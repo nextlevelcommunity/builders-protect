@@ -74,7 +74,7 @@ public struct MonitoredFolder: Codable, Identifiable, Hashable, Sendable {
     }
 }
 
-public struct AppSettings: Codable, Sendable {
+public struct AppSettings: Codable, Equatable, Sendable {
     public var folders: [MonitoredFolder]
     public var excludedPaths: [String]
     public var scheduleEnabled: Bool

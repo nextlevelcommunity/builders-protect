@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1 — 2026-10-26
+
+- Ajustes são salvos automaticamente após uma pequena pausa. O botão Salvar alterações continua disponível para confirmação.
+- Salvar ajustes preserva o horário da última varredura e evita sobrescrever estado atualizado pelo agendador.
+
 ## 1.1.0 — 2026-10-26
 
 - Instalação documentada a partir do fork, com `make install` e geração local do DMG.

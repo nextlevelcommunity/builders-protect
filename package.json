@@ -1,6 +1,6 @@
 {
   "name": "@culturabuilder/builders-protect",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Segurança contínua de dependências e Red Teaming para projetos da Cultura Builder Community.",
   "private": false,
   "type": "commonjs",

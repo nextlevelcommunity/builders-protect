@@ -80,6 +80,18 @@ struct SettingsView: View {
         .onChange(of: model.settings.excludedPaths) { paths in
             draft.excludedPaths = paths
         }
+        .task(id: draft) {
+            guard loaded else { return }
+            try? await Task.sleep(nanoseconds: 450_000_000)
+            guard !Task.isCancelled else { return }
+            persistDraft(announce: false)
+        }
+        .onChange(of: launchAtLogin) { _ in
+            persistDraft(announce: false)
+        }
+        .onDisappear {
+            persistDraft(announce: false)
+        }
     }
 
     private var section: SettingsSection {
@@ -736,15 +748,20 @@ struct SettingsView: View {
                 .foregroundStyle(CBTheme.textSecondary)
                 .transition(.opacity)
             } else {
-                Text("As alterações ficam salvas neste Mac.")
+                Text("As alterações são salvas automaticamente neste Mac.")
                     .font(.system(size: 9.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
             }
 
             Spacer()
 
-            Button("Fechar", action: onClose)
-                .buttonStyle(GhostButtonStyle())
+            Button {
+                persistDraft(announce: false)
+                onClose()
+            } label: {
+                Text("Fechar")
+            }
+            .buttonStyle(GhostButtonStyle())
 
             Button {
                 save()
@@ -844,13 +861,42 @@ struct SettingsView: View {
     }
 
     private func save() {
-        draft.hasCompletedOnboarding = true
-        model.updateSettings(draft)
-        model.setLaunchAtLogin(launchAtLogin)
+        persistDraft(announce: true)
+    }
+
+    private func persistDraft(announce: Bool) {
+        guard loaded else { return }
+
+        let launchAtLoginChanged = launchAtLogin != model.launchAtLoginEnabled
+        guard settingsChanged || launchAtLoginChanged else {
+            if announce { showSavedIndicator() }
+            return
+        }
+
+        var next = draft
+        next.lastScanAt = model.settings.lastScanAt
+        model.updateSettings(next, announce: announce)
+        if launchAtLoginChanged {
+            model.setLaunchAtLogin(launchAtLogin)
+        }
+        showSavedIndicator()
+    }
+
+    private var settingsChanged: Bool {
+        var current = model.settings
+        var pending = draft
+        current.lastScanAt = nil
+        pending.lastScanAt = nil
+        current.hasCompletedOnboarding = true
+        pending.hasCompletedOnboarding = true
+        return current != pending
+    }
+
+    private func showSavedIndicator() {
         withAnimation(.easeInOut(duration: 0.18)) {
             saved = true
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
             withAnimation(.easeInOut(duration: 0.18)) {
                 saved = false
             }

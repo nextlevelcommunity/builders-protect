@@ -351,7 +351,7 @@ final class AppModel: ObservableObject {
         showToast("Análise Red Teaming cancelada")
     }
 
-    func updateSettings(_ draft: AppSettings) {
+    func updateSettings(_ draft: AppSettings, announce: Bool = true) {
         var next = draft
         next.hasCompletedOnboarding = true
         next.folders = deduplicated(next.folders)
@@ -372,7 +372,9 @@ final class AppModel: ObservableObject {
            previousFolders != next.folders.map(\.path) || previousExclusions != next.excludedPaths {
             scheduleExclusionRescan()
         }
-        showToast("Ajustes salvos")
+        if announce {
+            showToast("Ajustes salvos")
+        }
     }
 
     func setLaunchAtLogin(_ enabled: Bool) {
