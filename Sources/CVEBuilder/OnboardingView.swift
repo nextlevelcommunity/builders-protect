@@ -448,6 +448,19 @@ struct OnboardingView: View {
             .buttonStyle(.plain)
             .keyboardShortcut("o", modifiers: .command)
 
+            if !draft.excludedPaths.isEmpty {
+                HStack(alignment: .top, spacing: 7) {
+                    Image(systemName: "arrow.triangle.branch")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(CBTheme.lime)
+                        .padding(.top, 1)
+                    Text("\(Vocabulary.quantity(draft.excludedPaths.count, "worktree ignorada", "worktrees ignoradas")) automaticamente. Você pode reativar em Ajustes > Pastas.")
+                        .font(.system(size: 9.8, weight: .regular, design: .rounded))
+                        .foregroundStyle(CBTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
             if !draft.folders.isEmpty {
                 VStack(spacing: 6) {
                     ForEach(draft.folders) { folder in
@@ -821,14 +834,19 @@ struct OnboardingView: View {
     }
 
     private var folderKey: String {
-        draft.folders.map(\.path).joined(separator: "|")
+        let folders = draft.folders.map(\.path).joined(separator: "|")
+        let exclusions = draft.excludedPaths.joined(separator: "|")
+        return folders + "||" + exclusions
     }
 
     private func addFolders() {
         let picked = model.pickFolders()
-        for folder in picked {
+        for folder in picked.folders {
             guard !draft.folders.contains(where: { $0.path == folder.path }) else { continue }
             draft.folders.append(folder)
+        }
+        for path in picked.autoExcludedPaths where !draft.excludedPaths.contains(path) {
+            draft.excludedPaths.append(path)
         }
     }
 

@@ -39,6 +39,8 @@ jobs:
 | `sarif-file` | `builders-protect.sarif` | Caminho do SARIF. Deixe vazio para não gerar |
 | `json-file` | `builders-protect.json` | Caminho do JSON. Deixe vazio para não gerar |
 
+Worktrees do Git são detectadas e ignoradas automaticamente, usando a pasta principal do repositório. Use `exclude` apenas para outras pastas que não devem entrar na varredura.
+
 ## Saídas
 
 | Saída | Descrição |

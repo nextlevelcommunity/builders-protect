@@ -83,11 +83,20 @@ public struct ProjectScanner: Sendable {
                 continue
             }
 
+            if isProjectRoot(root),
+               let scanned = buildProject(at: root, warnings: &warnings, packageLimit: packageLimit),
+               !scanned.payloads.isEmpty,
+               discovered.count < projectLimit {
+                let path = root.standardizedFileURL.path
+                discovered[path] = scanned
+                order.append(path)
+            }
+
             let keys: [URLResourceKey] = [.isDirectoryKey, .isRegularFileKey]
             guard let enumerator = FileManager.default.enumerator(
                 at: root,
                 includingPropertiesForKeys: keys,
-                options: [.skipsHiddenFiles, .skipsPackageDescendants],
+                options: [.skipsPackageDescendants],
                 errorHandler: { url, error in
                     warnings.append("Não consegui ler \(url.lastPathComponent): \(error.localizedDescription)")
                     return true
@@ -113,6 +122,10 @@ public struct ProjectScanner: Sendable {
                 let name = url.lastPathComponent
                 let depth = url.pathComponents.count - root.pathComponents.count
                 if depth > Self.maxDepth || Self.heavyDirectories.contains(name) {
+                    enumerator.skipDescendants()
+                    continue
+                }
+                if name.hasPrefix("."), name != ".worktrees" {
                     enumerator.skipDescendants()
                     continue
                 }

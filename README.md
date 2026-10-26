@@ -13,6 +13,7 @@ O Builders Protect encontra vulnerabilidades conhecidas nas dependências de um 
 - Gera resumo em Markdown, relatório JSON e SARIF 2.1.0.
 - Pode falhar o job quando encontra achados acima do limite configurado.
 - Pode rodar em rotinas diárias, semanais ou mensais no GitHub Actions.
+- Detecta worktrees do Git e usa a pasta principal do repositório; no app, as worktrees ignoradas podem ser reativadas em Ajustes > Pastas.
 - No app, pode gerar diagnóstico com IA e prompts de correção para agentes.
 
 ## Como funciona
@@ -69,13 +70,27 @@ jobs:
 
 Veja [docs/ACTION.md](docs/ACTION.md) para entradas, saídas, cron e permissões.
 
-### App macOS
+### App macOS a partir do fork
 
-1. Baixe o `.dmg` mais recente em [Releases](https://github.com/nextlevelcommunity/builders-protect/releases).
-2. Abra o DMG e arraste o Builders Protect para Aplicativos.
-3. Na primeira abertura, escolha as pastas que deseja monitorar.
+O app é instalado a partir do código-fonte, na sua máquina:
 
-O build público atual não é notarizado pela Apple. Se o macOS bloquear a primeira abertura, use **Abrir** pelo menu de contexto do Finder. Veja [docs/INSTALL.md](docs/INSTALL.md).
+1. Faça um fork de [nextlevelcommunity/builders-protect](https://github.com/nextlevelcommunity/builders-protect).
+2. Clone o seu fork e entre na pasta.
+3. Rode `make install`.
+
+```bash
+git clone https://github.com/<seu-usuario>/builders-protect.git
+cd builders-protect
+make install
+```
+
+O `make install` compila o app, assina localmente em modo ad-hoc e copia para `~/Applications/Builders Protect.app`. Requisitos: macOS 13+, Swift 5.10+ e Xcode Command Line Tools. Para gerar um DMG, use `make dmg`.
+
+O app fica disponível no Dock, no Launchpad e no **⌘+Tab**. O ícone na barra de menus abre o painel rápido; o banner **Controle total** abre a janela principal.
+
+O build local não é notarizado pela Apple. Se o macOS bloquear a primeira abertura, use **Abrir** pelo menu de contexto do Finder. Veja [docs/INSTALL.md](docs/INSTALL.md).
+
+Também é possível baixar um build pronto em [Releases](https://github.com/nextlevelcommunity/builders-protect/releases).
 
 ### CLI
 
@@ -120,6 +135,7 @@ O app macOS tem agendamento local próprio e notificações. Veja [docs/ACTION.m
 - O diagnóstico com IA usa os achados e metadados do projeto; não envia código-fonte.
 - O Red Teaming, quando liberado, será opt-in por projeto, com modelos privados dedicados à segurança e guardrails específicos. Os arquivos selecionados não são enviados para laboratórios de IA nem usados para treinamento.
 - Credenciais de assinante ficam no armazenamento local da Cultura Builder e não entram nos relatórios.
+- O repositório público não contém chaves de API, tokens ou credenciais. O código usa apenas endpoints públicos e a sessão local para recursos de assinante.
 - A Action não precisa de token de IA e não escreve no repositório.
 
 Leia [docs/SECURITY-MODEL.md](docs/SECURITY-MODEL.md) antes de usar em repositórios privados.

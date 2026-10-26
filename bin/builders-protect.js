@@ -27,6 +27,8 @@ Opções de scan:
   --endpoint <url>        Sobrescreve o endpoint da base de vulnerabilidades
   --quiet                 Não mostra progresso no stderr
 
+Worktrees do Git são detectadas e ignoradas automaticamente. A varredura usa a pasta principal do repositório.
+
 Códigos de saída:
   0  Nenhum achado no limite configurado
   1  Achados no limite configurado

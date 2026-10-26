@@ -11,7 +11,7 @@
 ## Em preparação
 
 - Red Teaming opt-in no app, após estabilização do consumo de recursos.
-- Interface desktop para Windows e Linux.
+- Interface desktop para Windows e Linux como app instalável, com atalho no menu de aplicativos, ícone de bandeja, instância única, painel rápido e janela principal.
 - Build macOS assinado e notarizado.
 - Checksums e artefatos de release para todas as plataformas suportadas.
 

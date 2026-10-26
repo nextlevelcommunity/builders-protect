@@ -16,9 +16,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUs
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.appearance = NSAppearance(named: .darkAqua)
-        let opensDebugWindow = debugAlertIndex() != nil
-            || CommandLine.arguments.contains("--report")
-        NSApp.setActivationPolicy(opensDebugWindow ? .regular : .accessory)
+        NSApp.setActivationPolicy(.regular)
+
+        let arguments = CommandLine.arguments
+        let isBackground = arguments.contains("--background")
+        let forceOnboarding = arguments.contains("--onboarding")
+        let forcePanel = arguments.contains("--panel")
+        let forceReport = arguments.contains("--report")
+
         buildMenu()
         configureStatusItem()
         configurePopover()
@@ -27,22 +32,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUs
         UNUserNotificationCenter.current().delegate = self
         model.start()
 
-        if CommandLine.arguments.contains("--report") {
+        if forceReport {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
                 self?.openReport()
             }
-        } else if !model.settings.hasCompletedOnboarding
-            || CommandLine.arguments.contains("--onboarding") {
+        } else if forceOnboarding || (!isBackground && !model.settings.hasCompletedOnboarding) {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
                 self?.openOnboarding()
             }
-        } else if CommandLine.arguments.contains("--panel") {
+        } else if forcePanel {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                self?.showPopover()
+            }
+        } else if !isBackground, !arguments.contains("--scan"), debugAlertIndex() == nil {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
                 self?.showPopover()
             }
         }
 
-        if CommandLine.arguments.contains("--scan") {
+        if arguments.contains("--scan") {
             model.scan()
         }
 
@@ -81,7 +89,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUs
         _ sender: NSApplication,
         hasVisibleWindows flag: Bool
     ) -> Bool {
-        openReport()
+        if !model.settings.hasCompletedOnboarding {
+            openOnboarding()
+            return true
+        }
+        if let window = settingsWindow, window.isVisible {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return true
+        }
+        if let window = onboardingWindow, window.isVisible {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return true
+        }
+        showPopover()
         return true
     }
 
@@ -217,8 +239,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUs
         )
         check.target = self
 
+        let panel = appMenu.addItem(
+            withTitle: "Abrir painel",
+            action: #selector(showPanelFromMenu),
+            keyEquivalent: "p"
+        )
+        panel.keyEquivalentModifierMask = [.command, .shift]
+        panel.target = self
+
         let report = appMenu.addItem(
-            withTitle: "Abrir análises",
+            withTitle: "Abrir controle total",
             action: #selector(showReport),
             keyEquivalent: ""
         )
@@ -261,7 +291,57 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUs
         editMenu.addItem(withTitle: "Colar", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
         editMenu.addItem(withTitle: "Selecionar tudo", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
 
+        let windowItem = NSMenuItem()
+        windowItem.title = "Janela"
+        mainMenu.addItem(windowItem)
+        let windowMenu = NSMenu(title: "Janela")
+        windowItem.submenu = windowMenu
+        windowMenu.addItem(
+            withTitle: "Minimizar",
+            action: #selector(NSWindow.performMiniaturize(_:)),
+            keyEquivalent: "m"
+        )
+        windowMenu.addItem(
+            withTitle: "Fechar",
+            action: #selector(NSWindow.performClose(_:)),
+            keyEquivalent: "w"
+        )
+        NSApp.windowsMenu = windowMenu
+
         NSApp.mainMenu = mainMenu
+    }
+
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        let menu = NSMenu()
+
+        let panel = menu.addItem(
+            withTitle: "Abrir painel",
+            action: #selector(showPanelFromMenu),
+            keyEquivalent: ""
+        )
+        panel.target = self
+
+        let control = menu.addItem(
+            withTitle: "Abrir controle total",
+            action: #selector(showReport),
+            keyEquivalent: ""
+        )
+        control.target = self
+
+        menu.addItem(.separator())
+
+        let check = menu.addItem(
+            withTitle: "Verificar agora",
+            action: #selector(checkNow),
+            keyEquivalent: ""
+        )
+        check.target = self
+
+        return menu
+    }
+
+    @objc private func showPanelFromMenu() {
+        showPopover()
     }
 
     @objc private func showAbout() {

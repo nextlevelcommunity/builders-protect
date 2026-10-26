@@ -417,13 +417,13 @@ struct SettingsView: View {
                     Button {
                         addExclusion()
                     } label: {
-                        Label("Ignorar subpasta", systemImage: "eye.slash")
+                        Label("Ignorar pasta", systemImage: "eye.slash")
                     }
                     .buttonStyle(GhostButtonStyle())
                 }
 
                 if draft.excludedPaths.isEmpty {
-                    Text("Nenhuma subpasta ignorada. Use esta opção para deixar worktrees e sandboxes fora da varredura.")
+                    Text("Nenhuma pasta ignorada. Use esta opção para deixar worktrees e sandboxes fora da varredura.")
                         .font(.system(size: 10.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -435,9 +435,19 @@ struct SettingsView: View {
                                     .font(.system(size: 12, weight: .regular))
                                     .foregroundStyle(CBTheme.textTertiary)
                                 VStack(alignment: .leading, spacing: 1) {
-                                    Text(URL(fileURLWithPath: path).lastPathComponent)
-                                        .font(.system(size: 11.5, weight: .medium, design: .rounded))
-                                        .foregroundStyle(CBTheme.textSecondary)
+                                    HStack(spacing: 6) {
+                                        Text(URL(fileURLWithPath: path).lastPathComponent)
+                                            .font(.system(size: 11.5, weight: .medium, design: .rounded))
+                                            .foregroundStyle(CBTheme.textSecondary)
+                                        if WorktreeSafety.isLinkedWorktree(URL(fileURLWithPath: path)) {
+                                            Text("worktree")
+                                                .font(.system(size: 8, weight: .semibold, design: .rounded))
+                                                .foregroundStyle(CBTheme.lime)
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 2)
+                                                .background(CBTheme.limeMuted, in: Capsule())
+                                        }
+                                    }
                                     Text(path.homeAbbreviated)
                                         .font(.system(size: 8.8, weight: .regular, design: .monospaced))
                                         .foregroundStyle(CBTheme.textTertiary)
@@ -446,11 +456,12 @@ struct SettingsView: View {
                                 }
                                 Spacer()
                                 Button {
-                                    draft.excludedPaths.removeAll { $0 == path }
+                                    restoreExclusion(path)
                                 } label: {
-                                    Text("Acompanhar")
+                                    Text("Reativar")
                                 }
                                 .buttonStyle(GhostButtonStyle(tint: CBTheme.mint))
+                                .help("Voltar a incluir esta pasta nas varreduras")
                             }
                             .padding(.horizontal, 11)
                             .padding(.vertical, 8)
@@ -459,7 +470,7 @@ struct SettingsView: View {
                     }
                 }
 
-                Text("As pastas ignoradas valem para as próximas varreduras.")
+                Text("As pastas ignoradas valem para as próximas varreduras. Worktrees do Git são detectadas e ignoradas automaticamente; use Reativar para incluí-las.")
                     .font(.system(size: 9.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
             }
@@ -778,17 +789,30 @@ struct SettingsView: View {
 
     private func addFolders() {
         let picked = model.pickFolders()
-        for folder in picked {
+        for folder in picked.folders {
             guard !draft.folders.contains(where: { $0.path == folder.path }) else { continue }
             draft.folders.append(folder)
         }
+        for path in picked.autoExcludedPaths where !draft.excludedPaths.contains(path) {
+            draft.excludedPaths.append(path)
+        }
+    }
+
+    private func restoreExclusion(_ path: String) {
+        let url = URL(fileURLWithPath: path, isDirectory: true)
+        if WorktreeSafety.isLinkedWorktree(url),
+           !draft.folders.contains(where: { path == $0.path || path.hasPrefix($0.path + "/") }),
+           let folder = model.makeFolder(url: url) {
+            draft.folders.append(folder)
+        }
+        draft.excludedPaths.removeAll { $0 == path }
     }
 
     private func addExclusion() {
         let panel = NSOpenPanel()
-        panel.title = "Ignorar subpasta"
+        panel.title = "Ignorar pasta"
         panel.message = "Escolha uma pasta que não deve entrar nas próximas varreduras."
-        panel.prompt = "Ignorar"
+        panel.prompt = "Ignorar pasta"
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = true

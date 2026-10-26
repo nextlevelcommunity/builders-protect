@@ -46,6 +46,8 @@ O Red Teaming está em preparação nesta versão e não é executado pela CLI n
 
 No app, a sessão da Cultura Builder é lida do armazenamento local usado pelo produto. Tokens não são gravados em relatórios, prompts, logs de CI ou artefatos.
 
+O repositório público não contém chaves de API, tokens ou credenciais. Endpoints públicos ficam no código; qualquer credencial de assinante permanece no armazenamento local da máquina.
+
 A CLI e a Action não usam a sessão de assinante. Elas não precisam de token de IA para a varredura de dependências.
 
 ## GitHub Actions

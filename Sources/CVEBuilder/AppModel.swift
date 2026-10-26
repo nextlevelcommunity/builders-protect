@@ -11,6 +11,11 @@ struct FolderPreview: Sendable {
     var warnings: [String]
 }
 
+struct FolderPickResult: Sendable {
+    var folders: [MonitoredFolder]
+    var autoExcludedPaths: [String]
+}
+
 @MainActor
 final class AppModel: ObservableObject {
     @Published private(set) var settings: AppSettings
@@ -149,6 +154,7 @@ final class AppModel: ObservableObject {
 
     func start() {
         LaunchAtLogin.migrateLegacy()
+        LaunchAtLogin.refreshIfEnabled()
         authStatus = authStore.status()
         launchAtLoginEnabled = LaunchAtLogin.isEnabled
         startScheduler()
@@ -479,6 +485,11 @@ final class AppModel: ObservableObject {
     func restoreExcludedPath(_ path: String) {
         var next = settings
         next.excludedPaths.removeAll { $0 == path }
+        if WorktreeSafety.isLinkedWorktree(URL(fileURLWithPath: path, isDirectory: true)),
+           !next.folders.contains(where: { path == $0.path || path.hasPrefix($0.path + "/") }),
+           let folder = makeFolder(url: URL(fileURLWithPath: path, isDirectory: true)) {
+            next.folders.append(folder)
+        }
         settings = next
         store.saveSettings(next)
         showToast("Pasta monitorada novamente")
@@ -519,22 +530,71 @@ final class AppModel: ObservableObject {
         openURL("https://hub.culturabuilder.com")
     }
 
-    func pickFolders() -> [MonitoredFolder] {
+    func pickFolders() -> FolderPickResult {
         let panel = NSOpenPanel()
         panel.title = "Escolher pastas de projetos"
-        panel.message = "A varredura lê apenas manifests e lockfiles. Nenhum código-fonte sai deste Mac."
+        panel.message = "A varredura lê apenas manifests e lockfiles. Worktrees do Git são ignoradas automaticamente e podem ser reativadas em Ajustes > Pastas."
         panel.prompt = "Monitorar"
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = true
         panel.canCreateDirectories = false
         panel.resolvesAliases = true
-        guard panel.runModal() == .OK else { return [] }
-        return panel.urls.compactMap(makeFolder)
+        guard panel.runModal() == .OK else {
+            return FolderPickResult(folders: [], autoExcludedPaths: [])
+        }
+        return prepareFolders(panel.urls)
+    }
+
+    func prepareFolders(_ urls: [URL]) -> FolderPickResult {
+        var folders: [MonitoredFolder] = []
+        var autoExcludedPaths: [String] = []
+        var seenFolders = Set<String>()
+        var seenExclusions = Set<String>()
+
+        func appendFolder(_ url: URL) {
+            let path = standardizedPath(url.path)
+            guard seenFolders.insert(path).inserted,
+                  let folder = makeFolder(url: URL(fileURLWithPath: path, isDirectory: true)) else {
+                return
+            }
+            folders.append(folder)
+        }
+
+        func appendExclusion(_ url: URL) {
+            let path = standardizedPath(url.path)
+            guard seenExclusions.insert(path).inserted else { return }
+            autoExcludedPaths.append(path)
+        }
+
+        for url in urls {
+            let selected = url.standardizedFileURL
+
+            if let location = WorktreeSafety.worktreeLocation(containing: selected) {
+                appendFolder(location.mainRoot)
+                appendExclusion(location.worktreeRoot)
+                for worktree in WorktreeSafety.registeredWorktrees(in: location.mainRoot) {
+                    appendExclusion(worktree)
+                }
+                continue
+            }
+
+            appendFolder(selected)
+            for worktree in WorktreeSafety.linkedWorktrees(under: selected) {
+                appendExclusion(worktree)
+            }
+        }
+
+        return FolderPickResult(folders: folders, autoExcludedPaths: autoExcludedPaths)
     }
 
     func makeFolder(url: URL) -> MonitoredFolder? {
         let standardized = url.standardizedFileURL
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: standardized.path, isDirectory: &isDirectory),
+              isDirectory.boolValue else {
+            return nil
+        }
         let bookmark = try? standardized.bookmarkData(
             options: [.withSecurityScope],
             includingResourceValuesForKeys: nil,

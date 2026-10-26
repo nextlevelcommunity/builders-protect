@@ -131,7 +131,7 @@ struct PanelView: View {
                 )
                 if let report = model.report {
                     summaryHero(report: report)
-                    openAnalysisButton(report: report)
+                    controlCenterBanner()
                 }
             } else if let report = model.report {
                 summaryHero(report: report)
@@ -140,7 +140,7 @@ struct PanelView: View {
                     AuthMiniCard(model: model)
                 }
 
-                openAnalysisButton(report: report)
+                controlCenterBanner()
 
                 if report.hasFindings {
                     quickRisks(report: report)
@@ -296,51 +296,74 @@ struct PanelView: View {
             .padding(.horizontal, 12)
     }
 
-    private func openAnalysisButton(report: ScanReport) -> some View {
+    private func controlCenterBanner() -> some View {
         Button {
             model.openReport()
         } label: {
-            HStack(spacing: 11) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .fill(CBTheme.limeMuted)
-                    Image(systemName: "doc.text.magnifyingglass")
-                        .font(.system(size: 14, weight: .semibold))
+            ZStack(alignment: .topTrailing) {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(CBTheme.surface)
+
+                LinearGradient(
+                    colors: [
+                        CBTheme.lime.opacity(0.16),
+                        CBTheme.mint.opacity(0.04),
+                        .clear
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+
+                HStack(alignment: .center, spacing: 15) {
+                    Image(systemName: "rectangle.3.group.fill")
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundStyle(CBTheme.lime)
+                        .frame(width: 34, height: 34)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("CONTROLE TOTAL")
+                            .font(.system(size: 8, weight: .heavy, design: .rounded))
+                            .tracking(1.2)
+                            .foregroundStyle(CBTheme.lime)
+                        Text("Abra a central completa")
+                            .font(.system(size: 17, weight: .semibold, design: .rounded))
+                            .foregroundStyle(CBTheme.text)
+                        Text("Projetos, riscos e correções em uma janela só.")
+                            .font(.system(size: 9.8, weight: .regular, design: .rounded))
+                            .foregroundStyle(CBTheme.textSecondary)
+                            .lineLimit(2)
+                    }
+
+                    Spacer(minLength: 12)
+
+                    Image(systemName: "arrow.up.right")
+                        .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(CBTheme.lime)
                 }
-                .frame(width: 34, height: 34)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Abrir análise completa")
-                        .font(.system(size: 11.5, weight: .semibold, design: .rounded))
-                        .foregroundStyle(CBTheme.text)
-                    Text(analysisSubtitle(report))
-                        .font(.system(size: 9, weight: .regular, design: .rounded))
-                        .foregroundStyle(CBTheme.textTertiary)
-                        .lineLimit(1)
-                }
-
-                Spacer(minLength: 4)
-
-                Image(systemName: "arrow.up.right")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(CBTheme.textTertiary)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 16)
             }
-            .padding(11)
-            .background(CBTheme.surface, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                CBTheme.lime.opacity(0.42),
+                                CBTheme.lime.opacity(0.04)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            )
+            .shadow(color: CBTheme.lime.opacity(0.12), radius: 18, y: 8)
+            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
         .buttonStyle(.plain)
-    }
-
-    private func analysisSubtitle(_ report: ScanReport) -> String {
-        var parts = [
-            Vocabulary.quantity(report.alerts.count, "projeto", "projetos"),
-            Vocabulary.quantity(report.totalPackages, "pacote", "pacotes")
-        ]
-        if !report.warnings.isEmpty {
-            parts.append(Vocabulary.quantity(report.warnings.count, "aviso", "avisos"))
-        }
-        return parts.joined(separator: " · ")
+        .accessibilityLabel("Abrir controle total")
     }
 
     private func quickRisks(report: ScanReport) -> some View {

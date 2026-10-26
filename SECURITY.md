@@ -32,6 +32,7 @@ Não fazem parte do escopo:
 
 - Fixe a Action em um commit completo em produção.
 - Use permissões mínimas no workflow.
+- Ao instalar o app a partir de um fork, revise o código e use um fork do próprio repositório; `make install` compila e executa código na sua máquina.
 - Trate `builders-protect.json` e `builders-protect.sarif` como informação interna.
 - Não use a CLI em projetos cujos lockfiles não possam ser compartilhados com a base de vulnerabilidades.
 - Mantenha o app e a CLI atualizados.

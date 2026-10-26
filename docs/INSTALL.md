@@ -2,20 +2,44 @@
 
 ## App macOS
 
-Requisitos: macOS 13 ou superior.
+Requisitos: macOS 13 ou superior, Swift 5.10+ e Xcode Command Line Tools.
+
+### Instalar a partir do fork
+
+1. Faça um fork de [nextlevelcommunity/builders-protect](https://github.com/nextlevelcommunity/builders-protect).
+2. Clone o seu fork e entre na pasta.
+3. Rode `make install`.
+
+```bash
+git clone https://github.com/<seu-usuario>/builders-protect.git
+cd builders-protect
+make install
+```
+
+O comando compila o app, assina localmente em modo ad-hoc e copia para `~/Applications/Builders Protect.app`. Depois, abra o app e escolha as pastas que deseja monitorar.
+
+Para gerar um DMG:
+
+```bash
+make dmg
+```
+
+### Instalar a partir de um build pronto
 
 1. Abra [Releases](https://github.com/nextlevelcommunity/builders-protect/releases).
-2. Baixe o `Builders Protect.dmg` mais recente.
+2. Baixe o `Builders.Protect.dmg` mais recente.
 3. Abra o DMG e arraste o app para **Aplicativos**.
 4. Abra o Builders Protect.
 5. Escolha as pastas que deseja monitorar.
 6. Ative o agendamento e as notificações nas configurações.
 
+O app fica em **~/Applications** (ou em **Aplicativos**, se você usou o DMG), aparece no Dock, no Launchpad e no **⌘+Tab**. O ícone na barra de menus abre o painel rápido; o banner **Controle total** abre a janela completa.
+
 ### Primeira abertura
 
-O build público atual usa assinatura ad-hoc e não é notarizado pela Apple. Se o macOS bloquear a abertura:
+O build local e o build público usam assinatura ad-hoc e não são notarizados pela Apple. Se o macOS bloquear a abertura:
 
-1. Abra o Finder e localize o app em **Aplicativos**.
+1. Abra o Finder e localize o app em **~/Applications** ou **Aplicativos**.
 2. Clique com o botão direito e escolha **Abrir**.
 3. Confirme **Abrir** no diálogo.
 
@@ -31,7 +55,7 @@ O app pode registrar um item de login do usuário. Para remover, desative a opç
 
 ### Atualização
 
-Baixe o DMG mais recente e substitua o app em **Aplicativos**. As configurações ficam em:
+No seu fork, atualize o código e rode `make install` novamente. Se preferir o build pronto, baixe o DMG mais recente e substitua o app na mesma pasta. As configurações ficam em:
 
 ```text
 ~/Library/Application Support/Builders Protect/
@@ -40,7 +64,7 @@ Baixe o DMG mais recente e substitua o app em **Aplicativos**. As configuraçõe
 ### Desinstalação
 
 1. Encerre o app.
-2. Remova `Builders Protect.app` de **Aplicativos**.
+2. Remova `Builders Protect.app` de **~/Applications** ou **Aplicativos**.
 3. Remova o item de login, se existir.
 4. Opcionalmente, remova os dados locais:
 

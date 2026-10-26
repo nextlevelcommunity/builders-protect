@@ -23,7 +23,7 @@ enum LaunchAtLogin {
     private static func isEnabled(at url: URL) -> Bool {
         guard let existing = NSDictionary(contentsOf: url) as? [String: Any],
               let arguments = existing["ProgramArguments"] as? [String],
-              let path = arguments.last else {
+              let path = arguments.dropFirst(2).first else {
             return false
         }
         return FileManager.default.fileExists(atPath: path)
@@ -59,6 +59,16 @@ enum LaunchAtLogin {
         install(appPath: bundleURL.path)
     }
 
+    static func refreshIfEnabled(bundleURL: URL = Bundle.main.bundleURL) {
+        guard bundleURL.pathExtension == "app", isEnabled else { return }
+        guard let existing = NSDictionary(contentsOf: plistURL) as? [String: Any],
+              let arguments = existing["ProgramArguments"] as? [String],
+              !arguments.contains("--background") else {
+            return
+        }
+        try? writePlist(appPath: bundleURL.path)
+    }
+
     static func disable() {
         try? FileManager.default.removeItem(at: plistURL)
         try? FileManager.default.removeItem(at: legacyPlistURL)
@@ -68,35 +78,39 @@ enum LaunchAtLogin {
 
     @discardableResult
     private static func install(appPath: String) -> Bool {
-        let contents: [String: Any] = [
-            "Label": label,
-            "ProgramArguments": ["/usr/bin/open", "-gj", appPath],
-            "RunAtLoad": true,
-            "ProcessType": "Interactive",
-            "LimitLoadToSessionType": "Aqua"
-        ]
-
         do {
-            try FileManager.default.createDirectory(
-                at: plistURL.deletingLastPathComponent(),
-                withIntermediateDirectories: true
-            )
-            let data = try PropertyListSerialization.data(
-                fromPropertyList: contents,
-                format: .xml,
-                options: 0
-            )
-            try data.write(to: plistURL, options: .atomic)
-            try? FileManager.default.setAttributes(
-                [.posixPermissions: 0o644],
-                ofItemAtPath: plistURL.path
-            )
+            try writePlist(appPath: appPath)
             runLaunchctl(["bootout", "gui/\(getuid())/\(label)"])
             runLaunchctl(["bootstrap", "gui/\(getuid())", plistURL.path])
             return isEnabled
         } catch {
             return false
         }
+    }
+
+    private static func writePlist(appPath: String) throws {
+        let contents: [String: Any] = [
+            "Label": label,
+            "ProgramArguments": ["/usr/bin/open", "-gj", appPath, "--args", "--background"],
+            "RunAtLoad": true,
+            "ProcessType": "Interactive",
+            "LimitLoadToSessionType": "Aqua"
+        ]
+
+        try FileManager.default.createDirectory(
+            at: plistURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        let data = try PropertyListSerialization.data(
+            fromPropertyList: contents,
+            format: .xml,
+            options: 0
+        )
+        try data.write(to: plistURL, options: .atomic)
+        try? FileManager.default.setAttributes(
+            [.posixPermissions: 0o644],
+            ofItemAtPath: plistURL.path
+        )
     }
 
     private static func runLaunchctl(_ arguments: [String]) {

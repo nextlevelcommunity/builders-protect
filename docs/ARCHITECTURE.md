@@ -27,9 +27,13 @@ O app e a CLI não compartilham código binário. Eles compartilham o contrato d
 
 - SwiftUI para interface.
 - AppKit para menu bar, janelas, notificações e ciclo de vida.
+- App regular no macOS: Dock, Launchpad e ⌘+Tab, além do ícone na barra de menus.
+- Painel rápido (popover) com banner de controle total e janela principal separada.
+- Item de login em segundo plano, sem abrir o painel ao iniciar com o Mac.
 - `CVECore` para descoberta, parsing, varredura, prompts e integração com IA.
 - Agendamento local e item de login do usuário.
 - Red Teaming em preparação, desativado nesta versão.
+- No Windows e no Linux, o app desktop seguirá o mesmo fluxo: atalho no menu de aplicativos, ícone de bandeja, painel rápido e janela principal.
 
 ### CLI e Action
 
@@ -50,14 +54,15 @@ O diagnóstico e o Red Teaming usam os modelos de segurança da Cultura Builder.
 
 ## Fluxo de varredura
 
-1. A raiz é resolvida e as exclusões são normalizadas.
+1. A raiz é resolvida e as exclusões são normalizadas. Se a pasta escolhida for uma worktree do Git, a varredura usa a pasta principal do repositório.
 2. O diretório é percorrido com limite de profundidade e projetos.
-3. Diretórios pesados, como `node_modules`, `.git`, `dist` e `target`, são ignorados.
-4. Cada projeto com lockfile é registrado.
-5. Cada lockfile é lido, limitado a 1,8 MB e verificado contra binários.
-6. O conteúdo é enviado para a base de vulnerabilidades.
-7. Os achados são normalizados, deduplicados e ordenados por severidade.
-8. O relatório é gerado em Markdown, JSON e/ou SARIF.
+3. Worktrees registradas ou aninhadas são ignoradas automaticamente. No app, elas ficam visíveis em Ajustes > Pastas e podem ser reativadas.
+4. Diretórios pesados, como `node_modules`, `.git`, `dist` e `target`, são ignorados.
+5. Cada projeto com lockfile é registrado.
+6. Cada lockfile é lido, limitado a 1,8 MB e verificado contra binários.
+7. O conteúdo é enviado para a base de vulnerabilidades.
+8. Os achados são normalizados, deduplicados e ordenados por severidade.
+9. O relatório é gerado em Markdown, JSON e/ou SARIF.
 
 ## Estrutura do repositório
 

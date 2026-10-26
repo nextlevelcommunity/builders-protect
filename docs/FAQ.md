@@ -66,6 +66,10 @@ Depende do projeto. Uma configuração comum:
 
 Sim. O app só lê as pastas que você autorizar. O acesso é usado para encontrar manifests e lockfiles. Você pode remover a autorização a qualquer momento.
 
+## O app varre worktrees do Git?
+
+Não por padrão. Ao adicionar uma pasta, as worktrees são detectadas, a varredura usa a pasta principal do repositório e as worktrees ficam pré-ignoradas. Em **Ajustes > Pastas**, clique em **Reativar** para incluí-las novamente. A CLI e a Action também usam a pasta principal e ignoram worktrees automaticamente.
+
 ## Por que o macOS bloqueou a primeira abertura?
 
 O build público atual não é notarizado pela Apple. Use **Abrir** pelo menu de contexto do Finder. Builds assinados e notarizados estão no roadmap.

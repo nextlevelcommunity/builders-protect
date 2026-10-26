@@ -48,7 +48,7 @@ struct AnalysisPanelView: View {
             }
         }
         .confirmationDialog(
-            "Ignorar esta pasta?",
+            "Ignorar pasta?",
             isPresented: Binding(
                 get: { exclusionCandidate != nil },
                 set: { if !$0 { exclusionCandidate = nil } }
@@ -732,7 +732,7 @@ private struct AnalysisProjectRow: View {
                         .buttonStyle(ModalSurfaceButtonStyle())
 
                         Button(action: onExclude) {
-                            Label("Ignorar", systemImage: "eye.slash")
+                            Label("Ignorar pasta", systemImage: "eye.slash")
                         }
                         .buttonStyle(ModalSurfaceButtonStyle())
 
@@ -756,7 +756,7 @@ private struct AnalysisProjectRow: View {
         )
         .contextMenu {
             Button(role: .destructive, action: onExclude) {
-                Label("Não acompanhar esta pasta", systemImage: "eye.slash")
+                Label("Ignorar pasta", systemImage: "eye.slash")
             }
             Button(action: onOpenFolder) {
                 Label("Abrir pasta no Finder", systemImage: "folder")
