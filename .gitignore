@@ -13,3 +13,4 @@ builders-protect.sarif
 !.env.example
 coverage/
 *.tgz
+.playwright-mcp/

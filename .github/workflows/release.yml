@@ -20,10 +20,11 @@ jobs:
       - run: npm test
       - run: swift test
       - run: make dmg
-      - name: Checksums
+      - name: Prepare release asset
         run: |
           cd dist
-          shasum -a 256 "Builders Protect.dmg" > SHA256SUMS.txt
+          cp "Builders Protect.dmg" "Builders.Protect.dmg"
+          shasum -a 256 "Builders.Protect.dmg" > SHA256SUMS.txt
           cat SHA256SUMS.txt
       - name: Publish release
         env:
@@ -35,6 +36,6 @@ jobs:
             gh release create "$TAG" --generate-notes --title "Builders Protect $TAG"
           fi
           gh release upload "$TAG" \
-            "dist/Builders Protect.dmg" \
+            "dist/Builders.Protect.dmg" \
             "dist/SHA256SUMS.txt" \
             --clobber
