@@ -1,0 +1,32 @@
+name: Builders Protect
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: builders-protect-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  protect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: nextlevelcommunity/builders-protect@v1
+        with:
+          path: .
+          fail-on: high
+          sarif-file: builders-protect.sarif
+          json-file: builders-protect.json
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: builders-protect.sarif

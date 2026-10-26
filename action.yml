@@ -1,0 +1,45 @@
+name: Builders Protect
+description: Verifica vulnerabilidades conhecidas nos lockfiles do projeto e gera resumo, JSON e SARIF.
+author: Cultura Builder Community
+branding:
+  icon: shield
+  color: purple
+inputs:
+  path:
+    description: Pasta raiz da varredura, relativa ao workspace.
+    required: false
+    default: .
+  fail-on:
+    description: Nível mínimo que falha o job. Use none, low, medium, high ou critical.
+    required: false
+    default: high
+  exclude:
+    description: Pastas a ignorar, separadas por vírgula.
+    required: false
+    default: ""
+  max-projects:
+    description: Limite de projetos por varredura.
+    required: false
+    default: "80"
+  sarif-file:
+    description: Caminho do SARIF gerado, relativo ao workspace.
+    required: false
+    default: builders-protect.sarif
+  json-file:
+    description: Caminho do relatório JSON gerado, relativo ao workspace. Deixe vazio para não gerar.
+    required: false
+    default: builders-protect.json
+outputs:
+  findings-count:
+    description: Total de achados.
+  critical-count:
+    description: Total de achados críticos.
+  high-count:
+    description: Total de achados altos.
+  sarif-file:
+    description: Caminho do SARIF gerado.
+  json-file:
+    description: Caminho do relatório JSON gerado.
+runs:
+  using: node20
+  main: action/index.js

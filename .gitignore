@@ -1,0 +1,15 @@
+.build/
+dist/
+.DS_Store
+Resources/AppIcon.icns
+Resources/icon_1024x1024.png
+*.dmg
+node_modules/
+builders-protect.json
+builders-protect.sarif
+*.log
+.env
+.env.*
+!.env.example
+coverage/
+*.tgz

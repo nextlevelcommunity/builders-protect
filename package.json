@@ -1,0 +1,38 @@
+{
+  "name": "@culturabuilder/builders-protect",
+  "version": "1.0.0",
+  "description": "Segurança contínua de dependências e Red Teaming para projetos da Cultura Builder Community.",
+  "private": false,
+  "type": "commonjs",
+  "bin": {
+    "builders-protect": "bin/builders-protect.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test",
+    "scan": "node bin/builders-protect.js scan"
+  },
+  "files": [
+    "action",
+    "action.yml",
+    "bin",
+    "docs",
+    "examples",
+    "lib",
+    "CHANGELOG.md",
+    "LICENSE",
+    "README.md",
+    "SECURITY.md"
+  ],
+  "keywords": [
+    "security",
+    "dependencies",
+    "vulnerabilities",
+    "sarif",
+    "github-actions",
+    "cultura-builder"
+  ],
+  "license": "SEE LICENSE IN LICENSE"
+}

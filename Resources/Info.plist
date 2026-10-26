@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Builders Protect</string>
+    <key>CFBundleDisplayName</key>
+    <string>Builders Protect</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.culturabuilder.buildersprotect</string>
+    <key>CFBundleVersion</key>
+    <string>1.0.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundleExecutable</key>
+    <string>CVEBuilder</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.developer-tools</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSHumanReadableCopyright</key>
+    <string>Cultura Builder</string>
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>O Builders Protect lê os lockfiles dos projetos que você escolher para verificar vulnerabilidades conhecidas.</string>
+    <key>NSDesktopFolderUsageDescription</key>
+    <string>O Builders Protect lê os lockfiles dos projetos que você escolher para verificar vulnerabilidades conhecidas.</string>
+    <key>NSDownloadsFolderUsageDescription</key>
+    <string>O Builders Protect lê os lockfiles dos projetos que você escolher para verificar vulnerabilidades conhecidas.</string>
+    <key>NSRemovableVolumesUsageDescription</key>
+    <string>O Builders Protect lê os lockfiles dos projetos que você escolher para verificar vulnerabilidades conhecidas.</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>O Builders Protect abre o Terminal para iniciar o login da Cultura Builder quando você pedir.</string>
+</dict>
+</plist>
