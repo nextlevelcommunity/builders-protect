@@ -13,7 +13,7 @@ struct PanelView: View {
                     .frame(height: 1)
                 ScrollView(.vertical, showsIndicators: false) {
                     content
-                        .padding(16)
+                        .padding(18)
                 }
                 Rectangle()
                     .fill(CBTheme.hairline)
@@ -27,7 +27,7 @@ struct PanelView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .frame(width: 440, height: 700)
+        .frame(width: 460, height: 720)
         .background(panelBackground)
         .preferredColorScheme(.dark)
         .onAppear {
@@ -54,37 +54,38 @@ struct PanelView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 10) {
-            BrandMark(size: 35)
+        HStack(spacing: 11) {
+            BrandMark(size: 38)
 
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 2) {
                 BrandWordmark(compact: true)
                 Text("Vulnerabilidades sob controle")
-                    .font(.system(size: 8.5, weight: .medium, design: .rounded))
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
             }
 
-            Spacer(minLength: 4)
+            Spacer(minLength: 6)
 
-            HStack(spacing: 5) {
+            HStack(spacing: 6) {
                 Circle()
                     .fill(statusColor)
-                    .frame(width: 5, height: 5)
-                Text(statusLabel)
-                    .font(.system(size: 8.5, weight: .semibold, design: .rounded))
+                    .frame(width: 6, height: 6)
+                Text("IA")
+                    .font(.system(size: 10.5, weight: .semibold, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
                     .lineLimit(1)
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
             .background(CBTheme.surface, in: Capsule())
+            .help(statusHelp)
 
             Button {
                 model.openSettings()
             } label: {
                 Image(systemName: "gearshape")
             }
-            .buttonStyle(IconButtonStyle(size: 28))
+            .buttonStyle(IconButtonStyle(size: 30))
             .help("Ajustes")
 
             Button {
@@ -92,16 +93,16 @@ struct PanelView: View {
             } label: {
                 Image(systemName: "power")
             }
-            .buttonStyle(IconButtonStyle(size: 28))
+            .buttonStyle(IconButtonStyle(size: 30))
             .help("Sair do Builders Protect")
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
     }
 
     @ViewBuilder
     private var content: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             if !model.settings.hasCompletedOnboarding {
                 EmptyPanelCard(
                     symbol: "slider.horizontal.3",
@@ -160,11 +161,11 @@ struct PanelView: View {
     private var scanHint: some View {
         HStack(alignment: .top, spacing: 7) {
             Image(systemName: "lock.shield")
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(CBTheme.lime)
                 .padding(.top, 1)
             Text("Apenas nomes, versões e lockfiles saem deste Mac. Nenhum código-fonte.")
-                .font(.system(size: 9.2, weight: .regular, design: .rounded))
+                .font(.system(size: 10.5, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -174,126 +175,98 @@ struct PanelView: View {
     private func summaryHero(report: ScanReport) -> some View {
         let risk = report.hasFindings ? report.risk : .low
         let hasFindings = report.hasFindings
+        let count = hasFindings ? report.alerts.count : report.projectsScanned
+        let accent = hasFindings ? risk.color : CBTheme.mint
 
-        return VStack(alignment: .leading, spacing: 13) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 5) {
-                    HStack(spacing: 6) {
-                        SectionLabel(text: hasFindings ? "Situação atual" : "Tudo limpo")
-                        if report.llmUsed {
-                            HStack(spacing: 3) {
-                                Image(systemName: "sparkles")
-                                Text("análise da IA")
+        return VStack(alignment: .leading, spacing: 16) {
+            Button {
+                model.openReport()
+            } label: {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(alignment: .top, spacing: 16) {
+                        HStack(alignment: .center, spacing: 12) {
+                            Text("\(count)")
+                                .font(.system(size: 54, weight: .semibold, design: .rounded))
+                                .monospacedDigit()
+                                .foregroundStyle(CBTheme.text)
+                                .fixedSize()
+
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(count == 1 ? "projeto" : "projetos")
+                                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(CBTheme.text)
+                                Text(
+                                    hasFindings
+                                        ? (count == 1 ? "afetado" : "afetados")
+                                        : (count == 1 ? "verificado" : "verificados")
+                                )
+                                .font(.system(size: 16, weight: .medium, design: .rounded))
+                                .foregroundStyle(CBTheme.textSecondary)
                             }
-                            .font(.system(size: 7.5, weight: .bold, design: .rounded))
-                            .foregroundStyle(CBTheme.lime)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 2)
-                            .background(CBTheme.limeMuted, in: Capsule())
+                        }
+
+                        Spacer(minLength: 8)
+
+                        VStack(spacing: 7) {
+                            ZStack {
+                                Circle()
+                                    .fill(accent.opacity(0.10))
+                                Circle()
+                                    .stroke(accent.opacity(0.28), lineWidth: 1)
+                                Image(systemName: hasFindings ? risk.symbol : "checkmark.shield.fill")
+                                    .font(.system(size: 25, weight: .semibold))
+                                    .foregroundStyle(accent)
+                            }
+                            .frame(width: 64, height: 64)
+
+                            Text(hasFindings ? risk.shortLabel : "LIMPO")
+                                .font(.system(size: 9.5, weight: .heavy, design: .rounded))
+                                .tracking(1)
+                                .foregroundStyle(accent)
                         }
                     }
 
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text("\(hasFindings ? report.alerts.count : report.projectsScanned)")
-                            .font(.system(size: 46, weight: .light, design: .rounded))
-                            .monospacedDigit()
-                            .foregroundStyle(CBTheme.text)
-                        Text(hasFindings ? "projetos afetados" : "projetos verificados")
-                            .font(.system(size: 11, weight: .semibold, design: .rounded))
-                            .foregroundStyle(CBTheme.textSecondary)
-                    }
-
                     Text(Vocabulary.prose(report.summary))
-                        .font(.system(size: 10.5, weight: .regular, design: .rounded))
+                        .font(.system(size: 12.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textSecondary)
-                        .lineSpacing(1.5)
-                        .lineLimit(3)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .textSelection(.enabled)
+                        .lineSpacing(2)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-
-                Spacer(minLength: 0)
-
-                VStack(spacing: 5) {
-                    ZStack {
-                        Circle()
-                            .fill((hasFindings ? risk.color : CBTheme.mint).opacity(0.10))
-                        Circle()
-                            .stroke(
-                                (hasFindings ? risk.color : CBTheme.mint).opacity(0.28),
-                                lineWidth: 1
-                            )
-                        Image(systemName: hasFindings ? risk.symbol : "checkmark.shield.fill")
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundStyle(hasFindings ? risk.color : CBTheme.mint)
-                    }
-                    .frame(width: 56, height: 56)
-
-                    Text(hasFindings ? risk.shortLabel : "LIMPO")
-                        .font(.system(size: 7.5, weight: .heavy, design: .rounded))
-                        .tracking(0.6)
-                        .foregroundStyle(hasFindings ? risk.color : CBTheme.mint)
-                }
+                .contentShape(Rectangle())
             }
-
-            HStack(spacing: 0) {
-                CounterTile(
-                    value: "\(report.projectsScanned)",
-                    label: "Projetos",
-                    tint: CBTheme.text
-                )
-                verticalDivider
-                CounterTile(
-                    value: "\(report.totalPackages)",
-                    label: "Pacotes",
-                    tint: CBTheme.text
-                )
-            }
+            .buttonStyle(.plain)
+            .help("Abrir a central com os detalhes")
 
             Divider().overlay(CBTheme.hairline)
 
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 Image(systemName: "clock")
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(CBTheme.textTertiary)
                 Text(model.lastScanLabel)
-                    .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                    .font(.system(size: 11.5, weight: .medium, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
 
-                Spacer(minLength: 6)
+                Spacer(minLength: 8)
 
                 Button {
+                    model.openReport()
                     model.scan()
                 } label: {
                     Label("Verificar agora", systemImage: "arrow.clockwise")
                 }
                 .buttonStyle(SurfaceButtonStyle(tint: CBTheme.lime))
+                .help("Abre a central completa e inicia uma nova verificação")
                 .disabled(!model.canScan)
             }
         }
-        .padding(15)
+        .padding(20)
         .background(
-            ZStack {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(CBTheme.surface)
-                LinearGradient(
-                    colors: [
-                        (hasFindings ? risk.color : CBTheme.mint).opacity(0.075),
-                        .clear
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            }
+            CBTheme.surfaceSolid,
+            in: RoundedRectangle(cornerRadius: 22, style: .continuous)
         )
-    }
-
-    private var verticalDivider: some View {
-        Rectangle()
-            .fill(CBTheme.hairline)
-            .frame(width: 1, height: 29)
-            .padding(.horizontal, 12)
     }
 
     private func controlCenterBanner() -> some View {
@@ -306,8 +279,8 @@ struct PanelView: View {
 
                 LinearGradient(
                     colors: [
-                        CBTheme.lime.opacity(0.16),
-                        CBTheme.mint.opacity(0.04),
+                        CBTheme.lime.opacity(0.11),
+                        CBTheme.mint.opacity(0.03),
                         .clear
                     ],
                     startPoint: .topLeading,
@@ -315,22 +288,22 @@ struct PanelView: View {
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
 
-                HStack(alignment: .center, spacing: 15) {
+                HStack(alignment: .center, spacing: 16) {
                     Image(systemName: "rectangle.3.group.fill")
-                        .font(.system(size: 28, weight: .semibold))
+                        .font(.system(size: 30, weight: .semibold))
                         .foregroundStyle(CBTheme.lime)
-                        .frame(width: 34, height: 34)
+                        .frame(width: 36, height: 36)
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text("CONTROLE TOTAL")
-                            .font(.system(size: 8, weight: .heavy, design: .rounded))
-                            .tracking(1.2)
+                            .font(.system(size: 9.5, weight: .heavy, design: .rounded))
+                            .tracking(1.3)
                             .foregroundStyle(CBTheme.lime)
                         Text("Abra a central completa")
-                            .font(.system(size: 17, weight: .semibold, design: .rounded))
+                            .font(.system(size: 18.5, weight: .semibold, design: .rounded))
                             .foregroundStyle(CBTheme.text)
                         Text("Projetos, riscos e correções em uma janela só.")
-                            .font(.system(size: 9.8, weight: .regular, design: .rounded))
+                            .font(.system(size: 11.5, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textSecondary)
                             .lineLimit(2)
                     }
@@ -338,28 +311,13 @@ struct PanelView: View {
                     Spacer(minLength: 12)
 
                     Image(systemName: "arrow.up.right")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundStyle(CBTheme.lime)
                 }
-                .padding(.horizontal, 18)
-                .padding(.vertical, 16)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 18)
             }
             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                CBTheme.lime.opacity(0.42),
-                                CBTheme.lime.opacity(0.04)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1
-                    )
-            )
-            .shadow(color: CBTheme.lime.opacity(0.12), radius: 18, y: 8)
             .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
         .buttonStyle(.plain)
@@ -367,40 +325,41 @@ struct PanelView: View {
     }
 
     private func quickRisks(report: ScanReport) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 12) {
             SectionLabel(text: "Principais riscos")
                 .padding(.horizontal, 2)
+                .padding(.bottom, 2)
 
             ForEach(Array(report.alerts.prefix(3))) { alert in
                 Button {
                     model.openAlert(alert)
                 } label: {
-                    HStack(spacing: 9) {
+                    HStack(spacing: 11) {
                         Circle()
                             .fill(alert.risk.color)
-                            .frame(width: 6, height: 6)
+                            .frame(width: 7, height: 7)
 
-                        VStack(alignment: .leading, spacing: 1) {
+                        VStack(alignment: .leading, spacing: 2) {
                             Text(alert.project.name)
-                                .font(.system(size: 10.5, weight: .semibold, design: .rounded))
+                                .font(.system(size: 12.5, weight: .semibold, design: .rounded))
                                 .foregroundStyle(CBTheme.text)
                                 .lineLimit(1)
                             Text(Vocabulary.quantity(alert.packageCount, "pacote", "pacotes"))
-                                .font(.system(size: 8.5, weight: .regular, design: .rounded))
+                                .font(.system(size: 10.5, weight: .regular, design: .rounded))
                                 .foregroundStyle(CBTheme.textTertiary)
                         }
 
-                        Spacer(minLength: 4)
+                        Spacer(minLength: 6)
 
                         RiskBadge(risk: alert.risk, compact: true)
 
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 8, weight: .bold))
+                            .font(.system(size: 9, weight: .bold))
                             .foregroundStyle(CBTheme.textTertiary)
                     }
-                    .padding(.horizontal, 11)
-                    .padding(.vertical, 8)
-                    .background(CBTheme.surface, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .background(CBTheme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }
@@ -408,7 +367,7 @@ struct PanelView: View {
     }
 
     private var footer: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             Button {
                 model.openSettings()
             } label: {
@@ -423,18 +382,18 @@ struct PanelView: View {
             }
             .buttonStyle(GhostButtonStyle())
 
-            Spacer(minLength: 4)
+            Spacer(minLength: 6)
 
-            HStack(spacing: 4) {
+            HStack(spacing: 5) {
                 Image(systemName: "clock.arrow.circlepath")
-                    .font(.system(size: 8, weight: .semibold))
+                    .font(.system(size: 9.5, weight: .semibold))
                 Text(model.nextRunLabel)
             }
-            .font(.system(size: 8.5, weight: .medium, design: .rounded))
+            .font(.system(size: 10.5, weight: .medium, design: .rounded))
             .foregroundStyle(CBTheme.textTertiary)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 7)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
     }
 
     private var statusColor: Color {
@@ -443,8 +402,11 @@ struct PanelView: View {
         return CBTheme.high
     }
 
-    private var statusLabel: String {
-        if model.isScanning { return "Verificando" }
-        return model.authLabel
+    private var statusHelp: String {
+        if model.isScanning { return "Verificando dependências agora" }
+        if model.authStatus.connected {
+            return "IA conectada à Cultura Builder — análise inteligente ativa"
+        }
+        return "IA desconectada — entre na Cultura Builder em Ajustes para ativar a análise"
     }
 }

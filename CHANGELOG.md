@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.3 — 2026-10-26
+
+- Painel rápido redesenhado, com tipografia maior, mais respiro e hierarquia mais clara.
+- O resumo agora mostra apenas o total de projetos afetados, com descrição curta; clicar no bloco abre a central completa.
+- Cartão de resumo com fundo sólido e banner Controle total sem borda e com menos contraste.
+- Indicador de IA encurtado para "IA", com o estado completo no tooltip.
+- "Verificar agora" passa a abrir a central completa e iniciar a verificação.
+- Principais riscos com mais espaçamento entre título, itens e padding vertical.
+
 ## 1.1.2 — 2026-10-26
 
 - Nova tela Gerenciar pastas: lista todos os projetos encontrados, com busca, seleção múltipla e ações em lote.

@@ -6,6 +6,7 @@ enum CBTheme {
     static let backgroundLifted = Color(red: 0.055, green: 0.062, blue: 0.052)
     static let surface = Color.white.opacity(0.045)
     static let surfaceStrong = Color.white.opacity(0.075)
+    static let surfaceSolid = Color(red: 0.061, green: 0.067, blue: 0.058)
     static let lime = Color(red: 0.78, green: 0.96, blue: 0.38)
     static let limeDeep = Color(red: 0.55, green: 0.84, blue: 0.24)
     static let limeMuted = Color(red: 0.78, green: 0.96, blue: 0.38).opacity(0.12)
@@ -114,14 +115,14 @@ struct SurfaceButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 12, weight: .semibold, design: .rounded))
+            .font(.system(size: 12.5, weight: .semibold, design: .rounded))
             .foregroundStyle(tint)
-            .padding(.horizontal, 13)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 9)
             .frame(maxWidth: fullWidth ? .infinity : nil)
             .background(
                 CBTheme.surfaceStrong,
-                in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
             )
             .opacity(configuration.isPressed ? 0.7 : 1)
     }
@@ -133,10 +134,10 @@ struct GhostButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 11.5, weight: .medium, design: .rounded))
+            .font(.system(size: 12.5, weight: .medium, design: .rounded))
             .foregroundStyle(tint)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
+            .padding(.horizontal, 11)
+            .padding(.vertical, 8)
             .background(
                 configuration.isPressed ? CBTheme.surfaceStrong : .clear,
                 in: RoundedRectangle(cornerRadius: 8, style: .continuous)

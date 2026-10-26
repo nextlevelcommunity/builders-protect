@@ -6,16 +6,16 @@ struct RiskBadge: View {
     var compact = false
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 5) {
             Image(systemName: risk.symbol)
-                .font(.system(size: compact ? 8 : 9, weight: .bold))
+                .font(.system(size: compact ? 9 : 9.5, weight: .bold))
             Text(compact ? risk.label : risk.label.uppercased())
-                .font(.system(size: compact ? 8.5 : 8.5, weight: .bold, design: .rounded))
+                .font(.system(size: 9.5, weight: .bold, design: .rounded))
                 .tracking(compact ? 0 : 0.5)
         }
         .foregroundStyle(risk.color)
-        .padding(.horizontal, compact ? 6 : 7)
-        .padding(.vertical, 3)
+        .padding(.horizontal, compact ? 7 : 8)
+        .padding(.vertical, 4)
         .background(risk.color.opacity(0.12), in: Capsule())
     }
 }
@@ -53,30 +53,9 @@ struct SectionLabel: View {
 
     var body: some View {
         Text(text.uppercased())
-            .font(.system(size: 8.5, weight: .bold, design: .rounded))
-            .tracking(1.4)
+            .font(.system(size: 9.5, weight: .bold, design: .rounded))
+            .tracking(1.3)
             .foregroundStyle(CBTheme.textTertiary)
-    }
-}
-
-struct CounterTile: View {
-    let value: String
-    let label: String
-    let tint: Color
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(value)
-                .font(.system(size: 21, weight: .light, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(tint)
-            Text(label.uppercased())
-                .font(.system(size: 7.5, weight: .bold, design: .rounded))
-                .tracking(0.8)
-                .foregroundStyle(CBTheme.textTertiary)
-                .lineLimit(1)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
