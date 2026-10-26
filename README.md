@@ -13,7 +13,7 @@ O Builders Protect encontra vulnerabilidades conhecidas nas dependências de um 
 - Gera resumo em Markdown, relatório JSON e SARIF 2.1.0.
 - Pode falhar o job quando encontra achados acima do limite configurado.
 - Pode rodar em rotinas diárias, semanais ou mensais no GitHub Actions.
-- Detecta worktrees do Git e usa a pasta principal do repositório; no app, as worktrees ignoradas podem ser reativadas em Ajustes > Pastas.
+- Detecta worktrees do Git e usa a pasta principal do repositório; no app, Gerenciar pastas lista todos os projetos encontrados, marca build, preview e artefatos e permite ignorar ou reativar várias pastas de uma vez.
 - No app, pode gerar diagnóstico com IA e prompts de correção para agentes.
 
 ## Como funciona

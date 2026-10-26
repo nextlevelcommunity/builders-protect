@@ -5,10 +5,12 @@ import Foundation
 import SwiftUI
 
 struct FolderPreview: Sendable {
-    var projectCount: Int
-    var lockfileCount: Int
-    var projects: [String]
+    var projectRefs: [ProjectRef]
     var warnings: [String]
+
+    var projectCount: Int { projectRefs.count }
+    var lockfileCount: Int { projectRefs.reduce(0) { $0 + $1.lockfiles.count } }
+    var projects: [String] { projectRefs.map(\.name) }
 }
 
 struct FolderPickResult: Sendable {
@@ -610,19 +612,24 @@ final class AppModel: ObservableObject {
 
     func previewFolders(
         _ folders: [MonitoredFolder],
-        excludedPaths: [String] = []
+        excludedPaths: [String] = [],
+        projectLimit: Int = 40
     ) async -> FolderPreview {
         await Task.detached(priority: .userInitiated) {
             let discovery = ProjectScanner().preview(
                 folders: folders,
-                excludedPaths: excludedPaths
+                excludedPaths: excludedPaths,
+                projectLimit: projectLimit
             )
-            return FolderPreview(
-                projectCount: discovery.projects.count,
-                lockfileCount: discovery.projects.reduce(0) { $0 + $1.ref.lockfiles.count },
-                projects: discovery.projects.map(\.ref.name).sorted(),
-                warnings: discovery.warnings
-            )
+            let refs = discovery.projects
+                .map(\.ref)
+                .sorted { left, right in
+                    if left.name != right.name {
+                        return left.name.localizedStandardCompare(right.name) == .orderedAscending
+                    }
+                    return left.path.localizedStandardCompare(right.path) == .orderedAscending
+                }
+            return FolderPreview(projectRefs: refs, warnings: discovery.warnings)
         }.value
     }
 

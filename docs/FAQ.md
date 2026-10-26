@@ -68,7 +68,7 @@ Sim. O app só lê as pastas que você autorizar. O acesso é usado para encontr
 
 ## O app varre worktrees do Git?
 
-Não por padrão. Ao adicionar uma pasta, as worktrees são detectadas, a varredura usa a pasta principal do repositório e as worktrees ficam pré-ignoradas. Em **Ajustes > Pastas**, clique em **Reativar** para incluí-las novamente. A CLI e a Action também usam a pasta principal e ignoram worktrees automaticamente.
+Não por padrão. Ao adicionar uma pasta, as worktrees são detectadas, a varredura usa a pasta principal do repositório e as worktrees ficam pré-ignoradas. Em **Ajustes > Pastas > Gerenciar pastas**, selecione uma ou várias pastas e use **Reativar selecionadas** para incluí-las novamente. A mesma tela mostra todos os projetos encontrados, marca pastas de build, preview e artefatos e permite ignorar várias de uma vez. A CLI e a Action também usam a pasta principal e ignoram worktrees automaticamente.
 
 ## Por que o macOS bloqueou a primeira abertura?
 

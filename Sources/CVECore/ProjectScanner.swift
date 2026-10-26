@@ -151,12 +151,13 @@ public struct ProjectScanner: Sendable {
 
     public func preview(
         folders: [MonitoredFolder],
-        excludedPaths: [String] = []
+        excludedPaths: [String] = [],
+        projectLimit: Int = 40
     ) -> ScanDiscovery {
         scan(
             folders: folders,
             excludedPaths: excludedPaths,
-            projectLimit: 40,
+            projectLimit: projectLimit,
             packageLimit: 80
         )
     }

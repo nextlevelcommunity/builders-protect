@@ -45,6 +45,7 @@ struct SettingsView: View {
     @State private var isPreviewing = false
     @State private var loaded = false
     @State private var saved = false
+    @State private var showingFolderManager = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -424,67 +425,55 @@ struct SettingsView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    SectionLabel(text: "Pastas ignoradas")
+                    SectionLabel(text: "Revisar pastas")
                     Spacer()
                     Button {
-                        addExclusion()
+                        showingFolderManager = true
                     } label: {
-                        Label("Ignorar pasta", systemImage: "eye.slash")
+                        Label("Gerenciar pastas", systemImage: "slider.horizontal.3")
                     }
-                    .buttonStyle(GhostButtonStyle())
+                    .buttonStyle(GhostButtonStyle(tint: CBTheme.lime))
+                    .disabled(draft.folders.isEmpty && draft.excludedPaths.isEmpty)
                 }
 
                 if draft.excludedPaths.isEmpty {
-                    Text("Nenhuma pasta ignorada. Use esta opção para deixar worktrees e sandboxes fora da varredura.")
+                    Text("Todas as pastas encontradas entram na varredura. Use Gerenciar pastas para ver a lista completa, selecionar várias e ignorar builds, previews ou artefatos.")
                         .font(.system(size: 10.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
-                    VStack(spacing: 6) {
-                        ForEach(draft.excludedPaths, id: \.self) { path in
-                            HStack(spacing: 9) {
-                                Image(systemName: "eye.slash")
-                                    .font(.system(size: 12, weight: .regular))
+                    Button {
+                        showingFolderManager = true
+                    } label: {
+                        HStack(spacing: 9) {
+                            Image(systemName: "eye.slash")
+                                .font(.system(size: 12, weight: .regular))
+                                .foregroundStyle(CBTheme.textTertiary)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(Vocabulary.quantity(draft.excludedPaths.count, "pasta excluída", "pastas excluídas"))
+                                    .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(CBTheme.textSecondary)
+                                Text("Revise, selecione várias e reative de uma vez.")
+                                    .font(.system(size: 8.8, weight: .regular, design: .rounded))
                                     .foregroundStyle(CBTheme.textTertiary)
-                                VStack(alignment: .leading, spacing: 1) {
-                                    HStack(spacing: 6) {
-                                        Text(URL(fileURLWithPath: path).lastPathComponent)
-                                            .font(.system(size: 11.5, weight: .medium, design: .rounded))
-                                            .foregroundStyle(CBTheme.textSecondary)
-                                        if WorktreeSafety.isLinkedWorktree(URL(fileURLWithPath: path)) {
-                                            Text("worktree")
-                                                .font(.system(size: 8, weight: .semibold, design: .rounded))
-                                                .foregroundStyle(CBTheme.lime)
-                                                .padding(.horizontal, 6)
-                                                .padding(.vertical, 2)
-                                                .background(CBTheme.limeMuted, in: Capsule())
-                                        }
-                                    }
-                                    Text(path.homeAbbreviated)
-                                        .font(.system(size: 8.8, weight: .regular, design: .monospaced))
-                                        .foregroundStyle(CBTheme.textTertiary)
-                                        .lineLimit(1)
-                                        .truncationMode(.middle)
-                                }
-                                Spacer()
-                                Button {
-                                    restoreExclusion(path)
-                                } label: {
-                                    Text("Reativar")
-                                }
-                                .buttonStyle(GhostButtonStyle(tint: CBTheme.mint))
-                                .help("Voltar a incluir esta pasta nas varreduras")
                             }
-                            .padding(.horizontal, 11)
-                            .padding(.vertical, 8)
-                            .background(CBTheme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            Spacer()
+                            Text("Revisar")
+                                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 9, weight: .bold))
                         }
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 9)
+                        .background(CBTheme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
+                    .buttonStyle(.plain)
                 }
 
-                Text("As pastas ignoradas valem para as próximas varreduras. Worktrees do Git são detectadas e ignoradas automaticamente; use Reativar para incluí-las.")
+                Text("Pastas de build, preview e artefatos aparecem marcadas para facilitar a revisão. As worktrees continuam sendo detectadas automaticamente.")
                     .font(.system(size: 9.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             previewCard
@@ -498,6 +487,19 @@ struct SettingsView: View {
                     .font(.system(size: 9.3, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .sheet(isPresented: $showingFolderManager) {
+            FolderManagerView(
+                model: model,
+                folders: draft.folders,
+                excludedPaths: draft.excludedPaths
+            ) { paths in
+                let removed = Set(draft.excludedPaths).subtracting(paths)
+                for path in removed {
+                    restoreExclusion(path)
+                }
+                draft.excludedPaths = paths
             }
         }
     }
@@ -823,25 +825,6 @@ struct SettingsView: View {
             draft.folders.append(folder)
         }
         draft.excludedPaths.removeAll { $0 == path }
-    }
-
-    private func addExclusion() {
-        let panel = NSOpenPanel()
-        panel.title = "Ignorar pasta"
-        panel.message = "Escolha uma pasta que não deve entrar nas próximas varreduras."
-        panel.prompt = "Ignorar pasta"
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = true
-        panel.canCreateDirectories = false
-        panel.resolvesAliases = true
-        guard panel.runModal() == .OK else { return }
-        for url in panel.urls {
-            let path = url.standardizedFileURL.path
-            if !draft.excludedPaths.contains(path) {
-                draft.excludedPaths.append(path)
-            }
-        }
     }
 
     private func updatePreview() async {

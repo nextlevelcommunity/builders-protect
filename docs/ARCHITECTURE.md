@@ -56,7 +56,7 @@ O diagnóstico e o Red Teaming usam os modelos de segurança da Cultura Builder.
 
 1. A raiz é resolvida e as exclusões são normalizadas. Se a pasta escolhida for uma worktree do Git, a varredura usa a pasta principal do repositório.
 2. O diretório é percorrido com limite de profundidade e projetos.
-3. Worktrees registradas ou aninhadas são ignoradas automaticamente. No app, elas ficam visíveis em Ajustes > Pastas e podem ser reativadas.
+3. Worktrees registradas ou aninhadas são ignoradas automaticamente. No app, **Gerenciar pastas** lista os projetos encontrados, marca build, preview e artefatos e permite ignorar ou reativar várias pastas em lote.
 4. Diretórios pesados, como `node_modules`, `.git`, `dist` e `target`, são ignorados.
 5. Cada projeto com lockfile é registrado.
 6. Cada lockfile é lido, limitado a 1,8 MB e verificado contra binários.

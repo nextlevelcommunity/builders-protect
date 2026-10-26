@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2 — 2026-10-26
+
+- Nova tela Gerenciar pastas: lista todos os projetos encontrados, com busca, seleção múltipla e ações em lote.
+- Pastas de build, preview e artefatos são marcadas automaticamente para facilitar a revisão.
+- É possível ignorar ou reativar várias pastas de uma vez, com regras de exclusão normalizadas.
+
 ## 1.1.1 — 2026-10-26
 
 - Ajustes são salvos automaticamente após uma pequena pausa. O botão Salvar alterações continua disponível para confirmação.

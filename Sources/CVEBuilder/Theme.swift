@@ -129,6 +129,7 @@ struct SurfaceButtonStyle: ButtonStyle {
 
 struct GhostButtonStyle: ButtonStyle {
     var tint: Color = CBTheme.textSecondary
+    @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -140,6 +141,7 @@ struct GhostButtonStyle: ButtonStyle {
                 configuration.isPressed ? CBTheme.surfaceStrong : .clear,
                 in: RoundedRectangle(cornerRadius: 8, style: .continuous)
             )
+            .opacity(isEnabled ? 1 : 0.35)
     }
 }
 
