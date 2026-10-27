@@ -20,9 +20,14 @@ public final class PestService: @unchecked Sendable {
         useLLM: Bool,
         routineID: UUID? = nil,
         resume: PestResumeState? = nil,
+        excludedPaths: [String] = [],
         progress: @escaping @Sendable (PestProgress) -> Void
     ) async throws -> PestReport {
         let startedAt = resume?.startedAt ?? Date()
+        let exclusions = PathExclusions.normalized(excludedPaths)
+        if PathExclusions.contains(project.path, in: exclusions) {
+            throw PestError.projectExcluded
+        }
         let startSnapshot = PestMemoryGuard.snapshot()
         if startSnapshot.availableBytes < PestMemoryGuard.minimumAvailableBytes {
             throw PestError.insufficientMemory(
@@ -58,7 +63,10 @@ public final class PestService: @unchecked Sendable {
             )
         )
 
-        let inventory = try collector.inventory(projectPath: project.path)
+        let inventory = try collector.inventory(
+            projectPath: project.path,
+            excludedPaths: exclusions
+        )
         guard !inventory.files.isEmpty else {
             throw PestError.noFiles
         }
@@ -73,7 +81,13 @@ public final class PestService: @unchecked Sendable {
         }
         let llmChecks = Array(checks.prefix(12))
 
-        var findings = resume?.findings ?? []
+        var findings = (resume?.findings ?? []).filter { finding in
+            !PathExclusions.contains(
+                relativePath: finding.file,
+                projectPath: project.path,
+                in: exclusions
+            )
+        }
         var summaryParts = resume?.summaryParts ?? []
         var limitations = resume?.limitations ?? []
         limitations.append(contentsOf: inventory.warnings)
@@ -84,7 +98,13 @@ public final class PestService: @unchecked Sendable {
             "Limites desta execução: até \(budget.maxFiles) arquivos, \(PestMemoryGuard.formatBytes(UInt64(budget.maxTotalBytes))) de código e \(PestMemoryGuard.formatBytes(budget.maxRSSGrowthBytes)) de memória adicional."
         )
 
-        let processed = Set(resume?.processedPaths ?? [])
+        let processed = Set((resume?.processedPaths ?? []).filter { path in
+            !PathExclusions.contains(
+                relativePath: path,
+                projectPath: project.path,
+                in: exclusions
+            )
+        })
         let remaining = inventory.files.filter { !processed.contains($0.path) }
         let chunks = collector.chunks(
             of: remaining,

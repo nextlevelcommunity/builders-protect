@@ -164,7 +164,7 @@ struct AnalysisPanelView: View {
             Spacer(minLength: 8)
 
             Text("\(filteredAlerts(report).count) de \(report.alerts.count) projetos")
-                .font(.system(size: 10.5, weight: .regular, design: .rounded))
+                .font(.system(size: 11.5, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
                 .monospacedDigit()
         }
@@ -190,7 +190,7 @@ struct AnalysisPanelView: View {
     ) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 11, weight: selected ? .medium : .regular, design: .rounded))
+                .font(.system(size: 12, weight: selected ? .medium : .regular, design: .rounded))
                 .foregroundStyle(selected ? tint : CBTheme.textSecondary)
                 .padding(.horizontal, 11)
                 .padding(.vertical, 7)
@@ -265,7 +265,7 @@ struct AnalysisPanelView: View {
                             Image(systemName: "sparkles")
                             Text("análise da IA")
                         }
-                        .font(.system(size: 8.5, weight: .medium, design: .rounded))
+                        .font(.system(size: 9.5, weight: .medium, design: .rounded))
                         .foregroundStyle(CBTheme.lime)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 3)
@@ -296,7 +296,7 @@ struct AnalysisPanelView: View {
                     inlineStat(value: "\(report.totalPackages)", label: "Pacotes")
                     Spacer()
                     Label(model.lastScanLabel, systemImage: "clock")
-                        .font(.system(size: 10.5, weight: .regular, design: .rounded))
+                        .font(.system(size: 11, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                 }
                 .padding(.top, 2)
@@ -318,7 +318,7 @@ struct AnalysisPanelView: View {
                 .frame(width: 76, height: 76)
 
                 Text(report.hasFindings ? risk.shortLabel : "LIMPO")
-                    .font(.system(size: 9, weight: .medium, design: .rounded))
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
                     .tracking(1)
                     .foregroundStyle(report.hasFindings ? risk.color : CBTheme.mint)
             }
@@ -348,7 +348,7 @@ struct AnalysisPanelView: View {
                 .monospacedDigit()
                 .foregroundStyle(CBTheme.text)
             Text(label.uppercased())
-                .font(.system(size: 8, weight: .medium, design: .rounded))
+                .font(.system(size: 9.5, weight: .medium, design: .rounded))
                 .tracking(1)
                 .foregroundStyle(CBTheme.textTertiary)
         }
@@ -384,7 +384,7 @@ struct AnalysisPanelView: View {
                 SectionLabel(text: "Projetos afetados")
                 Spacer()
                 Text("\(alerts.count) de \(report.alerts.count)")
-                    .font(.system(size: 10, weight: .regular, design: .rounded))
+                    .font(.system(size: 11, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
                     .monospacedDigit()
             }
@@ -488,7 +488,7 @@ struct AnalysisPanelView: View {
             ForEach(Array(report.nextSteps.enumerated()), id: \.offset) { index, step in
                 HStack(alignment: .top, spacing: 11) {
                     Text("\(index + 1)")
-                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
                         .foregroundStyle(CBTheme.lime)
                         .frame(width: 20, height: 20)
                         .background(CBTheme.limeMuted, in: Circle())
@@ -513,7 +513,7 @@ struct AnalysisPanelView: View {
                 .foregroundStyle(CBTheme.lime)
                 .padding(.top, 1)
             Text("A varredura de dependências envia apenas nomes, versões e lockfiles. O Pest tem consentimento próprio para código.")
-                .font(.system(size: 11, weight: .regular, design: .rounded))
+                .font(.system(size: 11.5, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
         }
     }
@@ -626,11 +626,11 @@ private struct AnalysisProjectRow: View {
                             Spacer(minLength: 8)
                             if alert.llmUsed {
                                 Image(systemName: "sparkles")
-                                    .font(.system(size: 10, weight: .regular))
+                                    .font(.system(size: 11, weight: .regular))
                                     .foregroundStyle(CBTheme.lime)
                             }
                             Image(systemName: expanded ? "chevron.up" : "chevron.down")
-                                .font(.system(size: 10, weight: .medium))
+                                .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(CBTheme.textTertiary)
                         }
 
@@ -640,7 +640,7 @@ private struct AnalysisProjectRow: View {
                                 .foregroundStyle(CBTheme.text)
                                 .lineLimit(1)
                             Text(alert.project.path.homeAbbreviated)
-                                .font(.system(size: 10.5, weight: .regular, design: .monospaced))
+                                .font(.system(size: 11, weight: .regular, design: .monospaced))
                                 .foregroundStyle(CBTheme.textTertiary)
                                 .lineLimit(1)
                                 .truncationMode(.middle)
@@ -657,7 +657,7 @@ private struct AnalysisProjectRow: View {
                             Label("Vulnerabilidades", systemImage: "shield.lefthalf.filled")
                             Label(Vocabulary.quantity(alert.packageCount, "pacote", "pacotes"), systemImage: "shippingbox")
                         }
-                        .font(.system(size: 10, weight: .regular, design: .rounded))
+                        .font(.system(size: 11, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                     }
                     .padding(.leading, 14)
@@ -676,14 +676,14 @@ private struct AnalysisProjectRow: View {
                                 .fill(package.severity.color)
                                 .frame(width: 4, height: 4)
                             Text(package.name)
-                                .font(.system(size: 10, weight: .regular, design: .monospaced))
+                                .font(.system(size: 11, weight: .regular, design: .monospaced))
                                 .foregroundStyle(CBTheme.textTertiary)
                                 .lineLimit(1)
                         }
                     }
                     if alert.packageCount > 3 {
                         Text("+\(alert.packageCount - 3)")
-                            .font(.system(size: 9.5, weight: .regular, design: .rounded))
+                            .font(.system(size: 10.5, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                     }
                     Spacer()
@@ -706,7 +706,7 @@ private struct AnalysisProjectRow: View {
                             SectionLabel(text: "Pacotes afetados")
                             Spacer()
                             Text("\(alert.packageCount)")
-                                .font(.system(size: 9, weight: .regular, design: .monospaced))
+                                .font(.system(size: 10, weight: .regular, design: .monospaced))
                                 .foregroundStyle(CBTheme.textTertiary)
                         }
                         ForEach(Array(alert.packageAggregates.prefix(6))) { package in
@@ -714,7 +714,7 @@ private struct AnalysisProjectRow: View {
                         }
                         if alert.packageCount > 6 {
                             Text("+ \(Vocabulary.quantity(alert.packageCount - 6, "pacote", "pacotes")) no detalhe completo")
-                                .font(.system(size: 10.5, weight: .regular, design: .rounded))
+                                .font(.system(size: 11, weight: .regular, design: .rounded))
                                 .foregroundStyle(CBTheme.textTertiary)
                                 .padding(.top, 3)
                         }
@@ -787,21 +787,21 @@ private struct AnalysisPackageRow: View {
                 .frame(width: 5, height: 5)
 
             Text(package.name)
-                .font(.system(size: 12, weight: .regular, design: .monospaced))
+                .font(.system(size: 12.5, weight: .regular, design: .monospaced))
                 .foregroundStyle(CBTheme.text)
                 .lineLimit(1)
 
             Text(package.installedVersion)
-                .font(.system(size: 11, weight: .regular, design: .monospaced))
+                .font(.system(size: 11.5, weight: .regular, design: .monospaced))
                 .foregroundStyle(CBTheme.textTertiary)
                 .lineLimit(1)
 
             if let fixed = package.fixedVersion {
                 Image(systemName: "arrow.right")
-                    .font(.system(size: 8, weight: .regular))
+                    .font(.system(size: 9, weight: .regular))
                     .foregroundStyle(CBTheme.textTertiary)
                 Text(fixed)
-                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                    .font(.system(size: 11.5, weight: .regular, design: .monospaced))
                     .foregroundStyle(CBTheme.mint)
                     .lineLimit(1)
             }
@@ -854,7 +854,7 @@ private struct ModalSurfaceButtonStyle: ButtonStyle {
 private struct ModalGhostButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 12, weight: .regular, design: .rounded))
+            .font(.system(size: 12.5, weight: .regular, design: .rounded))
             .foregroundStyle(CBTheme.textSecondary)
             .padding(.horizontal, 11)
             .padding(.vertical, 8)

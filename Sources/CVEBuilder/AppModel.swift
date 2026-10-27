@@ -191,11 +191,14 @@ final class AppModel: ObservableObject {
     }
 
     var selectedPestReport: PestReport? {
-        if let pestReport, pestReport.projectPath == pestProjectPath {
-            return pestReport
-        }
         guard let path = pestProjectPath else { return nil }
-        return pestState.reports.first { $0.projectPath == path }
+        let exclusions = PathExclusions.normalized(settings.excludedPaths)
+        guard !PathExclusions.contains(path, in: exclusions) else { return nil }
+
+        if let pestReport, pestReport.projectPath == path {
+            return pestReport.excluding(exclusions)
+        }
+        return pestState.reports.first { $0.projectPath == path }?.excluding(exclusions)
     }
 
     var canRunPest: Bool {
@@ -230,6 +233,7 @@ final class AppModel: ObservableObject {
         launchAtLoginEnabled = LaunchAtLogin.isEnabled
         startScheduler()
         startPestScheduler()
+        purgePestFindings(excludedPaths: settings.excludedPaths)
 
         guard settings.hasCompletedOnboarding, !settings.folders.isEmpty else {
             return
@@ -383,6 +387,11 @@ final class AppModel: ObservableObject {
             redTeamError = "Conecte sua conta da Cultura Builder para usar o Red Teaming."
             return
         }
+        let excludedPaths = settings.excludedPaths
+        if PathExclusions.contains(project.path, in: PathExclusions.normalized(excludedPaths)) {
+            redTeamError = RedTeamError.projectExcluded.localizedDescription
+            return
+        }
 
         redTeamTask?.cancel()
         isRedTeamRunning = true
@@ -396,7 +405,10 @@ final class AppModel: ObservableObject {
         let service = redTeamService
         redTeamTask = Task { [weak self] in
             do {
-                let report = try await service.analyze(project: project) { [weak self] progress in
+                let report = try await service.analyze(
+                    project: project,
+                    excludedPaths: excludedPaths
+                ) { [weak self] progress in
                     Task { @MainActor in
                         self?.redTeamProgress = progress
                     }
@@ -519,6 +531,34 @@ final class AppModel: ObservableObject {
             }.joined(separator: "\n")
         ]
         copyText(lines.joined(separator: "\n"), toast: "Resumo do Pest copiado")
+    }
+
+    func clearSelectedPestReport() {
+        guard let path = pestProjectPath else { return }
+        var state = pestState
+        let before = state.reports.count
+        state.reports.removeAll { $0.projectPath == path }
+        guard state.reports.count != before else { return }
+        for index in state.routines.indices where state.routines[index].projectPath == path {
+            state.routines[index].lastReportID = nil
+        }
+        pestState = state
+        pestReport = nil
+        persistPestState()
+        showToast("Relatório do Pest removido")
+    }
+
+    func clearAllPestReports() {
+        guard !pestState.reports.isEmpty else { return }
+        var state = pestState
+        state.reports.removeAll()
+        for index in state.routines.indices {
+            state.routines[index].lastReportID = nil
+        }
+        pestState = state
+        pestReport = nil
+        persistPestState()
+        showToast("Todos os relatórios do Pest foram removidos")
     }
 
     func startNetworkAnalysis() {
@@ -737,6 +777,14 @@ final class AppModel: ObservableObject {
     ) async {
         guard !isPestRunning else { return }
 
+        let excludedPaths = settings.excludedPaths
+        if PathExclusions.contains(project.path, in: PathExclusions.normalized(excludedPaths)) {
+            pestError = PestError.projectExcluded.localizedDescription
+            pestProgress = nil
+            isPestRunning = false
+            return
+        }
+
         let runID = UUID()
         pestRunID = runID
         isPestRunning = true
@@ -767,7 +815,8 @@ final class AppModel: ObservableObject {
                 project: project,
                 useLLM: useLLM && authStatus.connected,
                 routineID: routineID,
-                resume: resume
+                resume: resume,
+                excludedPaths: excludedPaths
             ) { [weak self] progress in
                 Task { @MainActor in
                     self?.pestProgress = progress
@@ -840,7 +889,7 @@ final class AppModel: ObservableObject {
                 guard let self else { return }
                 await self.performPest(
                     project: routine.project,
-                    useLLM: routine.useLLM,
+                    useLLM: self.pestUseAI,
                     routine: routine,
                     resume: nil
                 )
@@ -870,6 +919,9 @@ final class AppModel: ObservableObject {
         if next.notifyOnFindings {
             NotificationService.requestAuthorization()
         }
+        if previousExclusions != next.excludedPaths {
+            purgePestFindings(excludedPaths: next.excludedPaths)
+        }
         if wasCompleted,
            !isScanning,
            previousFolders != next.folders.map(\.path) || previousExclusions != next.excludedPaths {
@@ -878,6 +930,28 @@ final class AppModel: ObservableObject {
         if announce {
             showToast("Ajustes salvos")
         }
+    }
+
+    private func purgePestFindings(excludedPaths: [String]) {
+        let exclusions = PathExclusions.normalized(excludedPaths)
+        guard !exclusions.isEmpty else { return }
+
+        var state = pestState
+        var changed = false
+        for index in state.reports.indices {
+            let report = state.reports[index]
+            let filtered = report.excluding(exclusions)
+            if filtered.findings.count != report.findings.count
+                || filtered.resumeState?.processedPaths.count != report.resumeState?.processedPaths.count {
+                state.reports[index] = filtered
+                changed = true
+            }
+        }
+        if changed {
+            pestState = state
+            persistPestState()
+        }
+        pestReport = pestReport?.excluding(exclusions)
     }
 
     func setLaunchAtLogin(_ enabled: Bool) {

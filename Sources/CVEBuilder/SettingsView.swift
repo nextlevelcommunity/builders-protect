@@ -455,7 +455,7 @@ struct SettingsView: View {
                 }
 
                 if draft.excludedPaths.isEmpty {
-                    Text("Todas as pastas encontradas entram na varredura. Use Gerenciar pastas para ver a lista completa, selecionar várias e ignorar builds, previews ou artefatos.")
+                    Text("Todas as pastas encontradas entram na varredura. Use Gerenciar pastas para ver a lista completa, selecionar várias e ignorar builds, previews ou artefatos. O que você ignorar vale para a varredura, o Pest e o Red Teaming.")
                         .font(.system(size: 10.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                         .fixedSize(horizontal: false, vertical: true)

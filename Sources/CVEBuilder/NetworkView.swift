@@ -105,12 +105,12 @@ struct NetworkView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Uma foto da rede, não uma prova de invasão")
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .font(.system(size: 15.5, weight: .semibold, design: .rounded))
                     .foregroundStyle(CBTheme.text)
                 Text("O Builders Protect lê as configurações que o macOS mostra, consulta apenas o endereço do seu roteador e lista os aparelhos e serviços visíveis. Ele não captura tráfego, não testa senhas, não entra no painel do roteador e não consegue provar que alguém invadiu sua rede. O objetivo é explicar o que está exposto e o que vale corrigir primeiro.")
-                    .font(.system(size: 11.5, weight: .regular, design: .rounded))
+                    .font(.system(size: 12.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
-                    .lineSpacing(2)
+                    .lineSpacing(2.5)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -133,10 +133,10 @@ struct NetworkView: View {
                         .padding(.top, 1)
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Autorizo uma consulta local à minha rede")
-                            .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                            .font(.system(size: 12.5, weight: .semibold, design: .rounded))
                             .foregroundStyle(CBTheme.text)
                         Text("A checagem usa comandos do macOS, consulta o endereço do roteador por HTTP/HTTPS e não envia dados da rede para a Cultura Builder. Nenhuma senha é testada. Nenhum tráfego é gravado.")
-                            .font(.system(size: 9.8, weight: .regular, design: .rounded))
+                            .font(.system(size: 11, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -144,7 +144,7 @@ struct NetworkView: View {
 
                 Toggle(isOn: $consent) {
                     Text("Entendi e autorizo esta checagem local.")
-                        .font(.system(size: 11.5, weight: .regular, design: .rounded))
+                        .font(.system(size: 12.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textSecondary)
                 }
                 .toggleStyle(.checkbox)
@@ -155,10 +155,10 @@ struct NetworkView: View {
                 Toggle(isOn: $model.networkIsPublic) {
                     VStack(alignment: .leading, spacing: 1) {
                         Text("Estou numa rede pública")
-                            .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                            .font(.system(size: 12.5, weight: .semibold, design: .rounded))
                             .foregroundStyle(CBTheme.text)
                         Text("Hotel, aeroporto, café, coworking ou uma rede que você não controla. Isso torna os cenários de confiança mais rigorosos.")
-                            .font(.system(size: 9.5, weight: .regular, design: .rounded))
+                            .font(.system(size: 11, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -201,7 +201,7 @@ struct NetworkView: View {
                         ? "A checagem leva alguns segundos. Você pode continuar usando o Mac."
                         : "Marque a autorização acima para liberar a checagem."
                 )
-                .font(.system(size: 9.5, weight: .regular, design: .rounded))
+                .font(.system(size: 11, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
             }
 
@@ -244,10 +244,10 @@ struct NetworkView: View {
                             }
                         }
                         Text(report.snapshot.ssid ?? "Sua Wi-Fi")
-                            .font(.system(size: 18, weight: .light, design: .rounded))
+                            .font(.system(size: 20, weight: .light, design: .rounded))
                             .foregroundStyle(CBTheme.text)
                         Text("\(report.finishedAt.relativeShort) · \(report.snapshot.securityLabel)")
-                            .font(.system(size: 9.5, weight: .regular, design: .rounded))
+                            .font(.system(size: 11, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                     }
 
@@ -268,9 +268,9 @@ struct NetworkView: View {
                 }
 
                 Text(Vocabulary.prose(report.summary))
-                    .font(.system(size: 12, weight: .regular, design: .rounded))
+                    .font(.system(size: 13.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
-                    .lineSpacing(2)
+                    .lineSpacing(2.5)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
 
@@ -311,7 +311,7 @@ struct NetworkView: View {
                     Spacer()
 
                     Text(report.context.isPublicNetwork ? "rede marcada como pública" : "rede tratada como confiável")
-                        .font(.system(size: 9, weight: .regular, design: .rounded))
+                        .font(.system(size: 10.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                 }
             }
@@ -321,11 +321,11 @@ struct NetworkView: View {
     private func networkMetric(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label.uppercased())
-                .font(.system(size: 7.5, weight: .bold, design: .rounded))
+                .font(.system(size: 9, weight: .bold, design: .rounded))
                 .tracking(0.7)
                 .foregroundStyle(CBTheme.textTertiary)
             Text(value)
-                .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                .font(.system(size: 12, weight: .medium, design: .rounded))
                 .foregroundStyle(CBTheme.textSecondary)
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -337,7 +337,7 @@ struct NetworkView: View {
         VStack(alignment: .leading, spacing: 8) {
             SectionLabel(text: "O que pode acontecer")
             Text("Cada cenário mostra o que foi confirmado agora, o que é possível no seu tipo de rede e o que não foi possível verificar.")
-                .font(.system(size: 9.8, weight: .regular, design: .rounded))
+                .font(.system(size: 12, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -378,7 +378,7 @@ struct NetworkView: View {
                     SectionLabel(text: "Detalhes técnicos")
                     Spacer()
                     Text(showDetails ? "Ocultar" : "Mostrar")
-                        .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                        .font(.system(size: 10.5, weight: .medium, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                     Image(systemName: showDetails ? "chevron.up" : "chevron.down")
                         .font(.system(size: 9, weight: .bold))
@@ -430,11 +430,11 @@ struct NetworkView: View {
     private func detailRow(_ label: String, _ value: String) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Text(label)
-                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                .font(.system(size: 10.5, weight: .semibold, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
-                .frame(width: 108, alignment: .leading)
+                .frame(width: 118, alignment: .leading)
             Text(value)
-                .font(.system(size: 9, weight: .regular, design: .monospaced))
+                .font(.system(size: 10.5, weight: .regular, design: .monospaced))
                 .foregroundStyle(CBTheme.textSecondary)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
@@ -452,7 +452,7 @@ struct NetworkView: View {
                         .frame(width: 4, height: 4)
                         .padding(.top, 5)
                     Text(Vocabulary.prose(item))
-                        .font(.system(size: 9.5, weight: .regular, design: .rounded))
+                        .font(.system(size: 11, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -464,7 +464,7 @@ struct NetworkView: View {
     private var footer: some View {
         HStack(spacing: 8) {
             Text("Minha rede: leitura local. Não captura tráfego, não testa senhas e não prova invasão.")
-                .font(.system(size: 10.5, weight: .regular, design: .rounded))
+                .font(.system(size: 11.5, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
             Spacer()
             Button {
@@ -493,11 +493,11 @@ private struct NetworkScenarioCard: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(Vocabulary.prose(scenario.title))
-                        .font(.system(size: 12.5, weight: .semibold, design: .rounded))
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
                         .foregroundStyle(CBTheme.text)
                         .fixedSize(horizontal: false, vertical: true)
                     Text(scenario.status.label.uppercased())
-                        .font(.system(size: 7.5, weight: .bold, design: .rounded))
+                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
                         .tracking(0.7)
                         .foregroundStyle(color)
                 }
@@ -505,9 +505,9 @@ private struct NetworkScenarioCard: View {
             }
 
             Text(Vocabulary.prose(scenario.explanation))
-                .font(.system(size: 10.5, weight: .regular, design: .rounded))
+                .font(.system(size: 12.5, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textSecondary)
-                .lineSpacing(2)
+                .lineSpacing(2.5)
                 .fixedSize(horizontal: false, vertical: true)
 
             if !scenario.whatCouldHappen.isEmpty {
@@ -518,7 +518,7 @@ private struct NetworkScenarioCard: View {
             }
 
             Text(Vocabulary.prose(scenario.basedOn))
-                .font(.system(size: 8.8, weight: .regular, design: .rounded))
+                .font(.system(size: 10.5, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -532,11 +532,11 @@ private struct NetworkScenarioCard: View {
     private func scenarioLabel(_ label: String, _ text: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label.uppercased())
-                .font(.system(size: 7.5, weight: .bold, design: .rounded))
+                .font(.system(size: 9.5, weight: .bold, design: .rounded))
                 .tracking(0.7)
                 .foregroundStyle(CBTheme.textTertiary)
             Text(Vocabulary.prose(text))
-                .font(.system(size: 9.8, weight: .regular, design: .rounded))
+                .font(.system(size: 12, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -572,16 +572,16 @@ private struct NetworkFindingCard: View {
                     HStack(spacing: 7) {
                         RiskBadge(risk: finding.severity, compact: true)
                         Text(finding.category.uppercased())
-                            .font(.system(size: 7.5, weight: .bold, design: .rounded))
+                            .font(.system(size: 9.5, weight: .bold, design: .rounded))
                             .tracking(0.7)
                             .foregroundStyle(CBTheme.textTertiary)
                     }
                     Text(Vocabulary.prose(finding.title))
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
                         .foregroundStyle(CBTheme.text)
                         .fixedSize(horizontal: false, vertical: true)
                     Text(finding.target)
-                        .font(.system(size: 9.5, weight: .regular, design: .monospaced))
+                        .font(.system(size: 11, weight: .regular, design: .monospaced))
                         .foregroundStyle(CBTheme.textTertiary)
                         .textSelection(.enabled)
                 }
@@ -590,9 +590,9 @@ private struct NetworkFindingCard: View {
 
             if !finding.evidence.isEmpty {
                 Text(finding.evidence)
-                    .font(.system(size: 10, weight: .regular, design: .monospaced))
+                    .font(.system(size: 11.5, weight: .regular, design: .monospaced))
                     .foregroundStyle(CBTheme.textSecondary)
-                    .lineSpacing(2)
+                    .lineSpacing(2.5)
                     .padding(10)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
@@ -625,9 +625,9 @@ private struct NetworkFindingCard: View {
         VStack(alignment: .leading, spacing: 3) {
             SectionLabel(text: label)
             Text(Vocabulary.prose(text))
-                .font(.system(size: 10.5, weight: .regular, design: .rounded))
+                .font(.system(size: 12.5, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textSecondary)
-                .lineSpacing(2)
+                .lineSpacing(2.5)
                 .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
         }

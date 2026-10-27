@@ -13,14 +13,14 @@ O Builders Protect encontra vulnerabilidades conhecidas nas dependências de um 
 - Gera resumo em Markdown, relatório JSON e SARIF 2.1.0.
 - Pode falhar o job quando encontra achados acima do limite configurado.
 - Pode rodar em rotinas diárias, semanais ou mensais no GitHub Actions.
-- Detecta worktrees do Git e usa a pasta principal do repositório; no app, Gerenciar pastas lista todos os projetos encontrados, marca build, preview e artefatos e permite ignorar ou reativar várias pastas de uma vez.
+- Detecta worktrees do Git e usa a pasta principal do repositório; no app, Gerenciar pastas lista todos os projetos encontrados, marca build, preview e artefatos e permite ignorar ou reativar várias pastas de uma vez. O que for ignorado vale para todas as análises, inclusive Pest e Red Teaming.
 - No app, o Pest revisa o código do projeto com um catálogo destilado de templates do Nuclei e gera um prompt de correção por achado.
 - A seção Minha rede faz uma leitura local da Wi-Fi, do roteador, dos dispositivos conhecidos e dos serviços do Mac visíveis na rede.
 - No app, pode gerar diagnóstico com IA e prompts de correção para agentes.
 
 ## Pest e Minha rede
 
-O **Pest** é uma revisão de segurança do código, não um scanner de rede. Ele usa um checklist destilado do catálogo de templates do Nuclei para procurar problemas de autenticação, injection, exposição de dados e configuração. A análise local é estática: não executa o projeto, não instala dependências e não faz requisições ao alvo. Com a conta conectada, o Pest pode somar uma revisão da LLM privada da Cultura Builder, sempre depois de você autorizar o envio dos arquivos redigidos.
+O **Pest** é uma revisão de segurança do código, não um scanner de rede. Ele usa um checklist destilado do catálogo de templates do Nuclei para procurar problemas de autenticação, injection, exposição de dados e configuração. A análise local é estática: não executa o projeto, não instala dependências e não faz requisições ao alvo. Com a conta conectada, o Pest pode somar uma revisão da LLM privada da Cultura Builder. O consentimento é pedido em um modal a cada análise com IA, vale apenas para aquela execução e volta a ser solicitado na próxima. A rotina diária segue a opção de IA do Pest. Você pode limpar o relatório do projeto atual ou todos os relatórios salvos na própria área do Pest, com confirmação.
 
 A seção **Minha rede** é uma leitura local e passiva da conexão. Ela consulta o endereço do roteador, lê a segurança do Wi-Fi, lista dispositivos conhecidos e verifica serviços do Mac escutando na rede. O relatório explica o que está confirmado agora, o que é possível no seu cenário e o que não foi possível verificar. Ele não prova que alguém invadiu a rede. No topo do relatório, um prompt geral reúne todas as correções em um plano único; cada achado também tem seu próprio prompt.
 

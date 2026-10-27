@@ -5,9 +5,12 @@ struct PestView: View {
     @ObservedObject var model: AppModel
 
     @State private var consent = false
+    @State private var showConsentSheet = false
+    @State private var pendingResume = false
+    @State private var showClearDialog = false
+    @State private var clearAllReports = false
     @State private var routineHour = 9
     @State private var routineMinute = 0
-    @State private var routineUseAI = true
     @State private var routineError: String?
     @State private var formLoadedFor: String?
 
@@ -21,7 +24,6 @@ struct PestView: View {
                     intro
                     projectCard
                     memoryCard
-                    consentCard
                     actionCard
                     routineCard
                     reportContent
@@ -48,10 +50,48 @@ struct PestView: View {
         }
         .onChange(of: model.pestProjectPath) { _ in
             consent = false
+            pendingResume = false
+            showConsentSheet = false
             syncRoutineForm(force: true)
         }
         .onChange(of: model.pestRoutineForSelectedProject?.updatedAt) { _ in
             syncRoutineForm(force: false)
+        }
+        .onChange(of: model.isPestRunning) { running in
+            if !running { consent = false }
+        }
+        .onChange(of: model.pestUseAI) { enabled in
+            if !enabled {
+                showConsentSheet = false
+                pendingResume = false
+            }
+        }
+        .sheet(isPresented: $showConsentSheet, onDismiss: { pendingResume = false }) {
+            PestConsentSheet(
+                projectName: model.selectedPestProject?.name ?? "este projeto",
+                isResume: pendingResume,
+                onCancel: {
+                    showConsentSheet = false
+                    pendingResume = false
+                },
+                onAuthorize: authorizePestStart
+            )
+        }
+        .confirmationDialog(
+            clearAllReports ? "Limpar todos os relatórios do Pest?" : "Limpar este relatório do Pest?",
+            isPresented: $showClearDialog,
+            titleVisibility: .visible
+        ) {
+            Button(clearAllReports ? "Limpar todos" : "Limpar relatório", role: .destructive) {
+                if clearAllReports {
+                    model.clearAllPestReports()
+                } else {
+                    model.clearSelectedPestReport()
+                }
+            }
+            Button("Cancelar", role: .cancel) {}
+        } message: {
+            Text("Os achados salvos serão removidos deste Mac. A próxima análise começa do zero.")
         }
     }
 
@@ -295,39 +335,6 @@ struct PestView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    @ViewBuilder
-    private var consentCard: some View {
-        if model.authStatus.connected && model.pestUseAI {
-            SurfaceCard(padding: 16) {
-                VStack(alignment: .leading, spacing: 12) {
-                    SectionLabel(text: "Consentimento")
-
-                    NoticeCard(
-                        kind: .warning,
-                        title: "Arquivos de texto do projeto serão enviados para a LLM privada",
-                        message: "Somente arquivos de código e configuração do projeto escolhido são enviados, em blocos pequenos. .env, chaves, credenciais, binários, lockfiles, dependências instaladas e arquivos grandes são ignorados. Segredos reconhecíveis são mascarados antes do envio. Os dados não são usados para treinamento. A análise local continua disponível sem a IA."
-                    )
-
-                    Toggle(isOn: $consent) {
-                        Text("Autorizo o envio do código deste projeto para a LLM privada da Cultura Builder.")
-                            .font(.system(size: 11.5, weight: .regular, design: .rounded))
-                            .foregroundStyle(CBTheme.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .toggleStyle(.checkbox)
-                    .disabled(model.isPestRunning || model.selectedPestProject == nil)
-                }
-            }
-        } else if !model.authStatus.connected {
-            NoticeCard(
-                kind: .info,
-                title: "IA desconectada: o Pest roda a análise local",
-                message: "O checklist local continua funcionando. Conecte a conta para somar a revisão semântica da LLM privada da Cultura Builder.",
-                actionTitle: "Abrir Conta",
-                action: { model.settingsSection = .account }
-            )
-        }
-    }
 
     private var actionCard: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -337,6 +344,15 @@ struct PestView: View {
                         ScanProgress(phase: $0.phase, detail: $0.detail, fraction: $0.fraction)
                     }
                 )
+
+                if consent && model.authStatus.connected && model.pestUseAI {
+                    HStack(spacing: 7) {
+                        Image(systemName: "checkmark.shield.fill")
+                        Text("Consentimento autorizado para esta análise.")
+                    }
+                    .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                    .foregroundStyle(CBTheme.mint)
+                }
 
                 Button {
                     model.cancelPest()
@@ -358,10 +374,20 @@ struct PestView: View {
                 .toggleStyle(.switch)
                 .disabled(model.authStatus.connected == false)
 
+                if !model.authStatus.connected {
+                    NoticeCard(
+                        kind: .info,
+                        title: "IA desconectada: o Pest roda a análise local",
+                        message: "O checklist local continua funcionando. Conecte a conta para somar a revisão semântica da LLM privada da Cultura Builder.",
+                        actionTitle: "Abrir Conta",
+                        action: { model.settingsSection = .account }
+                    )
+                }
+
                 if model.pestResumeAvailable {
                     HStack(spacing: 10) {
                         Button {
-                            model.startPest(resume: true)
+                            requestPestStart(resume: true)
                         } label: {
                             Label("Retomar análise pausada", systemImage: "play.fill")
                         }
@@ -369,7 +395,7 @@ struct PestView: View {
                         .disabled(!canStart)
 
                         Button {
-                            model.startPest()
+                            requestPestStart()
                         } label: {
                             Label("Nova análise", systemImage: "arrow.clockwise")
                         }
@@ -378,8 +404,7 @@ struct PestView: View {
                     }
                 } else {
                     Button {
-                        consent = false
-                        model.startPest()
+                        requestPestStart()
                     } label: {
                         Label("Analisar com Pest", systemImage: "scope")
                     }
@@ -388,8 +413,8 @@ struct PestView: View {
                 }
 
                 Text(
-                    model.authStatus.connected && model.pestUseAI && !consent
-                        ? "Marque o consentimento acima para enviar o código à IA. A análise local não precisa de consentimento."
+                    model.authStatus.connected && model.pestUseAI
+                        ? "Com a IA ligada, o app pede consentimento a cada análise. A análise local não precisa de consentimento."
                         : "O Pest não altera seus arquivos e não faz commit. Você pode continuar usando o app enquanto ele roda."
                 )
                 .font(.system(size: 9.5, weight: .regular, design: .rounded))
@@ -403,11 +428,26 @@ struct PestView: View {
     }
 
     private var canStart: Bool {
-        guard model.canRunPest else { return false }
+        model.canRunPest
+    }
+
+    private func requestPestStart(resume: Bool = false) {
+        guard canStart else { return }
         if model.authStatus.connected && model.pestUseAI {
-            return consent
+            pendingResume = resume
+            showConsentSheet = true
+        } else {
+            consent = false
+            model.startPest(resume: resume)
         }
-        return true
+    }
+
+    private func authorizePestStart() {
+        let resume = pendingResume
+        consent = true
+        pendingResume = false
+        showConsentSheet = false
+        model.startPest(resume: resume)
     }
 
     private var routineCard: some View {
@@ -452,9 +492,9 @@ struct PestView: View {
 
                         Spacer()
 
-                        Toggle("Usar IA", isOn: $routineUseAI)
-                            .toggleStyle(.checkbox)
-                            .font(.system(size: 11, weight: .regular, design: .rounded))
+                        Text(model.pestUseAI ? "IA conforme acima" : "análise local")
+                            .font(.system(size: 9.5, weight: .regular, design: .rounded))
+                            .foregroundStyle(CBTheme.textTertiary)
                     }
 
                     if let conflict = routineConflict {
@@ -475,7 +515,7 @@ struct PestView: View {
                             .foregroundStyle(CBTheme.textTertiary)
                     }
 
-                    Text("Ao salvar com \"Usar IA\" ligado, você autoriza o envio recorrente dos mesmos arquivos redigidos para a LLM privada, uma vez ao dia.")
+                    Text("A rotina segue a opção de IA acima. Com a IA ligada, salvar a rotina autoriza o envio recorrente dos mesmos arquivos redigidos para a LLM privada, uma vez ao dia.")
                         .font(.system(size: 9, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -556,7 +596,7 @@ struct PestView: View {
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .foregroundStyle(CBTheme.text)
                     .lineLimit(1)
-                Text("\(routine.timeLabel) · \(routine.useLLM ? "IA" : "local") · \(nextRunDescription(for: routine))")
+                Text("\(routine.timeLabel) · \(model.pestUseAI ? "IA" : "local") · \(nextRunDescription(for: routine))")
                     .font(.system(size: 9, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
                     .lineLimit(1)
@@ -569,7 +609,6 @@ struct PestView: View {
                     model.selectPestProject(routine.projectPath)
                     routineHour = routine.hour
                     routineMinute = routine.minute
-                    routineUseAI = routine.useLLM
                     formLoadedFor = routine.projectPath
                     routineError = nil
                 } else {
@@ -610,7 +649,7 @@ struct PestView: View {
             project: project,
             hour: routineHour,
             minute: routineMinute,
-            useLLM: routineUseAI
+            useLLM: model.pestUseAI && model.authStatus.connected
         )
         if routineError == nil {
             syncRoutineForm(force: true)
@@ -643,11 +682,9 @@ struct PestView: View {
         if let routine = model.pestRoutineForSelectedProject {
             routineHour = routine.hour
             routineMinute = routine.minute
-            routineUseAI = routine.useLLM
         } else {
             routineHour = 9
             routineMinute = 0
-            routineUseAI = model.authStatus.connected
         }
         formLoadedFor = project.path
         routineError = nil
@@ -683,7 +720,7 @@ struct PestView: View {
                         title: "Análise pausada",
                         message: report.pauseReason ?? "O Pest pausou para proteger a memória do Mac.",
                         actionTitle: canStart ? "Retomar agora" : nil,
-                        action: canStart ? { model.startPest(resume: true) } : nil
+                        action: canStart ? { requestPestStart(resume: true) } : nil
                     )
                 }
 
@@ -722,10 +759,10 @@ struct PestView: View {
                             }
                         }
                         Text(report.projectName)
-                            .font(.system(size: 18, weight: .light, design: .rounded))
+                            .font(.system(size: 20, weight: .light, design: .rounded))
                             .foregroundStyle(CBTheme.text)
                         Text("\(report.finishedAt.relativeShort) · \(report.filesAnalyzed) arquivos · \(max(1, report.bytesAnalyzed / 1000)) KB")
-                            .font(.system(size: 9.5, weight: .regular, design: .rounded))
+                            .font(.system(size: 12, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                     }
 
@@ -737,16 +774,16 @@ struct PestView: View {
                             .monospacedDigit()
                             .foregroundStyle(report.risk.color)
                         Text(report.llmUsed ? "com IA" : "local")
-                            .font(.system(size: 8.5, weight: .bold, design: .rounded))
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
                             .tracking(0.6)
                             .foregroundStyle(CBTheme.textTertiary)
                     }
                 }
 
                 Text(Vocabulary.prose(report.summary))
-                    .font(.system(size: 12, weight: .regular, design: .rounded))
+                    .font(.system(size: 14, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
-                    .lineSpacing(2)
+                    .lineSpacing(2.5)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
 
@@ -758,8 +795,26 @@ struct PestView: View {
                     }
                     .buttonStyle(GhostButtonStyle(tint: CBTheme.lime))
 
+                    Button {
+                        clearAllReports = false
+                        showClearDialog = true
+                    } label: {
+                        Label("Limpar", systemImage: "trash")
+                    }
+                    .buttonStyle(GhostButtonStyle(tint: CBTheme.critical))
+                    .disabled(model.isPestRunning)
+
+                    Button {
+                        clearAllReports = true
+                        showClearDialog = true
+                    } label: {
+                        Label("Limpar tudo", systemImage: "trash")
+                    }
+                    .buttonStyle(GhostButtonStyle(tint: CBTheme.critical))
+                    .disabled(model.isPestRunning)
+
                     Text("\(report.checksApplied.count) checks · \(report.chunksAnalyzed) bloco(s)")
-                        .font(.system(size: 9, weight: .regular, design: .rounded))
+                        .font(.system(size: 11.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                 }
             }
@@ -776,7 +831,7 @@ struct PestView: View {
                         .frame(width: 4, height: 4)
                         .padding(.top, 5)
                     Text(Vocabulary.prose(item))
-                        .font(.system(size: 9.5, weight: .regular, design: .rounded))
+                        .font(.system(size: 12.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -788,7 +843,7 @@ struct PestView: View {
     private var footer: some View {
         HStack(spacing: 8) {
             Text("Pest: análise estática guiada pelo catálogo Nuclei. Não executa o projeto nem faz requisições ao alvo.")
-                .font(.system(size: 10.5, weight: .regular, design: .rounded))
+                .font(.system(size: 12, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
             Spacer()
             Button {
@@ -803,6 +858,88 @@ struct PestView: View {
     }
 }
 
+private struct PestConsentSheet: View {
+    let projectName: String
+    let isResume: Bool
+    let onCancel: () -> Void
+    let onAuthorize: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 13) {
+                ZStack {
+                    Circle()
+                        .fill(CBTheme.lime.opacity(0.12))
+                        .frame(width: 42, height: 42)
+                    Image(systemName: "lock.shield.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(CBTheme.lime)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    SectionLabel(text: "Consentimento do Pest")
+                    Text(isResume ? "Retomar a análise com IA" : "Analisar com IA")
+                        .font(.system(size: 21, weight: .light, design: .rounded))
+                        .foregroundStyle(CBTheme.text)
+                    Text(projectName)
+                        .font(.system(size: 11.5, weight: .regular, design: .rounded))
+                        .foregroundStyle(CBTheme.textTertiary)
+                }
+
+                Spacer()
+            }
+
+            NoticeCard(
+                kind: .warning,
+                title: "Arquivos de texto do projeto serão enviados para a LLM privada",
+                message: "Somente arquivos de código e configuração do projeto escolhido são enviados, em blocos pequenos. A análise local continua disponível sem a IA."
+            )
+
+            VStack(alignment: .leading, spacing: 9) {
+                consentLine("Somente arquivos de código e configuração do projeto escolhido.")
+                consentLine(".env, chaves, credenciais, binários, lockfiles e dependências instaladas ficam de fora.")
+                consentLine("Segredos reconhecíveis são mascarados antes do envio. Os dados não são usados para treinamento.")
+            }
+
+            Text("O consentimento vale apenas para esta execução. Na próxima análise, o app pergunta de novo.")
+                .font(.system(size: 10, weight: .regular, design: .rounded))
+                .foregroundStyle(CBTheme.textTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 10) {
+                Button("Agora não", action: onCancel)
+                    .buttonStyle(GhostButtonStyle())
+
+                Spacer()
+
+                Button(action: onAuthorize) {
+                    Label(
+                        isResume ? "Autorizar e retomar" : "Autorizar e analisar",
+                        systemImage: "checkmark.shield.fill"
+                    )
+                }
+                .buttonStyle(LimeButtonStyle())
+            }
+        }
+        .padding(24)
+        .frame(width: 540)
+        .background(CBTheme.background)
+    }
+
+    private func consentLine(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "checkmark")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundStyle(CBTheme.mint)
+                .padding(.top, 2)
+            Text(text)
+                .font(.system(size: 11.5, weight: .regular, design: .rounded))
+                .foregroundStyle(CBTheme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
 private struct PestFindingCard: View {
     let finding: PestFinding
     let onCopyPrompt: () -> Void
@@ -814,16 +951,16 @@ private struct PestFindingCard: View {
                     HStack(spacing: 7) {
                         RiskBadge(risk: finding.severity, compact: true)
                         Text(finding.confidence.uppercased())
-                            .font(.system(size: 7.5, weight: .bold, design: .rounded))
+                            .font(.system(size: 9.5, weight: .bold, design: .rounded))
                             .tracking(0.7)
                             .foregroundStyle(CBTheme.textTertiary)
                         Text(finding.category.uppercased())
-                            .font(.system(size: 7.5, weight: .bold, design: .rounded))
+                            .font(.system(size: 9.5, weight: .bold, design: .rounded))
                             .tracking(0.7)
                             .foregroundStyle(CBTheme.textTertiary)
                         if finding.source == .ia {
                             Text("IA")
-                                .font(.system(size: 7.5, weight: .bold, design: .rounded))
+                                .font(.system(size: 9.5, weight: .bold, design: .rounded))
                                 .foregroundStyle(CBTheme.lime)
                                 .padding(.horizontal, 5)
                                 .padding(.vertical, 2)
@@ -831,11 +968,11 @@ private struct PestFindingCard: View {
                         }
                     }
                     Text(Vocabulary.prose(finding.title))
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
                         .foregroundStyle(CBTheme.text)
                         .fixedSize(horizontal: false, vertical: true)
                     Text(finding.location)
-                        .font(.system(size: 9.5, weight: .regular, design: .monospaced))
+                        .font(.system(size: 11.5, weight: .regular, design: .monospaced))
                         .foregroundStyle(CBTheme.textTertiary)
                         .textSelection(.enabled)
                 }
@@ -844,9 +981,9 @@ private struct PestFindingCard: View {
 
             if !finding.evidence.isEmpty {
                 Text(finding.evidence)
-                    .font(.system(size: 10, weight: .regular, design: .monospaced))
+                    .font(.system(size: 12, weight: .regular, design: .monospaced))
                     .foregroundStyle(CBTheme.textSecondary)
-                    .lineSpacing(2)
+                    .lineSpacing(2.5)
                     .padding(10)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
@@ -873,7 +1010,7 @@ private struct PestFindingCard: View {
 
                 if let nuclei = finding.nuclei {
                     Text("Nuclei · \(nuclei)")
-                        .font(.system(size: 8.5, weight: .regular, design: .monospaced))
+                        .font(.system(size: 11, weight: .regular, design: .monospaced))
                         .foregroundStyle(CBTheme.textTertiary)
                         .lineLimit(1)
                         .truncationMode(.middle)
@@ -891,9 +1028,9 @@ private struct PestFindingCard: View {
         VStack(alignment: .leading, spacing: 3) {
             SectionLabel(text: label)
             Text(text)
-                .font(.system(size: 10.5, weight: .regular, design: .rounded))
+                .font(.system(size: 12.5, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textSecondary)
-                .lineSpacing(2)
+                .lineSpacing(2.5)
                 .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
         }

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.1 — 2026-10-27
+
+- Pastas ignoradas em Ajustes > Pastas agora valem para todas as análises: varredura de dependências, Pest e Red Teaming.
+- O Pest não percorre mais previews, releases ou artefatos ignorados dentro de um projeto.
+- Relatórios antigos do Pest deixam de exibir achados de pastas ignoradas e o progresso salvo é limpo antes de retomar.
+- O consentimento do Pest agora abre em um modal a cada análise com IA, vale apenas para aquela execução e volta a ser pedido na próxima.
+- A área do Pest ganhou ações para limpar o relatório do projeto atual ou todos os relatórios salvos, com confirmação.
+- A seleção de IA da rotina diária foi removida; a rotina segue a opção de IA do Pest.
+- Tipografia dos relatórios de Análises, Minha rede, Pest e detalhe do alerta foi ampliada para melhorar a leitura.
+
 ## 1.2.0 — 2026-10-27
 
 - Novo Pest: análise de segurança de código por projeto, guiada por um catálogo destilado de templates do Nuclei.

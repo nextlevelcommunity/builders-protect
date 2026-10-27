@@ -125,7 +125,10 @@ public struct PestCollector: Sendable {
         "server", "app", "main", "index", "docker", "compose", "nginx", "sshd"
     ]
 
-    public func inventory(projectPath: String) throws -> PestInventory {
+    public func inventory(
+        projectPath: String,
+        excludedPaths: [String] = []
+    ) throws -> PestInventory {
         let root = URL(fileURLWithPath: projectPath, isDirectory: true)
             .standardizedFileURL
             .resolvingSymlinksInPath()
@@ -133,6 +136,11 @@ public struct PestCollector: Sendable {
         guard FileManager.default.fileExists(atPath: root.path, isDirectory: &isDirectory),
               isDirectory.boolValue else {
             throw PestError.projectNotFound
+        }
+
+        let exclusions = PathExclusions.normalized(excludedPaths)
+        if PathExclusions.contains(root, in: exclusions) {
+            throw PestError.projectExcluded
         }
 
         let keys: [URLResourceKey] = [
@@ -161,6 +169,10 @@ public struct PestCollector: Sendable {
             let name = url.lastPathComponent
 
             if depth > maxDepth {
+                enumerator.skipDescendants()
+                continue
+            }
+            if PathExclusions.contains(url, in: exclusions) {
                 enumerator.skipDescendants()
                 continue
             }

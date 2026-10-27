@@ -22,7 +22,7 @@ O Red Teaming, quando liberado, enviará somente os arquivos selecionados após 
 
 ## O que é o Pest?
 
-É uma revisão de segurança do código do projeto, guiada por um catálogo destilado de templates do Nuclei. A análise local é estática: não executa o projeto, não instala dependências e não faz requisições ao alvo. Cada achado vem com explicação, recomendação e um prompt de correção. A IA é opcional e exige consentimento.
+É uma revisão de segurança do código do projeto, guiada por um catálogo destilado de templates do Nuclei. A análise local é estática: não executa o projeto, não instala dependências e não faz requisições ao alvo. Cada achado vem com explicação, recomendação e um prompt de correção. A IA é opcional e exige consentimento em um modal a cada análise; a autorização vale apenas para aquela execução. Na área do Pest, você pode limpar o relatório do projeto atual ou todos os relatórios salvos.
 
 ## O que é Minha rede?
 
@@ -84,7 +84,7 @@ Sim. O app só lê as pastas que você autorizar. O acesso é usado para encontr
 
 ## O app varre worktrees do Git?
 
-Não por padrão. Ao adicionar uma pasta, as worktrees são detectadas, a varredura usa a pasta principal do repositório e as worktrees ficam pré-ignoradas. Em **Ajustes > Pastas > Gerenciar pastas**, selecione uma ou várias pastas e use **Reativar selecionadas** para incluí-las novamente. A mesma tela mostra todos os projetos encontrados, marca pastas de build, preview e artefatos e permite ignorar várias de uma vez. A CLI e a Action também usam a pasta principal e ignoram worktrees automaticamente.
+Não por padrão. Ao adicionar uma pasta, as worktrees são detectadas, a varredura usa a pasta principal do repositório e as worktrees ficam pré-ignoradas. Em **Ajustes > Pastas > Gerenciar pastas**, selecione uma ou várias pastas e use **Reativar selecionadas** para incluí-las novamente. A mesma tela mostra todos os projetos encontrados, marca pastas de build, preview e artefatos e permite ignorar várias de uma vez. A lista de pastas ignoradas é global: vale para a varredura de dependências, o Pest e o Red Teaming. A CLI e a Action também usam a pasta principal e ignoram worktrees automaticamente.
 
 ## Por que o macOS bloqueou a primeira abertura?
 

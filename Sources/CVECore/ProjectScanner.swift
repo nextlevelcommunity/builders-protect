@@ -61,13 +61,13 @@ public struct ProjectScanner: Sendable {
         var warnings: [String] = []
         var discovered: [String: ScannedProject] = [:]
         var order: [String] = []
-        let exclusions = Self.normalizedExclusions(excludedPaths)
+        let exclusions = PathExclusions.normalized(excludedPaths)
 
         for folder in folders {
             guard discovered.count < projectLimit else { break }
             let resolution = resolve(folder)
             let root = resolution.url
-            if Self.isExcluded(root, by: exclusions) {
+            if PathExclusions.contains(root, in: exclusions) {
                 continue
             }
             defer {
@@ -114,7 +114,7 @@ public struct ProjectScanner: Sendable {
                 let values = try? url.resourceValues(forKeys: Set(keys))
                 guard values?.isDirectory == true else { continue }
 
-                if Self.isExcluded(url, by: exclusions) {
+                if PathExclusions.contains(url, in: exclusions) {
                     enumerator.skipDescendants()
                     continue
                 }
@@ -160,24 +160,6 @@ public struct ProjectScanner: Sendable {
             projectLimit: projectLimit,
             packageLimit: 80
         )
-    }
-
-    private static func normalizedExclusions(_ paths: [String]) -> [String] {
-        paths.map { path in
-            var normalized = URL(fileURLWithPath: path).standardizedFileURL.path
-            if normalized.count > 1, normalized.hasSuffix("/") {
-                normalized.removeLast()
-            }
-            return normalized
-        }
-    }
-
-    private static func isExcluded(_ url: URL, by exclusions: [String]) -> Bool {
-        guard !exclusions.isEmpty else { return false }
-        let path = url.standardizedFileURL.path
-        return exclusions.contains { excluded in
-            path == excluded || path.hasPrefix(excluded + "/")
-        }
     }
 
     private func resolve(_ folder: MonitoredFolder) -> (url: URL, accessed: Bool) {

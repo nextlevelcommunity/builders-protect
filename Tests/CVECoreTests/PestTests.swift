@@ -67,6 +67,66 @@ final class PestCollectorTests: XCTestCase {
         XCTAssertGreaterThan(inventory.skippedFiles, 0)
     }
 
+    func testInventoryRespectsExcludedPaths() throws {
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory
+            .appendingPathComponent("pest-exclusions-\(UUID().uuidString)", isDirectory: true)
+        defer { try? fileManager.removeItem(at: root) }
+
+        let sources = root.appendingPathComponent("Sources", isDirectory: true)
+        let ignored = root
+            .appendingPathComponent("artifacts", isDirectory: true)
+            .appendingPathComponent("releases", isDirectory: true)
+            .appendingPathComponent("preview", isDirectory: true)
+            .appendingPathComponent("source", isDirectory: true)
+        try fileManager.createDirectory(at: sources, withIntermediateDirectories: true)
+        try fileManager.createDirectory(at: ignored, withIntermediateDirectories: true)
+
+        try "let value = 1\n".write(
+            to: sources.appendingPathComponent("App.swift"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try "const secret = true\n".write(
+            to: ignored.appendingPathComponent("Route.ts"),
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let inventory = try PestCollector().inventory(
+            projectPath: root.path,
+            excludedPaths: [ignored.path + "/"]
+        )
+        let paths = inventory.files.map(\.path)
+
+        XCTAssertTrue(paths.contains("Sources/App.swift"))
+        XCTAssertFalse(paths.contains { $0.hasPrefix("artifacts/") })
+    }
+
+    func testExcludedProjectRootIsRejected() throws {
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory
+            .appendingPathComponent("pest-root-excluded-\(UUID().uuidString)", isDirectory: true)
+        try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? fileManager.removeItem(at: root) }
+        try "let value = 1\n".write(
+            to: root.appendingPathComponent("App.swift"),
+            atomically: true,
+            encoding: .utf8
+        )
+
+        XCTAssertThrowsError(
+            try PestCollector().inventory(
+                projectPath: root.path,
+                excludedPaths: [root.path]
+            )
+        ) { error in
+            guard case PestError.projectExcluded = error else {
+                return XCTFail("Esperava PestError.projectExcluded, recebeu \(error)")
+            }
+        }
+    }
+
     func testReaderRedactsSecretsAndTruncates() throws {
         let fileManager = FileManager.default
         let root = fileManager.temporaryDirectory

@@ -174,6 +174,43 @@ public struct PestReport: Codable, Identifiable, Sendable {
     public var highCount: Int {
         findings.filter { $0.severity == .high }.count
     }
+
+    public func excluding(_ excludedPaths: [String]) -> PestReport {
+        let exclusions = PathExclusions.normalized(excludedPaths)
+        guard !exclusions.isEmpty else { return self }
+
+        var copy = self
+        copy.findings = findings.filter { finding in
+            !PathExclusions.contains(
+                relativePath: finding.file,
+                projectPath: projectPath,
+                in: exclusions
+            )
+        }
+        let removedFindings = findings.count - copy.findings.count
+        if removedFindings > 0,
+           !copy.summary.localizedCaseInsensitiveContains("Achados de pastas ignoradas") {
+            copy.summary += " Achados de pastas ignoradas foram removidos deste relatório; rode uma nova análise para atualizar o resumo."
+        }
+        if var resume = copy.resumeState {
+            resume.findings = resume.findings.filter { finding in
+                !PathExclusions.contains(
+                    relativePath: finding.file,
+                    projectPath: projectPath,
+                    in: exclusions
+                )
+            }
+            resume.processedPaths = resume.processedPaths.filter { path in
+                !PathExclusions.contains(
+                    relativePath: path,
+                    projectPath: projectPath,
+                    in: exclusions
+                )
+            }
+            copy.resumeState = resume
+        }
+        return copy
+    }
 }
 
 public struct PestProgress: Sendable {
@@ -212,6 +249,7 @@ public struct PestLLMResult: Sendable {
 
 public enum PestError: Error, LocalizedError {
     case projectNotFound
+    case projectExcluded
     case noFiles
     case insufficientMemory(String)
     case insufficientDisk(String)
@@ -221,6 +259,8 @@ public enum PestError: Error, LocalizedError {
         switch self {
         case .projectNotFound:
             return "A pasta do projeto não existe mais."
+        case .projectExcluded:
+            return "Este projeto está ignorado em Ajustes > Pastas. Reative a pasta para analisar."
         case .noFiles:
             return "Nenhum arquivo de código legível foi encontrado neste projeto."
         case .insufficientMemory(let detail), .insufficientDisk(let detail):

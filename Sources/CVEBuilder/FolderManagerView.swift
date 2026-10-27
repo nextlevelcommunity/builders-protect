@@ -73,7 +73,7 @@ struct FolderManagerView: View {
                 Text("Gerenciar pastas")
                     .font(.system(size: 20, weight: .semibold, design: .rounded))
                     .foregroundStyle(CBTheme.text)
-                Text("Selecione uma ou várias pastas encontradas para ignorar. Pastas de build, preview e artefatos costumam não ser projetos reais.")
+                Text("Selecione uma ou várias pastas para ignorar. A escolha vale para a varredura, o Pest e o Red Teaming. Pastas de build, preview e artefatos costumam não ser projetos reais.")
                     .font(.system(size: 10.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)

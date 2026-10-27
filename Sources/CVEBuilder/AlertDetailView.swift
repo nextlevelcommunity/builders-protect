@@ -64,7 +64,7 @@ struct AlertDetailView: View {
 
                 VStack(alignment: .leading, spacing: 5) {
                     Text("ALERTA DE SEGURANÇA")
-                        .font(.system(size: 8, weight: .bold, design: .rounded))
+                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
                         .tracking(1.6)
                         .foregroundStyle(CBTheme.textTertiary)
 
@@ -74,7 +74,7 @@ struct AlertDetailView: View {
                         .lineLimit(1)
 
                     Text(alert.project.path.homeAbbreviated)
-                        .font(.system(size: 9.5, weight: .regular, design: .monospaced))
+                        .font(.system(size: 10.5, weight: .regular, design: .monospaced))
                         .foregroundStyle(CBTheme.textTertiary)
                         .lineLimit(1)
                         .truncationMode(.middle)
@@ -89,14 +89,14 @@ struct AlertDetailView: View {
                         if alert.hasKEV { KEVBadge() }
                     }
                     Text("Gerado \(alert.generatedAt.relativeShort)")
-                        .font(.system(size: 8.5, weight: .regular, design: .rounded))
+                        .font(.system(size: 9.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                     if alert.llmUsed {
                         HStack(spacing: 3) {
                             Image(systemName: "sparkles")
                             Text("análise da Cultura Builder")
                         }
-                        .font(.system(size: 8, weight: .semibold, design: .rounded))
+                        .font(.system(size: 9.5, weight: .semibold, design: .rounded))
                         .foregroundStyle(CBTheme.lime)
                     }
                 }
@@ -151,7 +151,7 @@ struct AlertDetailView: View {
                 .monospacedDigit()
                 .foregroundStyle(tint)
             Text(label.uppercased())
-                .font(.system(size: 7.5, weight: .bold, design: .rounded))
+                .font(.system(size: 9.5, weight: .bold, design: .rounded))
                 .tracking(0.7)
                 .foregroundStyle(CBTheme.textTertiary)
         }
@@ -184,12 +184,12 @@ struct AlertDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 Image(systemName: symbol)
-                    .font(.system(size: 9.5, weight: .semibold))
+                    .font(.system(size: 10.5, weight: .semibold))
                     .foregroundStyle(tint)
                 SectionLabel(text: label)
             }
             Text(text)
-                .font(.system(size: 10.8, weight: .regular, design: .rounded))
+                .font(.system(size: 12.5, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textSecondary)
                 .lineSpacing(2)
                 .fixedSize(horizontal: false, vertical: true)
@@ -206,7 +206,7 @@ struct AlertDetailView: View {
                 SectionLabel(text: "Pacotes afetados")
                 Spacer()
                 Text(Vocabulary.quantity(alert.packageCount, "pacote", "pacotes"))
-                    .font(.system(size: 8.5, weight: .semibold, design: .rounded))
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
             }
 
@@ -244,7 +244,7 @@ struct AlertDetailView: View {
 
             ScrollView(.vertical, showsIndicators: true) {
                 Text(Vocabulary.prompt(alert.fixPrompt))
-                    .font(.system(size: 10, weight: .regular, design: .monospaced))
+                    .font(.system(size: 11.5, weight: .regular, design: .monospaced))
                     .foregroundStyle(CBTheme.textSecondary)
                     .lineSpacing(2.5)
                     .textSelection(.enabled)
@@ -255,7 +255,7 @@ struct AlertDetailView: View {
             .background(Color.black.opacity(0.25), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
             Text("Revise o prompt antes de aplicar. Ele foi escrito para um agente de código e não faz commit sozinho.")
-                .font(.system(size: 9, weight: .regular, design: .rounded))
+                .font(.system(size: 10.5, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
         }
     }
@@ -263,7 +263,7 @@ struct AlertDetailView: View {
     private var footer: some View {
         HStack(spacing: 8) {
             Text("Fonte: base de vulnerabilidades · análise: Cultura Builder")
-                .font(.system(size: 8.5, weight: .regular, design: .rounded))
+                .font(.system(size: 10, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
             Spacer()
             Button {
@@ -292,19 +292,19 @@ private struct PackageDetailCard: View {
                         .frame(width: 6, height: 6)
 
                     Text(package.name)
-                        .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
+                        .font(.system(size: 12.5, weight: .semibold, design: .monospaced))
                         .foregroundStyle(CBTheme.text)
 
                     Text(package.installedVersion)
-                        .font(.system(size: 10, weight: .regular, design: .monospaced))
+                        .font(.system(size: 11, weight: .regular, design: .monospaced))
                         .foregroundStyle(CBTheme.textTertiary)
 
                     if let fixed = package.fixedVersion {
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 7, weight: .bold))
+                            .font(.system(size: 9, weight: .bold))
                             .foregroundStyle(CBTheme.textTertiary)
                         Text(fixed)
-                            .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
                             .foregroundStyle(CBTheme.mint)
                     }
 
@@ -313,7 +313,7 @@ private struct PackageDetailCard: View {
                     if package.hasKEV { KEVBadge() }
 
                     Image(systemName: expanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(CBTheme.textTertiary)
                 }
                 .padding(.horizontal, 13)
@@ -348,7 +348,7 @@ private struct FindingRow: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 7) {
                 Text("Vulnerabilidade")
-                    .font(.system(size: 9.5, weight: .bold, design: .monospaced))
+                    .font(.system(size: 10.5, weight: .bold, design: .monospaced))
                     .foregroundStyle(finding.severity.color)
 
                 if finding.isKEV { KEVBadge() }
@@ -357,7 +357,7 @@ private struct FindingRow: View {
 
                 if let fixed = finding.fixedVersion {
                     Text("corrigido em \(fixed)")
-                        .font(.system(size: 8.5, weight: .medium, design: .monospaced))
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
                         .foregroundStyle(CBTheme.mint)
                 }
 
@@ -365,21 +365,21 @@ private struct FindingRow: View {
                     onOpenURL(finding.url)
                 } label: {
                     Image(systemName: "arrow.up.forward")
-                        .font(.system(size: 8, weight: .bold))
+                        .font(.system(size: 9.5, weight: .bold))
                 }
                 .buttonStyle(IconButtonStyle(size: 21))
                 .help("Abrir detalhes da vulnerabilidade")
             }
 
             Text(Vocabulary.prose(finding.title))
-                .font(.system(size: 10.2, weight: .medium, design: .rounded))
+                .font(.system(size: 12, weight: .medium, design: .rounded))
                 .foregroundStyle(CBTheme.text)
                 .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
 
             if let summary = finding.summary, !summary.isEmpty {
                 Text(Vocabulary.prose(summary))
-                    .font(.system(size: 9.5, weight: .regular, design: .rounded))
+                    .font(.system(size: 11.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
                     .lineSpacing(1.5)
                     .fixedSize(horizontal: false, vertical: true)

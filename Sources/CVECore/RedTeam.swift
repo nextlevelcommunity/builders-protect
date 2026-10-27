@@ -141,6 +141,7 @@ public struct RedTeamCollection: Sendable {
 
 public enum RedTeamError: Error, LocalizedError {
     case projectNotFound
+    case projectExcluded
     case noFiles
     case analysisFailed(String)
 
@@ -148,6 +149,8 @@ public enum RedTeamError: Error, LocalizedError {
         switch self {
         case .projectNotFound:
             return "A pasta do projeto não existe mais."
+        case .projectExcluded:
+            return "Este projeto está ignorado em Ajustes > Pastas. Reative a pasta para analisar."
         case .noFiles:
             return "Nenhum arquivo de código legível foi encontrado neste projeto."
         case .analysisFailed(let detail):
@@ -207,7 +210,10 @@ public struct RedTeamCollector: Sendable {
         "id_rsa", "id_ed25519", "id_ecdsa", "id_dsa"
     ]
 
-    public func collect(projectPath: String) throws -> RedTeamCollection {
+    public func collect(
+        projectPath: String,
+        excludedPaths: [String] = []
+    ) throws -> RedTeamCollection {
         let root = URL(fileURLWithPath: projectPath, isDirectory: true)
             .standardizedFileURL
             .resolvingSymlinksInPath()
@@ -215,6 +221,11 @@ public struct RedTeamCollector: Sendable {
         guard FileManager.default.fileExists(atPath: root.path, isDirectory: &isDirectory),
               isDirectory.boolValue else {
             throw RedTeamError.projectNotFound
+        }
+
+        let exclusions = PathExclusions.normalized(excludedPaths)
+        if PathExclusions.contains(root, in: exclusions) {
+            throw RedTeamError.projectExcluded
         }
 
         let keys: [URLResourceKey] = [
@@ -243,6 +254,10 @@ public struct RedTeamCollector: Sendable {
             let name = url.lastPathComponent
 
             if depth > maxDepth {
+                enumerator.skipDescendants()
+                continue
+            }
+            if PathExclusions.contains(url, in: exclusions) {
                 enumerator.skipDescendants()
                 continue
             }
@@ -376,6 +391,7 @@ public final class RedTeamService: @unchecked Sendable {
 
     public func analyze(
         project: ProjectRef,
+        excludedPaths: [String] = [],
         progress: @escaping @Sendable (RedTeamProgress) -> Void
     ) async throws -> RedTeamReport {
         let startedAt = Date()
@@ -387,7 +403,10 @@ public final class RedTeamService: @unchecked Sendable {
             )
         )
 
-        let collection = try collector.collect(projectPath: project.path)
+        let collection = try collector.collect(
+            projectPath: project.path,
+            excludedPaths: excludedPaths
+        )
         guard !collection.files.isEmpty else {
             throw RedTeamError.noFiles
         }

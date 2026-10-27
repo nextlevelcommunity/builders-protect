@@ -8,9 +8,9 @@ struct RiskBadge: View {
     var body: some View {
         HStack(spacing: 5) {
             Image(systemName: risk.symbol)
-                .font(.system(size: compact ? 9 : 9.5, weight: .bold))
+                .font(.system(size: compact ? 10 : 10.5, weight: .bold))
             Text(compact ? risk.label : risk.label.uppercased())
-                .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                .font(.system(size: 10.5, weight: .bold, design: .rounded))
                 .tracking(compact ? 0 : 0.5)
         }
         .foregroundStyle(risk.color)
@@ -23,7 +23,7 @@ struct RiskBadge: View {
 struct KEVBadge: View {
     var body: some View {
         Text("KEV")
-            .font(.system(size: 8, weight: .heavy, design: .rounded))
+            .font(.system(size: 9.5, weight: .heavy, design: .rounded))
             .tracking(0.7)
             .foregroundStyle(CBTheme.critical)
             .padding(.horizontal, 5)
@@ -53,8 +53,8 @@ struct SectionLabel: View {
 
     var body: some View {
         Text(text.uppercased())
-            .font(.system(size: 9.5, weight: .bold, design: .rounded))
-            .tracking(1.3)
+            .font(.system(size: 10.5, weight: .bold, design: .rounded))
+            .tracking(1.1)
             .foregroundStyle(CBTheme.textTertiary)
     }
 }
