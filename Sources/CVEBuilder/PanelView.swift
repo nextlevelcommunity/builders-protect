@@ -164,7 +164,7 @@ struct PanelView: View {
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(CBTheme.lime)
                 .padding(.top, 1)
-            Text("Apenas nomes, versões e lockfiles saem deste Mac. Nenhum código-fonte.")
+            Text("Nesta varredura, apenas nomes, versões e lockfiles saem deste Mac.")
                 .font(.system(size: 10.5, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
                 .fixedSize(horizontal: false, vertical: true)

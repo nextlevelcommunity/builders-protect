@@ -1,0 +1,405 @@
+{
+  "version": "2026.10",
+  "source": "projectdiscovery/nuclei-templates",
+  "updatedAt": "2026-10-27",
+  "notes": "Catálogo compacto e curado a partir das categorias de templates do Nuclei. Não contém o motor nem os templates completos; serve para orientar a revisão estática do Pest.",
+  "checks": [
+    {
+      "id": "hardcoded-secret",
+      "title": "Segredo ou credencial embutida no código",
+      "category": "Exposição",
+      "severity": "high",
+      "nuclei": "file/js/js-analyse.yaml",
+      "nucleiID": "js-analyse",
+      "tags": ["secret", "token", "keys", "exposure", "credential", "auth"],
+      "languages": [],
+      "fileHints": ["config", "env", "settings", "auth", "api", "client", "server", "script"],
+      "guidance": "Procure chaves de API, tokens, senhas, connection strings e chaves privadas escritas diretamente no código ou em arquivos versionados. O coletor do Pest já redige valores reconhecíveis antes de qualquer envio.",
+      "remediation": "Mova o valor para um gerenciador de segredos ou variável de ambiente fora do repositório, revogue a credencial exposta e adicione o arquivo ao ignore.",
+      "patterns": [
+        "(?i)-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----",
+        "(?i)\\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{20,}\\b",
+        "\\bsk-[A-Za-z0-9]{20,}\\b",
+        "\\bAKIA[0-9A-Z]{16}\\b"
+      ]
+    },
+    {
+      "id": "sqli-concat",
+      "title": "SQL injection por concatenação ou interpolação",
+      "category": "Injection",
+      "severity": "critical",
+      "nuclei": "dast/vulnerabilities/sqli/sqli-error-based.yaml",
+      "nucleiID": "sqli-error-based",
+      "tags": ["sqli", "injection", "database", "sql"],
+      "languages": ["js", "jsx", "ts", "tsx", "py", "rb", "go", "java", "kt", "php", "cs", "swift"],
+      "fileHints": ["sql", "query", "repository", "dao", "database", "db", "model", "store", "service"],
+      "guidance": "Procure consultas SQL montadas com entrada externa por concatenação, interpolação de template, f-string ou format(). Verifique também ORDER BY, LIMIT e nomes de tabela/coluna dinâmicos.",
+      "remediation": "Use consultas parametrizadas ou o query builder do ORM, valide listas de permissão para identificadores e nunca concatene entrada do usuário no SQL.",
+      "patterns": [
+        "(?i)\\b(?:select|insert|update|delete)\\b[^;\\n]{0,220}(?:\\$\\{|#\\{|\\+\\s*[a-z_$]|\\.\\s*format\\s*\\(|\\bformat\\s*\\()",
+        "(?i)\\b(?:query|execute|exec|prepare|raw)\\s*\\([^)\\n]{0,160}(?:\\b(?:req|request|params|query|body|input|user|id)\\b|\\$\\{|#\\{)",
+        "(?i)\\bf[\"'][^\"'\\n]*\\b(?:select|insert|update|delete)\\b[^\"'\\n]*\\{[^}]+\\}"
+      ]
+    },
+    {
+      "id": "command-injection",
+      "title": "Execução de comando com entrada externa",
+      "category": "Injection",
+      "severity": "high",
+      "nuclei": "dast/vulnerabilities/injection/unix-command-injection.yaml",
+      "nucleiID": "unix-command-injection",
+      "tags": ["rce", "cmdi", "injection", "shell", "exec"],
+      "languages": ["js", "jsx", "ts", "tsx", "py", "rb", "go", "java", "kt", "php", "cs", "swift"],
+      "fileHints": ["exec", "shell", "command", "process", "runner", "deploy", "script", "worker", "job"],
+      "guidance": "Procure chamadas de shell, subprocesso ou execução de comando que recebem entrada externa sem allowlist. Inclua eval, Function, Runtime.exec e equivalentes.",
+      "remediation": "Evite shell; use APIs nativas com argumentos separados, allowlist estrita e o menor privilégio possível. Remova eval e construções dinâmicas desnecessárias.",
+      "patterns": [
+        "(?i)\\b(?:exec|execSync|spawn|spawnSync|system|popen|Runtime\\.getRuntime\\(\\)\\.exec|ProcessBuilder)\\s*\\([^)\\n]{0,200}(?:\\+|\\$\\{|#\\{|\\b(?:req|request|params|query|body|input)\\b)",
+        "(?i)\\b(?:os\\.system|subprocess\\.(?:run|call|Popen|check_output))\\s*\\([^)\\n]{0,200}(?:\\+|\\$\\{|f[\"']|format\\s*\\(|\\b(?:req|request|params|query|body|input)\\b)",
+        "(?i)\\b(?:shell_exec|passthru|popen|system|exec)\\s*\\([^)\\n]{0,160}\\$_(?:GET|POST|REQUEST|COOKIE)",
+        "(?i)\\b(?:eval|assert)\\s*\\([^)\\n]{0,160}\\$_(?:GET|POST|REQUEST|COOKIE)"
+      ]
+    },
+    {
+      "id": "xss-dom-sink",
+      "title": "XSS em sink DOM controlado por entrada",
+      "category": "XSS",
+      "severity": "medium",
+      "nuclei": "dast/vulnerabilities/xss/dom-xss.yaml",
+      "nucleiID": "dom-xss",
+      "tags": ["xss", "dom", "frontend", "browser"],
+      "languages": ["js", "jsx", "ts", "tsx", "vue", "svelte", "html", "php"],
+      "fileHints": ["component", "view", "page", "template", "render", "client", "browser", "dom"],
+      "guidance": "Procure innerHTML, document.write, dangerouslySetInnerHTML, v-html e outros sinks DOM recebendo dados externos, URL, mensagem ou estado não confiável.",
+      "remediation": "Prefira textContent e renderização escapada. Quando HTML for inevitável, sanitize com uma biblioteca mantida e aplique CSP restritiva.",
+      "patterns": [
+        "(?i)\\.innerHTML\\s*=\\s*(?![\\\"'`])",
+        "(?i)dangerouslySetInnerHTML\\s*=\\s*\\{\\{\\s*__html\\s*:\\s*(?![\\\"'`])",
+        "(?i)document\\.(?:write|writeln)\\s*\\([^)\\n]{0,160}(?:\\+|\\$\\{)",
+        "(?i)(?:v-html|\\[innerHTML\\])\\s*="
+      ]
+    },
+    {
+      "id": "xss-reflected",
+      "title": "Reflexão de entrada sem escape",
+      "category": "XSS",
+      "severity": "medium",
+      "nuclei": "dast/vulnerabilities/xss/reflected-xss.yaml",
+      "nucleiID": "reflected-xss",
+      "tags": ["xss", "rxss", "template", "response"],
+      "languages": ["js", "ts", "py", "rb", "go", "java", "php", "cs", "html"],
+      "fileHints": ["controller", "handler", "route", "view", "template", "render", "response", "api"],
+      "guidance": "Verifique se parâmetros de URL, corpo ou headers são devolvidos em HTML sem escape contextual, inclusive em mensagens de erro e páginas de busca.",
+      "remediation": "Aplique escape contextual no template, valide a entrada e adicione cabeçalhos de segurança e CSP.",
+      "patterns": []
+    },
+    {
+      "id": "ssrf",
+      "title": "SSRF em requisição com URL controlável",
+      "category": "SSRF",
+      "severity": "high",
+      "nuclei": "dast/vulnerabilities/ssrf/response-ssrf.yaml",
+      "nucleiID": "response-ssrf",
+      "tags": ["ssrf", "http", "fetch", "url", "proxy", "webhook"],
+      "languages": ["js", "jsx", "ts", "tsx", "py", "rb", "go", "java", "kt", "php", "cs", "swift"],
+      "fileHints": ["fetch", "http", "client", "proxy", "webhook", "url", "link", "preview", "import", "integration"],
+      "guidance": "Procure chamadas HTTP cujo destino vem de parâmetro, webhook, importação ou URL de usuário. Considere redirects, DNS rebinding e acesso a metadata/loopback.",
+      "remediation": "Aplique allowlist de esquemas e hosts, bloqueie IPs privados e metadata, resolva e valide o destino após redirects e use rede de saída restrita.",
+      "patterns": [
+        "(?i)\\b(?:fetch|axios\\.(?:get|post|put)|requests\\.(?:get|post|put)|http\\.get|urllib\\.request\\.urlopen|Net::HTTP|RestClient)\\s*\\([^)\\n]{0,220}(?:\\b(?:req|request|params|query|body|input|url|target|callback|webhook)\\b|\\$\\{|#\\{|\\+)"
+      ]
+    },
+    {
+      "id": "path-traversal",
+      "title": "Leitura ou envio de arquivo por caminho controlável",
+      "category": "Path Traversal",
+      "severity": "high",
+      "nuclei": "dast/vulnerabilities/lfi/lfi-keyed.yaml",
+      "nucleiID": "lfi-keyed",
+      "tags": ["lfi", "pathtraversal", "file", "upload", "download"],
+      "languages": ["js", "ts", "py", "rb", "go", "java", "kt", "php", "cs", "swift"],
+      "fileHints": ["file", "upload", "download", "storage", "media", "attachment", "export", "import", "path"],
+      "guidance": "Procure leitura, escrita, download ou envio de arquivo usando nome ou caminho vindo de requisição. Verifique normalização, symlinks e prefixos.",
+      "remediation": "Gere nomes internos, mantenha um diretório base fixo, normalize e confirme que o caminho final permanece dentro dele. Não aceite caminho absoluto.",
+      "patterns": [
+        "(?i)\\b(?:readFile|readFileSync|sendFile|createReadStream|File\\.read|File\\.open|open|send_file|res\\.download|res\\.sendFile)\\s*\\([^)\\n]{0,200}(?:\\b(?:req|request|params|query|body|input|path|file|filename)\\b|\\$\\{|#\\{|\\+)"
+      ]
+    },
+    {
+      "id": "ssti",
+      "title": "Template injection a partir de entrada externa",
+      "category": "Injection",
+      "severity": "high",
+      "nuclei": "dast/vulnerabilities/ssti/reflection-ssti.yaml",
+      "nucleiID": "reflection-ssti",
+      "tags": ["ssti", "template", "render", "injection"],
+      "languages": ["js", "ts", "py", "rb", "java", "php", "cs", "go"],
+      "fileHints": ["template", "render", "view", "mail", "report", "pdf", "email", "page"],
+      "guidance": "Procure compilação de template com texto do usuário em Jinja, Twig, Handlebars, EJS, ERB, Thymeleaf e similares. Verifique também templates de e-mail e PDF.",
+      "remediation": "Nunca compile template a partir de entrada do usuário. Use templates fixos com dados passados como contexto escapado.",
+      "patterns": [
+        "(?i)\\b(?:render_template_string|Template\\(|template\\.render|Handlebars\\.compile|_.template|ejs\\.render|nunjucks\\.renderString|Environment\\(\\)\\.from_string)\\s*\\([^)\\n]{0,200}(?:\\b(?:req|request|params|query|body|input|name|message)\\b|\\$\\{|#\\{|\\+)"
+      ]
+    },
+    {
+      "id": "crlf-injection",
+      "title": "Injeção de cabeçalho ou CRLF",
+      "category": "Injection",
+      "severity": "medium",
+      "nuclei": "dast/vulnerabilities/crlf/crlf-injection.yaml",
+      "nucleiID": "crlf-injection",
+      "tags": ["crlf", "header", "response", "redirect"],
+      "languages": ["js", "ts", "py", "rb", "go", "java", "php", "cs", "swift"],
+      "fileHints": ["header", "redirect", "response", "cookie", "location", "middleware", "http"],
+      "guidance": "Procure headers, Location, Set-Cookie e redirects construídos com entrada externa sem remoção de \\r e \\n.",
+      "remediation": "Rejeite quebras de linha em valores de header, use APIs que validam o valor e evite redirect aberto.",
+      "patterns": [
+        "(?i)\\b(?:setHeader|writeHead|header|set-cookie|location)\\b[^\\n]{0,200}(?:\\b(?:req|request|params|query|body|input|url|next|return)\\b|\\$\\{|#\\{|\\+)"
+      ]
+    },
+    {
+      "id": "open-redirect",
+      "title": "Redirect aberto",
+      "category": "Redirect",
+      "severity": "medium",
+      "nuclei": "dast/vulnerabilities/redirect/open-redirect.yaml",
+      "nucleiID": "open-redirect",
+      "tags": ["redirect", "url", "auth", "phishing"],
+      "languages": ["js", "jsx", "ts", "tsx", "py", "rb", "go", "java", "kt", "php", "cs", "swift"],
+      "fileHints": ["redirect", "login", "auth", "return", "next", "callback", "url", "router", "middleware"],
+      "guidance": "Verifique redirects para URLs controladas por parâmetro, campo next/return/redirect_uri ou callback OAuth. Teste bypasses com //, barra invertida e domínio parecido.",
+      "remediation": "Aceite apenas caminhos relativos internos ou uma allowlist exata de destinos. Não confie em validação por prefixo.",
+      "patterns": [
+        "(?i)\\b(?:redirect|location\\.href|res\\.redirect|Response\\.Redirect|http\\.Redirect)\\s*[=(]\\s*[^\\\"'`\\n]{0,160}(?:\\b(?:req|request|params|query|next|return|url|target|redirect)\\b|\\$\\{|#\\{|\\+)"
+      ]
+    },
+    {
+      "id": "insecure-tls",
+      "title": "Validação de TLS desativada",
+      "category": "Configuração",
+      "severity": "high",
+      "nuclei": "ssl/deprecated-tls.yaml",
+      "nucleiID": "deprecated-tls",
+      "tags": ["tls", "ssl", "certificate", "misconfig", "http"],
+      "languages": ["js", "ts", "py", "rb", "go", "java", "kt", "php", "cs", "swift"],
+      "fileHints": ["http", "client", "request", "tls", "ssl", "certificate", "webhook", "integration", "config"],
+      "guidance": "Procure rejectUnauthorized: false, verify=False, InsecureSkipVerify, NODE_TLS_REJECT_UNAUTHORIZED=0 e desativação de verificação de certificado.",
+      "remediation": "Reative a validação de certificado e hostname. Se houver CA interna, configure a CA explicitamente em vez de desligar a verificação.",
+      "patterns": [
+        "(?i)(?:rejectUnauthorized\\s*:\\s*false|NODE_TLS_REJECT_UNAUTHORIZED\\s*=\\s*[\\\"']?0|verify\\s*=\\s*False|InsecureSkipVerify\\s*:\\s*true|StrictHostKeyChecking\\s*=\\s*no|CURLOPT_SSL_VERIFYPEER\\s*,\\s*(?:false|0))"
+      ]
+    },
+    {
+      "id": "debug-enabled",
+      "title": "Modo de depuração exposto",
+      "category": "Configuração",
+      "severity": "medium",
+      "nuclei": "http/misconfiguration/django-debug-config-enabled.yaml",
+      "nucleiID": "django-debug-config-enabled",
+      "tags": ["debug", "misconfig", "exposure", "django", "flask", "rails"],
+      "languages": ["py", "rb", "js", "ts", "php", "java", "cs", "go", "conf", "yaml", "yml"],
+      "fileHints": ["config", "settings", "app", "server", "main", "environment", "docker", "compose"],
+      "guidance": "Procure debug, traceback, profiler ou stack trace habilitados em configuração de produção, especialmente Django, Flask, Rails, Express e PHP.",
+      "remediation": "Desative debug em produção, force via ambiente seguro e garanta que stack traces não retornem ao cliente.",
+      "patterns": [
+        "(?i)(?:app\\.debug\\s*=\\s*True|DEBUG\\s*=\\s*True|debug\\s*:\\s*true|flask\\.run\\([^)]*debug\\s*=\\s*True|config\\.consider_all_requests_local\\s*=\\s*true)"
+      ]
+    },
+    {
+      "id": "permissive-cors",
+      "title": "CORS permissivo",
+      "category": "Configuração",
+      "severity": "medium",
+      "nuclei": "http/misconfiguration/",
+      "nucleiID": "cors-misconfiguration",
+      "tags": ["cors", "misconfig", "browser", "http", "headers"],
+      "languages": ["js", "ts", "py", "rb", "go", "java", "kt", "php", "cs", "swift", "conf", "yaml", "yml"],
+      "fileHints": ["cors", "middleware", "server", "app", "config", "route", "api", "headers"],
+      "guidance": "Procure Access-Control-Allow-Origin: * combinado com credenciais, origem refletida sem validação ou cors() aberto em rotas autenticadas.",
+      "remediation": "Use allowlist exata de origens, não reflita Origin sem validação e evite credenciais com curinga.",
+      "patterns": [
+        "(?i)(?:Access-Control-Allow-Origin[\\\"']?\\s*[:,]\\s*[\\\"']\\*|origin\\s*:\\s*[\\\"']\\*[\\\"']|cors\\s*\\(\\s*\\)|cors\\s*\\(\\s*\\{\\s*origin\\s*:\\s*true)"
+      ]
+    },
+    {
+      "id": "jwt-none",
+      "title": "JWT sem validação de assinatura",
+      "category": "Autenticação",
+      "severity": "critical",
+      "nuclei": "http/exposures/tokens/generic/jwt-token.yaml",
+      "nucleiID": "jwt-token",
+      "tags": ["jwt", "auth", "token", "authentication"],
+      "languages": ["js", "ts", "py", "rb", "go", "java", "kt", "php", "cs", "swift"],
+      "fileHints": ["auth", "jwt", "token", "session", "login", "middleware", "security"],
+      "guidance": "Procure algoritmo none, verificação desativada, segredo fixo no código ou decode usado como se fosse validação.",
+      "remediation": "Valide assinatura e algoritmo com allowlist, use chaves gerenciadas e rejeite none. Verifique issuer, audience e expiração.",
+      "patterns": [
+        "(?i)(?:algorithms?\\s*[:=]\\s*\\[?\\s*[\\\"']none[\\\"']|jwt\\.decode\\([^)]*verify\\s*=\\s*False|verify\\s*:\\s*false[^\\n]{0,80}(?:jwt|token)|jsonwebtoken\\.decode\\s*\\()"
+      ]
+    },
+    {
+      "id": "insecure-deserialization",
+      "title": "Desserialização insegura",
+      "category": "Injection",
+      "severity": "high",
+      "nuclei": "dast/vulnerabilities/xxe/generic-xxe.yaml",
+      "nucleiID": "generic-xxe",
+      "tags": ["deserialization", "xxe", "pickle", "yaml", "xml", "rce"],
+      "languages": ["py", "rb", "java", "php", "cs", "go", "js", "ts"],
+      "fileHints": ["serialize", "deserialize", "pickle", "yaml", "xml", "import", "export", "parser", "worker"],
+      "guidance": "Procure pickle, yaml.load sem SafeLoader, unserialize, ObjectInputStream e parsers XML com entidades externas habilitadas recebendo dados externos.",
+      "remediation": "Use formatos seguros como JSON, SafeLoader, allowlist de classes e desative entidades externas e DTD em XML.",
+      "patterns": [
+        "(?i)\\b(?:pickle\\.loads?|unserialize|Marshal\\.load|ObjectInputStream|readObject)\\s*\\(",
+        "(?i)\\byaml\\.load\\s*\\((?![^)\\n]*SafeLoader)",
+        "(?i)(?:libxml_disable_entity_loader\\s*\\(\\s*false|XMLParser\\([^)]*externalEntities\\s*=\\s*true|DocumentBuilderFactory[^;\\n]{0,80}setFeature)"
+      ]
+    },
+    {
+      "id": "default-credentials",
+      "title": "Credencial padrão ou fraca",
+      "category": "Autenticação",
+      "severity": "high",
+      "nuclei": "http/default-logins/",
+      "nucleiID": "default-login",
+      "tags": ["default-login", "credential", "auth", "password", "admin"],
+      "languages": ["js", "ts", "py", "rb", "go", "java", "kt", "php", "cs", "swift", "conf", "yaml", "yml", "json"],
+      "fileHints": ["auth", "login", "seed", "fixture", "demo", "admin", "config", "docker", "compose"],
+      "guidance": "Procure usuário/senha padrão, admin/admin, troca de senha desativada e seeds de produção com credenciais conhecidas.",
+      "remediation": "Remova credenciais padrão, exija troca no primeiro acesso, use hash forte e mantenha segredos fora do repositório.",
+      "patterns": [
+        "(?i)(?:admin|root|user|test)\\s*[:=]\\s*[\\\"'](?:admin|root|password|passwd|123456|changeme|default)[\\\"']"
+      ]
+    },
+    {
+      "id": "authorization-idor",
+      "title": "Autorização ausente ou IDOR",
+      "category": "Autorização",
+      "severity": "high",
+      "nuclei": "",
+      "nucleiID": "",
+      "tags": ["auth", "authorization", "idor", "access-control", "tenant"],
+      "languages": ["js", "ts", "py", "rb", "go", "java", "kt", "php", "cs", "swift"],
+      "fileHints": ["route", "controller", "handler", "api", "admin", "user", "account", "tenant", "organization", "order", "invoice"],
+      "guidance": "Verifique rotas que buscam ou alteram recurso por id da requisição sem confirmar dono, tenant, papel ou permissão. Inclua operações em lote e downloads.",
+      "remediation": "Centralize a checagem de autorização no servidor, derive o tenant da sessão e negue por padrão. Teste com dois usuários de papéis diferentes.",
+      "patterns": []
+    },
+    {
+      "id": "mass-assignment",
+      "title": "Atribuição em massa de campos",
+      "category": "Autorização",
+      "severity": "high",
+      "nuclei": "",
+      "nucleiID": "",
+      "tags": ["mass-assignment", "authorization", "api", "model", "update"],
+      "languages": ["js", "ts", "py", "rb", "java", "php", "cs", "go"],
+      "fileHints": ["controller", "handler", "api", "model", "update", "create", "user", "account", "admin"],
+      "guidance": "Procure criação/atualização que espalha o corpo inteiro da requisição no modelo, permitindo alterar papel, tenant, saldo ou campos internos.",
+      "remediation": "Use DTO ou allowlist explícita de campos por operação e papel. Nunca passe o corpo inteiro para update/create.",
+      "patterns": []
+    },
+    {
+      "id": "race-condition",
+      "title": "Race condition em operação sensível",
+      "category": "Lógica",
+      "severity": "medium",
+      "nuclei": "",
+      "nucleiID": "",
+      "tags": ["race-condition", "logic", "payment", "coupon", "balance", "inventory"],
+      "languages": ["js", "ts", "py", "rb", "go", "java", "kt", "php", "cs", "swift"],
+      "fileHints": ["checkout", "payment", "order", "coupon", "balance", "wallet", "inventory", "stock", "transfer", "vote"],
+      "guidance": "Verifique leitura seguida de escrita sem transação, lock ou operação atômica em saldo, estoque, cupom, curtida, saque e criação de recurso único.",
+      "remediation": "Use transação com isolamento adequado, lock otimista/pessimista ou operação atômica no banco. Adicione idempotência e testes concorrentes.",
+      "patterns": []
+    },
+    {
+      "id": "file-upload",
+      "title": "Upload de arquivo sem validação suficiente",
+      "category": "Upload",
+      "severity": "high",
+      "nuclei": "",
+      "nucleiID": "",
+      "tags": ["upload", "file", "rce", "storage", "content-type"],
+      "languages": ["js", "ts", "py", "rb", "go", "java", "kt", "php", "cs", "swift"],
+      "fileHints": ["upload", "file", "media", "attachment", "avatar", "image", "document", "storage"],
+      "guidance": "Verifique validação apenas por extensão ou Content-Type, nome controlado, execução no diretório público, tamanho ilimitado e falta de antivírus.",
+      "remediation": "Valide conteúdo real, gere nome aleatório, armazene fora do webroot, limite tamanho, sirva com Content-Disposition seguro e escaneie malware.",
+      "patterns": []
+    },
+    {
+      "id": "rate-limit",
+      "title": "Ausência de limite em autenticação ou operação cara",
+      "category": "Autenticação",
+      "severity": "medium",
+      "nuclei": "",
+      "nucleiID": "",
+      "tags": ["rate-limit", "bruteforce", "auth", "abuse", "otp"],
+      "languages": ["js", "ts", "py", "rb", "go", "java", "kt", "php", "cs", "swift"],
+      "fileHints": ["auth", "login", "signup", "reset", "otp", "token", "password", "email", "webhook", "search"],
+      "guidance": "Procure login, OTP, recuperação de senha, busca e endpoints caros sem rate limit, lockout progressivo ou captcha.",
+      "remediation": "Aplique limite por conta, IP e dispositivo; use atraso progressivo, alerta e invalidação de tokens. Proteja também custos de IA e e-mail.",
+      "patterns": []
+    },
+    {
+      "id": "nginx-hsts-missing",
+      "title": "HSTS ausente em configuração Nginx",
+      "category": "Hardening",
+      "severity": "high",
+      "nuclei": "file/audit/nginx/file-nginx-hsts-missing.yaml",
+      "nucleiID": "file-missing-nginx-hsts",
+      "tags": ["hardening", "nginx", "hsts", "tls", "headers", "config"],
+      "languages": ["conf"],
+      "fileHints": ["nginx", "site", "server", "default", "conf"],
+      "guidance": "Em arquivos de configuração Nginx com bloco server e HTTP, verifique se falta Strict-Transport-Security.",
+      "remediation": "Adicione add_header Strict-Transport-Security \"max-age=31536000; includeSubDomains\" always; após confirmar HTTPS em todos os subdomínios.",
+      "patterns": []
+    },
+    {
+      "id": "apache-directory-listing",
+      "title": "Listagem de diretórios habilitada no Apache",
+      "category": "Hardening",
+      "severity": "medium",
+      "nuclei": "file/audit/apache/file-disable-directory-listing.yaml",
+      "nucleiID": "file-disable-directory-listing",
+      "tags": ["hardening", "apache", "config", "directory-listing"],
+      "languages": ["conf"],
+      "fileHints": ["apache", "httpd", "site", "conf", "htaccess"],
+      "guidance": "Procure Options Indexes em diretórios servidos pelo Apache, expondo listagem de arquivos.",
+      "remediation": "Use Options -Indexes no diretório ou .htaccess e confirme que não há listagem pública.",
+      "patterns": [
+        "(?i)Options\\s+[^\\n]*\\bIndexes\\b"
+      ]
+    },
+    {
+      "id": "ssh-root-login",
+      "title": "Login root por SSH habilitado",
+      "category": "Hardening",
+      "severity": "high",
+      "nuclei": "file/audit/ssh/file-disable-root-login.yaml",
+      "nucleiID": "file-disable-root-login",
+      "tags": ["hardening", "ssh", "config", "root", "remote-access"],
+      "languages": ["conf", "txt"],
+      "fileHints": ["ssh", "sshd", "config"],
+      "guidance": "Procure PermitRootLogin yes em sshd_config ou configuração equivalente.",
+      "remediation": "Defina PermitRootLogin no e desabilite autenticação por senha quando possível. Use acesso por usuário e sudo.",
+      "patterns": [
+        "(?i)PermitRootLogin\\s+yes"
+      ]
+    },
+    {
+      "id": "mongodb-auth-disabled",
+      "title": "Autenticação do MongoDB desabilitada",
+      "category": "Hardening",
+      "severity": "high",
+      "nuclei": "file/audit/mongodb/file-mongodb-auth-disabled.yaml",
+      "nucleiID": "file-mongodb-auth-disabled",
+      "tags": ["hardening", "mongodb", "config", "auth", "database"],
+      "languages": ["conf", "yaml", "yml"],
+      "fileHints": ["mongod", "mongo", "database", "docker", "compose"],
+      "guidance": "Em mongod.conf, verifique se security.authorization está ausente ou desabilitado.",
+      "remediation": "Habilite authorization: enabled, crie usuários com menor privilégio e restrinja a rede de acesso.",
+      "patterns": []
+    }
+  ]
+}

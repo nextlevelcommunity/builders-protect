@@ -30,8 +30,10 @@ O app e a CLI não compartilham código binário. Eles compartilham o contrato d
 - App regular no macOS: Dock, Launchpad e ⌘+Tab, além do ícone na barra de menus.
 - Painel rápido (popover) com banner de controle total e janela principal separada.
 - Item de login em segundo plano, sem abrir o painel ao iniciar com o Mac.
-- `CVECore` para descoberta, parsing, varredura, prompts e integração com IA.
+- `CVECore` para descoberta, parsing, varredura, Pest, Minha rede, prompts e integração com IA.
 - Agendamento local e item de login do usuário.
+- Pest com análise estática local, orçamento de memória, rotinas por projeto e LLM opcional.
+- Minha rede com coleta local passiva de Wi-Fi/LAN e relatório em linguagem leiga.
 - Red Teaming em preparação, desativado nesta versão.
 - No Windows e no Linux, o app desktop seguirá o mesmo fluxo: atalho no menu de aplicativos, ícone de bandeja, painel rápido e janela principal.
 
@@ -48,9 +50,33 @@ O app e a CLI não compartilham código binário. Eles compartilham o contrato d
 
 A base é operada e validada pela Cultura Builder. A integração é tratada como um serviço externo. Fornecedores, topologia e controles internos não são documentados publicamente.
 
+### Pest
+
+O Pest compartilha o scanner de projetos, mas tem pipeline próprio:
+
+1. O projeto escolhido é inventariado com limites de arquivos, bytes e profundidade.
+2. Arquivos de texto são lidos just-in-time; `.env`, chaves, binários, lockfiles, dependências instaladas e arquivos grandes ficam de fora.
+3. O catálogo `PestKnowledge.json` seleciona checks por stack, extensão e sinais do projeto.
+4. O analisador estático procura padrões de risco e gera achados determinísticos.
+5. Com consentimento e IA conectada, blocos redigidos são enviados à LLM privada; caminhos retornados são validados contra os arquivos permitidos.
+6. Cada achado recebe explicação, recomendação e prompt de correção.
+7. O orçamento de memória pode pausar a análise e salvar um estado retomável.
+
+As rotinas do Pest são locais, uma por projeto, com intervalo circular mínimo de 30 minutos. O scheduler não inicia uma rotina se a anterior ainda estiver rodando.
+
+### Minha rede
+
+Minha rede é uma pipeline local e passiva:
+
+1. Comandos do macOS leem Wi-Fi, rota padrão, DNS, interfaces, ARP, firewall, FileVault, SIP, Gatekeeper, atualizações e portas TCP escutando.
+2. A presença de VPN/Tailscale é detectada para evitar falsos positivos de DNS.
+3. O endereço local do roteador é consultado por HTTP e HTTPS, sem autenticação, sem teste de senha e sem captura de tráfego.
+4. O auditor transforma os sinais em achados e em cenários com status confirmado, possível, não encontrado ou não verificável.
+5. O relatório inclui o que a checagem não prova e limita a conclusão a uma foto do momento.
+
 ### IA
 
-O diagnóstico e o Red Teaming usam os modelos de segurança da Cultura Builder. O acesso exige sessão de assinante. A CLI e a Action não usam IA.
+O diagnóstico de dependências com IA, o Pest com IA e o Red Teaming usam os modelos de segurança da Cultura Builder. O acesso exige sessão de assinante. A CLI e a Action não usam IA. Minha rede não usa IA.
 
 ## Fluxo de varredura
 
@@ -97,9 +123,13 @@ Node.js 20 está disponível em todos os runners do GitHub e não exige compila�
 
 A CLI envia o conteúdo do lockfile em vez de reimplementar todos os parsers. Isso reduz divergências entre ecossistemas e mantém a CLI pequena. O limite de 1,8 MB e a checagem de binários evitam arquivos inadequados.
 
-### Red Teaming separado
+### Pest e Red Teaming separados
 
-O Red Teaming é uma análise de código, não de dependências. Ele tem fluxo, consentimento e modelos próprios. Por isso não é executado pela CLI nem pela Action e permanece em preparação nesta versão.
+O Pest é uma revisão estática de código, com catálogo local e LLM opcional. O Red Teaming será uma análise mais profunda, com fluxo, consentimento e modelos próprios. Nenhum dos dois é executado pela CLI nem pela Action; ambos ficam no app macOS e o Red Teaming permanece em preparação nesta versão.
+
+### Minha rede sem varredura ativa
+
+Minha rede não substitui um scanner de rede. As consultas são limitadas ao próprio Mac e ao endereço do roteador. Não há descoberta agressiva, captura de pacotes, teste de credenciais ou exploração. Essa escolha mantém a funcionalidade útil para explicação e prevenção sem transformar o app em uma ferramenta de ataque.
 
 ### Windows e Linux
 

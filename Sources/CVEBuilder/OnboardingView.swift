@@ -112,7 +112,7 @@ struct OnboardingView: View {
                 }
                 .foregroundStyle(CBTheme.lime)
 
-                Text("Só nomes, versões e lockfiles saem deste Mac. Nenhum código-fonte.")
+                Text("Nesta varredura, só nomes, versões e lockfiles saem deste Mac.")
                     .font(.system(size: 9.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
                     .lineSpacing(1.5)

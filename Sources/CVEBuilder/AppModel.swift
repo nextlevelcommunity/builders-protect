@@ -37,6 +37,21 @@ final class AppModel: ObservableObject {
     @Published private(set) var redTeamProgress: RedTeamProgress?
     @Published private(set) var redTeamReport: RedTeamReport?
     @Published private(set) var redTeamError: String?
+    @Published private(set) var pestProjects: [ProjectRef] = []
+    @Published private(set) var isLoadingPestProjects = false
+    @Published var pestProjectPath: String?
+    @Published private(set) var pestState: PestState
+    @Published private(set) var isPestRunning = false
+    @Published private(set) var pestProgress: PestProgress?
+    @Published private(set) var pestReport: PestReport?
+    @Published private(set) var pestError: String?
+    @Published var pestUseAI = true
+    @Published private(set) var networkState: NetworkState
+    @Published private(set) var isNetworkRunning = false
+    @Published private(set) var networkProgress: NetworkProgress?
+    @Published private(set) var networkReport: NetworkReport?
+    @Published private(set) var networkError: String?
+    @Published var networkIsPublic = false
     @Published var expandedProjectID: String?
     @Published var settingsSection: SettingsSection = .analysis
     @Published private(set) var toast: String?
@@ -52,29 +67,45 @@ final class AppModel: ObservableObject {
     private let scanService: ScanService
     private let authStore: BuilderAuthStore
     private let redTeamService: RedTeamService
+    private let pestService: PestService
+    private let networkService: NetworkService
     private var scheduler: ScanScheduler?
+    private var pestScheduler: PestScheduler?
     private var toastTask: Task<Void, Never>?
     private var previewTask: Task<Void, Never>?
     private var exclusionRescanTask: Task<Void, Never>?
     private var redTeamTask: Task<Void, Never>?
     private var redTeamProjectsTask: Task<Void, Never>?
     private var redTeamReports: [String: RedTeamReport] = [:]
+    private var pestProjectsTask: Task<Void, Never>?
+    private var pestTask: Task<Void, Never>?
+    private var pestRunID = UUID()
+    private var networkTask: Task<Void, Never>?
+    private var networkRunID = UUID()
 
     init(
         store: SettingsStore = .shared,
         scanService: ScanService = ScanService(),
         authStore: BuilderAuthStore = .shared,
-        redTeamService: RedTeamService = RedTeamService()
+        redTeamService: RedTeamService = RedTeamService(),
+        pestService: PestService = PestService(),
+        networkService: NetworkService = NetworkService()
     ) {
         self.store = store
         self.scanService = scanService
         self.authStore = authStore
         self.redTeamService = redTeamService
+        self.pestService = pestService
+        self.networkService = networkService
         self.settings = store.loadSettings()
         self.report = store.loadReport()
         self.authStatus = authStore.status()
         self.launchAtLoginEnabled = LaunchAtLogin.isEnabled
         self.redTeamReports = store.loadRedTeamReports()
+        self.pestState = store.loadPestState()
+        let networkState = store.loadNetworkState()
+        self.networkState = networkState
+        self.networkReport = networkState.latest
     }
 
     var isConfigured: Bool {
@@ -154,12 +185,51 @@ final class AppModel: ObservableObject {
         !isRedTeamRunning && selectedRedTeamProject != nil && authStatus.connected
     }
 
+    var selectedPestProject: ProjectRef? {
+        guard let pestProjectPath else { return nil }
+        return pestProjects.first { $0.path == pestProjectPath }
+    }
+
+    var selectedPestReport: PestReport? {
+        if let pestReport, pestReport.projectPath == pestProjectPath {
+            return pestReport
+        }
+        guard let path = pestProjectPath else { return nil }
+        return pestState.reports.first { $0.projectPath == path }
+    }
+
+    var canRunPest: Bool {
+        !isPestRunning && selectedPestProject != nil
+    }
+
+    var pestResumeAvailable: Bool {
+        selectedPestReport?.resumeState != nil
+    }
+
+    var pestRoutineForSelectedProject: PestRoutine? {
+        guard let path = pestProjectPath else { return nil }
+        return pestState.routines.first { $0.projectPath == path }
+    }
+
+    var pestNextRunDate: Date? {
+        pestScheduler?.nextRunDate()
+    }
+
+    var latestNetworkReport: NetworkReport? {
+        networkReport ?? networkState.latest
+    }
+
+    var canRunNetwork: Bool {
+        !isNetworkRunning
+    }
+
     func start() {
         LaunchAtLogin.migrateLegacy()
         LaunchAtLogin.refreshIfEnabled()
         authStatus = authStore.status()
         launchAtLoginEnabled = LaunchAtLogin.isEnabled
         startScheduler()
+        startPestScheduler()
 
         guard settings.hasCompletedOnboarding, !settings.folders.isEmpty else {
             return
@@ -173,11 +243,15 @@ final class AppModel: ObservableObject {
 
     func stop() {
         scheduler?.stop()
+        pestScheduler?.stop()
         toastTask?.cancel()
         previewTask?.cancel()
         exclusionRescanTask?.cancel()
         redTeamTask?.cancel()
         redTeamProjectsTask?.cancel()
+        pestTask?.cancel()
+        pestProjectsTask?.cancel()
+        networkTask?.cancel()
     }
 
     func panelOpened() {
@@ -351,6 +425,433 @@ final class AppModel: ObservableObject {
         isRedTeamRunning = false
         redTeamProgress = nil
         showToast("Análise Red Teaming cancelada")
+    }
+
+    func loadPestProjects() {
+        guard !isLoadingPestProjects else { return }
+        isLoadingPestProjects = true
+        let folders = settings.folders
+        let excludedPaths = settings.excludedPaths
+        pestProjectsTask?.cancel()
+        pestProjectsTask = Task { [weak self] in
+            let discovery = await Task.detached(priority: .userInitiated) {
+                ProjectScanner().preview(folders: folders, excludedPaths: excludedPaths)
+            }.value
+            guard !Task.isCancelled else {
+                self?.isLoadingPestProjects = false
+                return
+            }
+            guard let self else { return }
+
+            self.pestProjects = discovery.projects
+                .map(\.ref)
+                .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+            self.isLoadingPestProjects = false
+
+            let paths = Set(self.pestProjects.map(\.path))
+            if let current = self.pestProjectPath, !paths.contains(current) {
+                self.pestProjectPath = nil
+            }
+            if self.pestProjectPath == nil {
+                let preferredPath = self.pestState.routines.first?.projectPath
+                    ?? self.report?.alerts.first?.project.path
+                self.pestProjectPath = self.pestProjects
+                    .first(where: { $0.path == preferredPath })?
+                    .path ?? self.pestProjects.first?.path
+            }
+            self.pestReport = self.pestProjectPath.flatMap { path in
+                self.pestState.reports.first { $0.projectPath == path }
+            }
+            if self.pestProjects.isEmpty {
+                self.pestError = discovery.warnings.first
+            }
+        }
+    }
+
+    func selectPestProject(_ path: String) {
+        pestProjectPath = path
+        pestReport = pestState.reports.first { $0.projectPath == path }
+        pestError = nil
+    }
+
+    func startPest(resume: Bool = false) {
+        guard !isPestRunning else { return }
+        guard let project = selectedPestProject else {
+            pestError = "Selecione um projeto para analisar."
+            return
+        }
+        let resumeState = resume ? selectedPestReport?.resumeState : nil
+        if resume, resumeState == nil {
+            pestError = "Não há uma análise pausada para retomar."
+            return
+        }
+        pestTask?.cancel()
+        pestTask = Task { [weak self] in
+            await self?.performPest(
+                project: project,
+                useLLM: self?.pestUseAI == true,
+                routine: nil,
+                resume: resumeState
+            )
+        }
+    }
+
+    func cancelPest() {
+        pestRunID = UUID()
+        pestTask?.cancel()
+        pestTask = nil
+        isPestRunning = false
+        pestProgress = nil
+        showToast("Análise Pest cancelada")
+    }
+
+    func copyPestFixPrompt(_ finding: PestFinding) {
+        copyText(Vocabulary.prompt(finding.fixPrompt), toast: "Prompt de correção copiado")
+    }
+
+    func copyPestSummary(_ report: PestReport) {
+        let lines = [
+            "Pest · \(report.projectName)",
+            report.summary,
+            "",
+            report.findings.map { finding in
+                "[\(finding.severity.label.uppercased())] \(finding.title) · \(finding.file)\(finding.line.map { ":\($0)" } ?? "")"
+            }.joined(separator: "\n")
+        ]
+        copyText(lines.joined(separator: "\n"), toast: "Resumo do Pest copiado")
+    }
+
+    func startNetworkAnalysis() {
+        guard !isNetworkRunning else { return }
+        networkTask?.cancel()
+
+        let runID = UUID()
+        networkRunID = runID
+        isNetworkRunning = true
+        networkError = nil
+        networkProgress = NetworkProgress(
+            phase: "Preparando",
+            detail: "Lendo a rede atual sem capturar tráfego.",
+            fraction: 0.01
+        )
+
+        let context = NetworkAuditContext(isPublicNetwork: networkIsPublic)
+        let service = networkService
+        networkTask = Task { [weak self] in
+            let report = await service.analyze(context: context) { [weak self] progress in
+                Task { @MainActor [weak self] in
+                    guard let self, self.networkRunID == runID else { return }
+                    self.networkProgress = progress
+                }
+            }
+            guard let self, self.networkRunID == runID else { return }
+            self.finishNetwork(report)
+        }
+    }
+
+    func cancelNetworkAnalysis() {
+        networkRunID = UUID()
+        networkTask?.cancel()
+        networkTask = nil
+        isNetworkRunning = false
+        networkProgress = nil
+        showToast("Análise da rede cancelada")
+    }
+
+    func copyNetworkFixPrompt(_ finding: NetworkFinding) {
+        copyText(Vocabulary.prompt(finding.fixPrompt), toast: "Prompt de correção copiado")
+    }
+
+    func copyNetworkGeneralPrompt(_ report: NetworkReport) {
+        copyText(
+            Vocabulary.prompt(NetworkPromptBuilder.generalPrompt(for: report)),
+            toast: "Prompt geral da rede copiado"
+        )
+    }
+
+    func copyNetworkSummary(_ report: NetworkReport) {
+        var lines = [
+            "Minha rede",
+            report.summary,
+            "",
+            report.assurance
+        ]
+        if !report.findings.isEmpty {
+            lines.append("")
+            lines.append("Pontos de atenção:")
+            lines.append(contentsOf: report.findings.map { finding in
+                "[\(finding.severity.label.uppercased())] \(finding.title) · \(finding.target)"
+            })
+        }
+        if !report.scenarios.isEmpty {
+            lines.append("")
+            lines.append("Cenários:")
+            lines.append(contentsOf: report.scenarios.map { scenario in
+                "\(scenario.status.label): \(scenario.title). \(scenario.explanation)"
+            })
+        }
+        copyText(lines.joined(separator: "\n"), toast: "Resumo da rede copiado")
+    }
+
+    private func finishNetwork(_ report: NetworkReport) {
+        var state = networkState
+        state.addReport(report)
+        networkState = state
+        store.saveNetworkState(state)
+        networkReport = report
+        isNetworkRunning = false
+        networkProgress = nil
+        networkError = nil
+
+        showToast(
+            report.findings.isEmpty
+                ? "Rede verificada sem achados"
+                : "Rede verificada: \(Vocabulary.quantity(report.findings.count, "ponto de atenção", "pontos de atenção"))"
+        )
+        if settings.notifyOnFindings, !report.findings.isEmpty {
+            NotificationService.notifyNetwork(report)
+        }
+    }
+
+    func pestRoutineConflict(
+        hour: Int,
+        minute: Int,
+        projectPath: String,
+        excluding id: UUID? = nil
+    ) -> String? {
+        PestRoutinePlanner.conflict(
+            hour: hour,
+            minute: minute,
+            projectPath: projectPath,
+            routines: pestState.routines,
+            excluding: id
+        )
+    }
+
+    @discardableResult
+    func savePestRoutine(
+        project: ProjectRef,
+        hour: Int,
+        minute: Int,
+        useLLM: Bool
+    ) -> String? {
+        let normalizedHour = min(23, max(0, hour))
+        let normalizedMinute = min(59, max(0, minute))
+        let existing = pestState.routines.first { $0.projectPath == project.path }
+        if let conflict = pestRoutineConflict(
+            hour: normalizedHour,
+            minute: normalizedMinute,
+            projectPath: project.path,
+            excluding: existing?.id
+        ) {
+            return conflict
+        }
+
+        var state = pestState
+        if let index = state.routines.firstIndex(where: { $0.projectPath == project.path }) {
+            state.routines[index].projectName = project.name
+            state.routines[index].hour = normalizedHour
+            state.routines[index].minute = normalizedMinute
+            state.routines[index].useLLM = useLLM
+            state.routines[index].enabled = true
+            state.routines[index].updatedAt = Date()
+        } else {
+            state.routines.append(
+                PestRoutine(
+                    projectPath: project.path,
+                    projectName: project.name,
+                    hour: normalizedHour,
+                    minute: normalizedMinute,
+                    useLLM: useLLM
+                )
+            )
+        }
+        state.routines.sort { $0.timeLabel < $1.timeLabel }
+        pestState = state
+        persistPestState()
+        showToast("Rotina Pest salva")
+        return nil
+    }
+
+    @discardableResult
+    func updatePestRoutine(
+        id: UUID,
+        hour: Int,
+        minute: Int,
+        useLLM: Bool,
+        enabled: Bool
+    ) -> String? {
+        guard let index = pestState.routines.firstIndex(where: { $0.id == id }) else {
+            return "Rotina não encontrada."
+        }
+        let current = pestState.routines[index]
+        let normalizedHour = min(23, max(0, hour))
+        let normalizedMinute = min(59, max(0, minute))
+        if enabled,
+           let conflict = pestRoutineConflict(
+               hour: normalizedHour,
+               minute: normalizedMinute,
+               projectPath: current.projectPath,
+               excluding: id
+           ) {
+            return conflict
+        }
+
+        var state = pestState
+        state.routines[index].hour = normalizedHour
+        state.routines[index].minute = normalizedMinute
+        state.routines[index].useLLM = useLLM
+        state.routines[index].enabled = enabled
+        state.routines[index].updatedAt = Date()
+        state.routines.sort { $0.timeLabel < $1.timeLabel }
+        pestState = state
+        persistPestState()
+        showToast(enabled ? "Rotina Pest atualizada" : "Rotina Pest pausada")
+        return nil
+    }
+
+    func setPestRoutineEnabled(id: UUID, enabled: Bool) {
+        guard let routine = pestState.routines.first(where: { $0.id == id }) else { return }
+        _ = updatePestRoutine(
+            id: id,
+            hour: routine.hour,
+            minute: routine.minute,
+            useLLM: routine.useLLM,
+            enabled: enabled
+        )
+    }
+
+    func removePestRoutine(id: UUID) {
+        var state = pestState
+        state.routines.removeAll { $0.id == id }
+        pestState = state
+        persistPestState()
+        showToast("Rotina Pest removida")
+    }
+
+    private func performPest(
+        project: ProjectRef,
+        useLLM: Bool,
+        routine: PestRoutine?,
+        resume: PestResumeState?
+    ) async {
+        guard !isPestRunning else { return }
+
+        let runID = UUID()
+        pestRunID = runID
+        isPestRunning = true
+        pestError = nil
+        pestProgress = PestProgress(
+            phase: resume == nil ? "Preparando" : "Retomando",
+            detail: resume == nil
+                ? "Mapeando arquivos com orçamento de memória."
+                : "Retomando a análise pausada.",
+            fraction: 0.01
+        )
+
+        let startedAt = Date()
+        var state = pestState
+        state.lastRunAt = startedAt
+        if let routine,
+           let index = state.routines.firstIndex(where: { $0.id == routine.id }) {
+            state.routines[index].lastRunAt = startedAt
+            state.routines[index].updatedAt = startedAt
+        }
+        pestState = state
+        persistPestState()
+
+        let service = pestService
+        let routineID = routine?.id
+        do {
+            let report = try await service.analyze(
+                project: project,
+                useLLM: useLLM && authStatus.connected,
+                routineID: routineID,
+                resume: resume
+            ) { [weak self] progress in
+                Task { @MainActor in
+                    self?.pestProgress = progress
+                }
+            }
+            guard pestRunID == runID else { return }
+            finishPest(report, routineID: routineID)
+        } catch is CancellationError {
+            guard pestRunID == runID else { return }
+            isPestRunning = false
+            pestProgress = nil
+        } catch {
+            guard pestRunID == runID else { return }
+            isPestRunning = false
+            pestProgress = nil
+            pestError = error.localizedDescription
+        }
+    }
+
+    private func finishPest(_ report: PestReport, routineID: UUID?) {
+        var state = pestState
+        state.addReport(report)
+        if let routineID,
+           let index = state.routines.firstIndex(where: { $0.id == routineID }) {
+            state.routines[index].lastReportID = report.id
+            state.routines[index].lastRunAt = report.startedAt
+            state.routines[index].updatedAt = Date()
+        }
+        pestState = state
+        persistPestState()
+
+        if pestProjectPath == nil || pestProjectPath == report.projectPath {
+            pestReport = report
+        }
+        isPestRunning = false
+        pestProgress = nil
+
+        if report.paused {
+            let reason = report.pauseReason ?? "memória insuficiente"
+            pestError = "Pest pausou: \(reason)"
+            showToast("Pest pausou. Abra o relatório para retomar.")
+            NotificationService.notifyPestPaused(report)
+        } else {
+            pestError = nil
+            showToast(
+                report.findings.isEmpty
+                    ? "Pest concluído sem achados"
+                    : "Pest concluído: \(report.findings.count) achado(s)"
+            )
+            if settings.notifyOnFindings, !report.findings.isEmpty {
+                NotificationService.notifyPest(report)
+            }
+        }
+    }
+
+    private func persistPestState() {
+        store.savePestState(pestState)
+        pestScheduler?.update(
+            routines: pestState.routines,
+            lastRunAt: pestState.lastRunAt
+        )
+    }
+
+    private func startPestScheduler() {
+        if pestScheduler == nil {
+            pestScheduler = PestScheduler(
+                routines: pestState.routines,
+                lastRunAt: pestState.lastRunAt
+            ) { [weak self] routine in
+                guard let self else { return }
+                await self.performPest(
+                    project: routine.project,
+                    useLLM: routine.useLLM,
+                    routine: routine,
+                    resume: nil
+                )
+            }
+        } else {
+            pestScheduler?.update(
+                routines: pestState.routines,
+                lastRunAt: pestState.lastRunAt
+            )
+        }
+        pestScheduler?.start()
     }
 
     func updateSettings(_ draft: AppSettings, announce: Bool = true) {

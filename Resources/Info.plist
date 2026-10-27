@@ -9,9 +9,9 @@
     <key>CFBundleIdentifier</key>
     <string>com.culturabuilder.buildersprotect</string>
     <key>CFBundleVersion</key>
-    <string>1.1.3</string>
+    <string>1.2.0</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.1.3</string>
+    <string>1.2.0</string>
     <key>CFBundleExecutable</key>
     <string>CVEBuilder</string>
     <key>CFBundlePackageType</key>
@@ -36,5 +36,12 @@
     <string>O Builders Protect lê os lockfiles dos projetos que você escolher para verificar vulnerabilidades conhecidas.</string>
     <key>NSAppleEventsUsageDescription</key>
     <string>O Builders Protect abre o Terminal para iniciar o login da Cultura Builder quando você pedir.</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>O Builders Protect consulta o endereço do seu roteador para explicar a proteção da rede local. Nenhum tráfego é gravado ou enviado.</string>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
 </dict>
 </plist>

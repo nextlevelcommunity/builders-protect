@@ -4,6 +4,8 @@ import SwiftUI
 
 enum SettingsSection: String, CaseIterable, Identifiable {
     case analysis
+    case pest
+    case network
     case redTeam
     case account
     case folders
@@ -15,6 +17,8 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .analysis: return "Análises"
+        case .pest: return "Pest"
+        case .network: return "Minha rede"
         case .redTeam: return "Red Teaming"
         case .account: return "Conta"
         case .folders: return "Pastas"
@@ -26,6 +30,8 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .analysis: return "doc.text.magnifyingglass"
+        case .pest: return "scope"
+        case .network: return "wifi"
         case .redTeam: return "shield.lefthalf.filled"
         case .account: return "person.crop.circle"
         case .folders: return "folder"
@@ -56,6 +62,10 @@ struct SettingsView: View {
                 .frame(width: 1)
             if section == .analysis {
                 AnalysisPanelView(model: model)
+            } else if section == .pest {
+                PestView(model: model)
+            } else if section == .network {
+                NetworkView(model: model)
             } else if section == .redTeam {
                 RedTeamView(model: model)
             } else {
@@ -194,6 +204,10 @@ struct SettingsView: View {
                 switch section {
                 case .analysis:
                     EmptyView()
+                case .pest:
+                    EmptyView()
+                case .network:
+                    EmptyView()
                 case .redTeam:
                     EmptyView()
                 case .account:
@@ -231,6 +245,10 @@ struct SettingsView: View {
         switch section {
         case .analysis:
             return "Resultados da última varredura e o que corrigir primeiro."
+        case .pest:
+            return "Análise de segurança do código, guiada pelo catálogo Nuclei."
+        case .network:
+            return "Uma leitura local da sua Wi-Fi, do roteador e dos serviços visíveis."
         case .redTeam:
             return "Análise profunda de um projeto, com consentimento explícito."
         case .account:
@@ -334,7 +352,7 @@ struct SettingsView: View {
             NoticeCard(
                 kind: .info,
                 title: "O que vai para a Cultura Builder",
-                message: "O diagnóstico recebe nomes, versões, vulnerabilidades e caminhos dos projetos. Nenhum código-fonte, segredo ou arquivo .env é enviado. O Red Teaming está em breve e, quando ativado, enviará código somente após sua autorização."
+                message: "O diagnóstico de dependências recebe nomes, versões, vulnerabilidades e caminhos dos projetos, sem código-fonte. O Pest só envia código e configuração após sua autorização, com redaction de segredos. O Red Teaming está em breve."
             )
 
             if let path = model.authStatus.authFilePath {
@@ -654,7 +672,7 @@ struct SettingsView: View {
                 aboutRow(
                     symbol: "lock.shield",
                     title: "Privacidade",
-                    detail: "A varredura envia nomes, versões e lockfiles. Nenhum código-fonte sai do Mac. O Red Teaming está em breve."
+                    detail: "A varredura de dependências envia nomes, versões e lockfiles, sem código-fonte. O Pest e o Red Teaming têm consentimento próprio."
                 )
                 Divider().overlay(CBTheme.hairline)
                 aboutRow(

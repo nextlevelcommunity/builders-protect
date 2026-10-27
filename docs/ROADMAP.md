@@ -7,6 +7,8 @@
 - GitHub Action com resumo, JSON e SARIF.
 - Rotinas diárias, semanais e mensais via cron.
 - Diagnóstico com IA para assinantes no app.
+- Pest: análise estática de código por projeto, com catálogo Nuclei destilado, prompts de correção, rotinas e LLM opcional.
+- Minha rede: leitura local e passiva de Wi-Fi, roteador, dispositivos e serviços do Mac, com explicações leigas e cenários condicionais.
 
 ## Em preparação
 
@@ -21,11 +23,13 @@
 - Regras de priorização por criticidade e exposição.
 - Integração com outros fluxos de CI.
 - Relatórios comparativos entre execuções.
+- Histórico visual e comparativo das checagens de rede.
+- Mais sinais locais para o Pest, sem aumentar o consumo de memória.
 
 ## Fora do escopo atual
 
 - Correção automática de dependências.
-- Pentest ou análise de infraestrutura.
+- Pentest, análise de infraestrutura externa ou monitoramento contínuo de tráfego. Minha rede é uma leitura local, não um serviço de detecção de invasão.
 - Substituição de revisão de código.
 - Interface desktop Windows/Linux nesta versão.
 

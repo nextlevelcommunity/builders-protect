@@ -13,7 +13,8 @@ let package = Package(
     targets: [
         .target(
             name: "CVECore",
-            path: "Sources/CVECore"
+            path: "Sources/CVECore",
+            resources: [.copy("Resources/PestKnowledge.json")]
         ),
         .executableTarget(
             name: "CVEBuilder",

@@ -88,6 +88,7 @@ extension String {
 
 struct LimeButtonStyle: ButtonStyle {
     var fullWidth = false
+    @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -104,7 +105,7 @@ struct LimeButtonStyle: ButtonStyle {
                 ),
                 in: RoundedRectangle(cornerRadius: 10, style: .continuous)
             )
-            .opacity(configuration.isPressed ? 0.78 : 1)
+            .opacity(isEnabled ? (configuration.isPressed ? 0.78 : 1) : 0.35)
             .scaleEffect(configuration.isPressed ? 0.985 : 1)
     }
 }
@@ -112,6 +113,7 @@ struct LimeButtonStyle: ButtonStyle {
 struct SurfaceButtonStyle: ButtonStyle {
     var fullWidth = false
     var tint: Color = CBTheme.text
+    @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -124,7 +126,7 @@ struct SurfaceButtonStyle: ButtonStyle {
                 CBTheme.surfaceStrong,
                 in: RoundedRectangle(cornerRadius: 10, style: .continuous)
             )
-            .opacity(configuration.isPressed ? 0.7 : 1)
+            .opacity(isEnabled ? (configuration.isPressed ? 0.7 : 1) : 0.35)
     }
 }
 

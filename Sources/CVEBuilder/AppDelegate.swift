@@ -499,8 +499,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUs
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
+        let userInfo = response.notification.request.content.userInfo
+        let opensNetwork = userInfo["openNetwork"] as? Bool == true
+        let opensPest = userInfo["openPest"] as? Bool == true
         Task { @MainActor [weak self] in
-            self?.showPopover()
+            guard let self else { return }
+            if opensNetwork {
+                self.openSettings(section: .network)
+            } else if opensPest {
+                self.openSettings(section: .pest)
+            } else {
+                self.showPopover()
+            }
         }
         completionHandler()
     }

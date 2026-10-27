@@ -171,6 +171,122 @@ public final class LLMClient: @unchecked Sendable {
         return try parseRedTeam(content)
     }
 
+    public func analyzePest(
+        project: ProjectRef,
+        checks: [PestCheck],
+        files: [PestSourceFile],
+        chunkIndex: Int,
+        chunkCount: Int
+    ) async throws -> PestLLMResult {
+        let token: String
+        do {
+            token = try await authStore.validAccessToken()
+        } catch {
+            throw LLMError.authUnavailable(error.localizedDescription)
+        }
+
+        let payload = try makePestPayload(
+            project: project,
+            checks: checks,
+            files: files,
+            chunkIndex: chunkIndex,
+            chunkCount: chunkCount
+        )
+        let system = """
+        Você é o Pest, revisor sênior de segurança de aplicações do Builders Protect, da Cultura Builder.
+        O checklist abaixo foi destilado do catálogo de templates do ProjectDiscovery Nuclei. Use-o como guia, não como prova.
+        Analise SOMENTE os arquivos fornecidos e procure brechas reais, oportunidades de hardening e configurações perigosas.
+
+        Prioridades:
+        - Bypass de autenticação e autorização, IDOR, escalada de privilégio, tenant isolation.
+        - Injection (SQL, comando, template, header, desserialização), SSRF, path traversal, upload inseguro.
+        - XSS, CSRF, CORS permissivo, exposição de dados, criptografia fraca, JWT inseguro.
+        - Segredos embutidos, validação insuficiente, race conditions e configuração insegura.
+        - Qualquer caminho em que dados externos cheguem a uma operação perigosa sem validação.
+
+        Regras obrigatórias:
+        - Responda SOMENTE com um objeto JSON válido, sem markdown, sem comentários e sem cercas de código.
+        - Use apenas evidências presentes nos arquivos. Nunca invente arquivo, linha, trecho ou falha.
+        - Se a evidência for indireta, use confidence "baixa" e explique a limitação no campo impact.
+        - Cite o caminho relativo exato e uma linha aproximada. O campo evidence deve ter um trecho curto e literal.
+        - Use um check_id exatamente igual a um id do checklist. Se nenhum se aplicar, use "pest-manual".
+        - Não reporte dependências desatualizadas, CVEs de pacotes ou problemas já cobertos pela análise de lockfiles.
+        - Não inclua segredos, tokens ou valores sensíveis na resposta.
+        - Máximo de 8 achados por bloco, priorizando impacto e confiança.
+        - Todo achado precisa de fix_prompt completo, pronto para colar em um agente de código.
+        - Escreva em português do Brasil, de forma direta e técnica.
+        - Se não houver achados, devolva findings vazio e um summary explicando o que foi revisado.
+
+        Formato exato:
+        {"summary":"resumo do que foi revisado e do risco geral","findings":[{"check_id":"id-do-checklist","severity":"critical|high|medium|low","title":"falha curta","file":"caminho/relativo.ext","line":123,"evidence":"trecho literal curto","impact":"o que um atacante consegue fazer","recommendation":"correção concreta","fix_prompt":"prompt completo para o agente corrigir","confidence":"alta|media|baixa"}],"limitations":["limite da análise"]}
+        """
+
+        let user = """
+        Projeto: \(project.name)
+        Caminho: \(project.path)
+        Bloco \(chunkIndex) de \(chunkCount).
+
+        Use o checklist e os arquivos abaixo. Procure brechas e oportunidades de hardening.
+        \(payload)
+        """
+
+        let content = try await completePest(system: system, user: user, token: token)
+        return try parsePest(
+            content,
+            project: project,
+            checks: checks,
+            allowedPaths: Set(files.map(\.path))
+        )
+    }
+
+    private func completePest(
+        system: String,
+        user: String,
+        token: String
+    ) async throws -> String {
+        do {
+            return try await requestCompletion(
+                system: system,
+                user: user,
+                token: token,
+                jsonMode: true,
+                maxTokens: 6_000,
+                timeout: 240,
+                reasoningEffort: "low",
+                temperature: 0.1
+            )
+        } catch LLMError.requestFailed(let message) where message.contains("400") {
+            return try await requestCompletion(
+                system: system,
+                user: user,
+                token: token,
+                jsonMode: false,
+                maxTokens: 6_000,
+                timeout: 240,
+                reasoningEffort: "low",
+                temperature: 0.1
+            )
+        } catch LLMError.requestFailed(let message)
+            where message.contains("401") || message.contains("403") {
+            let refreshed: String
+            do {
+                refreshed = try await authStore.forceRefresh()
+            } catch {
+                throw LLMError.authUnavailable(error.localizedDescription)
+            }
+            return try await requestCompletion(
+                system: system,
+                user: user,
+                token: refreshed,
+                jsonMode: true,
+                maxTokens: 6_000,
+                timeout: 240,
+                reasoningEffort: "low",
+                temperature: 0.1
+            )
+        }
+    }
+
     private func completeRedTeam(
         system: String,
         user: String,
@@ -419,6 +535,153 @@ public final class LLMClient: @unchecked Sendable {
             options: [.prettyPrinted, .sortedKeys]
         )
         return String(data: data, encoding: .utf8) ?? "{}"
+    }
+
+    private func makePestPayload(
+        project: ProjectRef,
+        checks: [PestCheck],
+        files: [PestSourceFile],
+        chunkIndex: Int,
+        chunkCount: Int
+    ) throws -> String {
+        let checklist: [[String: Any]] = checks.map { check in
+            [
+                "id": check.id,
+                "titulo": check.title,
+                "categoria": check.category,
+                "severidade": check.severity.rawValue,
+                "tags": check.tags,
+                "orientacao": check.guidance,
+                "correcao": check.remediation,
+                "nuclei": check.nuclei,
+                "nuclei_id": check.nucleiID
+            ]
+        }
+        let payload: [String: Any] = [
+            "projeto": [
+                "nome": project.name,
+                "caminho": project.path
+            ],
+            "bloco": "\(chunkIndex) de \(chunkCount)",
+            "checklist": checklist,
+            "arquivos": files.map { file in
+                [
+                    "caminho": file.path,
+                    "bytes": file.bytes,
+                    "truncado": file.truncated,
+                    "conteudo": file.content
+                ]
+            }
+        ]
+        let data = try JSONSerialization.data(
+            withJSONObject: payload,
+            options: [.sortedKeys]
+        )
+        return String(data: data, encoding: .utf8) ?? "{}"
+    }
+
+    private func parsePest(
+        _ content: String,
+        project: ProjectRef,
+        checks: [PestCheck],
+        allowedPaths: Set<String>
+    ) throws -> PestLLMResult {
+        let json = Self.extractJSONObject(from: content)
+        guard let data = json.data(using: .utf8),
+              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw LLMError.invalidResponse("Não consegui interpretar o relatório do Pest.")
+        }
+
+        let rawSummary = (root["summary"] as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let summary = PestReader.redact(rawSummary).text
+        let limitations = (root["limitations"] as? [String] ?? [])
+            .map { PestReader.redact($0.trimmingCharacters(in: .whitespacesAndNewlines)).text }
+            .filter { !$0.isEmpty }
+
+        let checkByID = Dictionary(uniqueKeysWithValues: checks.map { ($0.id, $0) })
+        var findings: [PestFinding] = []
+        for item in (root["findings"] as? [[String: Any]] ?? []) {
+            let title = (item["title"] as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let file = (item["file"] as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            guard !title.isEmpty, !file.isEmpty else { continue }
+            guard allowedPaths.contains(file) else { continue }
+
+            let rawCheckID = (item["check_id"] as? String)
+                ?? (item["check"] as? String)
+                ?? "pest-manual"
+            let check = checkByID[rawCheckID]
+            let severity = parseRedTeamSeverity(item["severity"] as? String)
+            let rawLine = (item["line"] as? NSNumber)?.intValue
+                ?? (item["line"] as? String).flatMap(Int.init)
+            let line = rawLine.map { max(1, $0) }
+            let evidence = (item["evidence"] as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let impact = (item["impact"] as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let recommendation = (item["recommendation"] as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let confidence = (item["confidence"] as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? "media"
+            let rawFixPrompt = (item["fix_prompt"] as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+            let category = check?.category ?? "Pest"
+            let nuclei = check?.nuclei
+            let fallbackCheck = PestCheck(
+                id: rawCheckID,
+                title: title,
+                category: category,
+                severity: severity,
+                nuclei: nuclei ?? "",
+                nucleiID: check?.nucleiID ?? "",
+                tags: [],
+                languages: [],
+                fileHints: [],
+                guidance: impact,
+                remediation: recommendation,
+                patterns: []
+            )
+            let fixPrompt = rawFixPrompt.isEmpty
+                ? PestPromptBuilder.fixPrompt(
+                    project: project,
+                    check: check ?? fallbackCheck,
+                    file: file,
+                    line: line,
+                    evidence: PestReader.maskEvidence(evidence)
+                )
+                : rawFixPrompt
+
+            findings.append(
+                PestFinding(
+                    severity: severity,
+                    title: title,
+                    checkID: rawCheckID,
+                    category: category,
+                    nuclei: nuclei,
+                    file: file,
+                    line: line,
+                    evidence: PestReader.maskEvidence(evidence, limit: 600),
+                    impact: String(impact.prefix(1_400)),
+                    recommendation: String(recommendation.prefix(1_400)),
+                    fixPrompt: String(fixPrompt.prefix(4_000)),
+                    confidence: confidence.lowercased(),
+                    source: .ia
+                )
+            )
+        }
+
+        guard !summary.isEmpty || !findings.isEmpty else {
+            throw LLMError.invalidResponse("O Pest devolveu um relatório vazio.")
+        }
+
+        return PestLLMResult(
+            summary: summary,
+            findings: Array(findings.prefix(8)),
+            limitations: Array(limitations.prefix(6))
+        )
     }
 
     private func parseRedTeam(_ content: String) throws -> RedTeamLLMResult {

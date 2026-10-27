@@ -6,15 +6,31 @@ Os dois. O app macOS é distribuído como DMG. A CLI e a GitHub Action são para
 
 ## Preciso ser assinante da Cultura Builder?
 
-Para a varredura de dependências, CLI e GitHub Action, não. Para o diagnóstico com IA e o Red Teaming no app, sim.
+Para a varredura de dependências, CLI, GitHub Action, Pest local e Minha rede, não. Para o diagnóstico com IA, o Pest com IA e o Red Teaming no app, sim.
 
 ## O que é enviado?
 
 A varredura de dependências envia nomes, versões e o conteúdo dos lockfiles. Não envia código-fonte, `.env`, chaves ou credenciais.
 
-O diagnóstico com IA envia os achados e metadados do projeto, não o código.
+O diagnóstico de dependências com IA envia os achados e metadados do projeto, não o código.
+
+O Pest local não envia nada. O Pest com IA só envia trechos de código e configuração do projeto escolhido depois de consentimento explícito, em blocos pequenos e com segredos reconhecíveis mascarados. `.env`, chaves, binários, lockfiles e dependências instaladas ficam de fora.
+
+Minha rede não envia dados para a Cultura Builder. Ela faz uma consulta local ao endereço do roteador e não captura tráfego.
 
 O Red Teaming, quando liberado, enviará somente os arquivos selecionados após consentimento explícito.
+
+## O que é o Pest?
+
+É uma revisão de segurança do código do projeto, guiada por um catálogo destilado de templates do Nuclei. A análise local é estática: não executa o projeto, não instala dependências e não faz requisições ao alvo. Cada achado vem com explicação, recomendação e um prompt de correção. A IA é opcional e exige consentimento.
+
+## O que é Minha rede?
+
+É uma checagem local da Wi-Fi, do roteador, dos dispositivos conhecidos e dos serviços do Mac visíveis na rede. Ela explica o que está confirmado, o que é possível e o que não pôde ser verificado. Não é um scanner de vulnerabilidades nem um teste de invasão: não captura tráfego, não testa senhas e não entra no painel do roteador.
+
+## Minha rede consegue saber se alguém invadiu meu Wi-Fi?
+
+Não. Ela tira uma foto das configurações e dos serviços visíveis naquele momento. Pode mostrar uma exposição, como uma rede aberta ou um serviço escutando para a rede, mas não prova que alguém entrou, interceptou tráfego ou capturou uma senha. Para investigação de incidente, é necessário um trabalho específico de resposta a incidentes.
 
 ## O Red Teaming já está disponível?
 
@@ -33,7 +49,7 @@ A CLI e a GitHub Action funcionam nos três sistemas. A interface desktop para W
 | App | Action |
 | --- | --- |
 | Interface, agendamento local, notificações | Execução em PR, push ou cron |
-| Diagnóstico com IA para assinantes | Varredura de dependências |
+| Pest local, Minha rede, diagnóstico com IA | Varredura de dependências |
 | Red Teaming em preparação | SARIF e resumo no job |
 | macOS | Linux, Windows e macOS |
 

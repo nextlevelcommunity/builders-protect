@@ -512,7 +512,7 @@ struct AnalysisPanelView: View {
                 .font(.system(size: 11, weight: .regular))
                 .foregroundStyle(CBTheme.lime)
                 .padding(.top, 1)
-            Text("A varredura envia apenas nomes, versões e lockfiles. Nenhum código-fonte sai deste Mac.")
+            Text("A varredura de dependências envia apenas nomes, versões e lockfiles. O Pest tem consentimento próprio para código.")
                 .font(.system(size: 11, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
         }

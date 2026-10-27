@@ -49,6 +49,10 @@ Não desative o Gatekeeper globalmente.
 
 O app pede acesso às pastas que você escolher. Ele precisa ler manifests e lockfiles para encontrar dependências. O acesso é limitado às pastas autorizadas.
 
+Na primeira checagem de **Minha rede**, o macOS pode pedir permissão de rede local. Ela é usada para consultar o endereço do roteador e ler os serviços visíveis. O app não captura tráfego, não testa senhas e não envia dados da rede para a Cultura Builder.
+
+O **Pest** lê apenas o projeto escolhido. A análise local não envia arquivos. Se você ativar a IA e marcar o consentimento, trechos de código e configuração são redigidos e enviados à LLM privada da Cultura Builder.
+
 ### Abrir ao iniciar
 
 O app pode registrar um item de login do usuário. Para remover, desative a opção nas configurações do app ou remova o item em **Ajustes do Sistema > Geral > Itens de Login**.
@@ -60,6 +64,8 @@ No seu fork, atualize o código e rode `make install` novamente. Se preferir o b
 ```text
 ~/Library/Application Support/Builders Protect/
 ```
+
+O diretório contém `settings.json`, `report.json`, `pest.json` e `network.json`, com permissão restrita ao seu usuário.
 
 ### Desinstalação
 

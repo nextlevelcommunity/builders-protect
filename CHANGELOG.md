@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.0 — 2026-10-27
+
+- Novo Pest: análise de segurança de código por projeto, guiada por um catálogo destilado de templates do Nuclei.
+- O Pest combina análise estática local com revisão opcional da LLM privada da Cultura Builder, sempre com consentimento explícito.
+- O envio para IA usa blocos pequenos, redaction de segredos, orçamento de memória e validação de caminhos; `.env`, chaves, binários e dependências instaladas ficam de fora.
+- Cada achado do Pest inclui impacto, recomendação e um prompt de correção pronto para um agente.
+- Rotinas Pest diárias por projeto, com intervalo mínimo de 30 minutos, retomada após pausa por memória baixa e notificações.
+- Nova seção Minha rede: uma checagem local e passiva da Wi-Fi, do roteador, dos dispositivos conhecidos e dos serviços do Mac visíveis na rede.
+- O relatório de rede usa linguagem leiga e separa o que está confirmado agora, o que é possível no cenário e o que não pôde ser verificado.
+- Um prompt geral no topo do relatório reúne todas as correções da rede em um plano único e priorizado, além dos prompts por achado.
+- Minha rede não captura tráfego, não testa senhas, não entra no painel do roteador e deixa claro que uma checagem local não prova invasão.
+- O app agora inclui permissões de rede local e ATS restrito ao endereço local do roteador.
+- Textos de privacidade foram atualizados para diferenciar a varredura de dependências, o Pest e o Red Teaming.
+
 ## 1.1.3 — 2026-10-26
 
 - Painel rápido redesenhado, com tipografia maior, mais respiro e hierarquia mais clara.
