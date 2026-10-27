@@ -5,7 +5,7 @@ Este documento descreve o que o Builders Protect lê, envia e produz. Ele vale p
 ## Princípios
 
 - A varredura de dependências não envia código-fonte.
-- O Pest local não envia dados para fora do Mac. O Pest com IA é opt-in por análise e envia somente trechos de código e configuração do projeto escolhido, depois de redaction.
+- O Pest usa a IA da Cultura Builder em todas as análises. A varredura de arquivos é local, e o envio de trechos de código e configuração do projeto escolhido só acontece após consentimento na análise manual ou autorização ao salvar a rotina, sempre com redaction.
 - Minha rede é local e passiva: não envia dados para a Cultura Builder, não captura tráfego, não testa senhas e não entra no painel do roteador.
 - O Red Teaming é opt-in, por projeto, e será exclusivo para assinantes ativos.
 - Nenhum segredo é incluído nos relatórios.
@@ -17,13 +17,12 @@ Este documento descreve o que o Builders Protect lê, envia e produz. Ele vale p
 | --- | --- | --- | --- |
 | Varredura de dependências | Manifests e lockfiles das pastas autorizadas | Nome e conteúdo do lockfile, nomes e versões de pacotes | Código-fonte, `.env`, chaves, credenciais |
 | Diagnóstico de dependências com IA | Achados e metadados do projeto | Achados, nomes de pacotes, versões, caminhos e ecossistemas | Código-fonte, segredos |
-| Pest local | Código e configuração de texto do projeto escolhido | Nada | Conteúdo do projeto, segredos, binários |
-| Pest com IA | Código e configuração de texto do projeto escolhido | Blocos pequenos de texto, após consentimento e redaction | `.env`, chaves, credenciais reconhecíveis, binários, lockfiles, dependências instaladas, arquivos grandes |
+| Pest | Código e configuração de texto do projeto escolhido | Blocos pequenos de texto, após consentimento e redaction | `.env`, chaves, credenciais reconhecíveis, binários, lockfiles, dependências instaladas, arquivos grandes |
 | Minha rede | Configurações de rede do macOS, tabela ARP, DNS, serviços escutando e estado do firewall/FileVault | Nada para a Cultura Builder; uma consulta GET ao endereço local do roteador | Tráfego, senhas, conteúdo de navegação, dados de outros aparelhos |
 | Red Teaming | Arquivos selecionados do projeto | Somente arquivos selecionados, após consentimento | Credenciais, arquivos ignorados, arquivos fora do projeto |
 | GitHub Action | Workspace do repositório | Lockfiles para a base de vulnerabilidades | Código-fonte, segredos, tokens do GitHub |
 
-Lockfiles podem conter nomes de pacotes internos e URLs de registries privados. Trate o relatório e os artefatos gerados como informação interna. O Pest com IA também pode receber trechos de código; use o consentimento por análise e revise o escopo antes de autorizar.
+Lockfiles podem conter nomes de pacotes internos e URLs de registries privados. Trate o relatório e os artefatos gerados como informação interna. O Pest também pode receber trechos de código; use o consentimento por análise e revise o escopo antes de autorizar.
 
 ## Base de vulnerabilidades
 
@@ -33,9 +32,9 @@ A consulta usa apenas os dados necessários para identificar vulnerabilidades co
 
 ## IA e assinatura
 
-O diagnóstico de dependências com IA, o Pest com IA e o Red Teaming usam os modelos de segurança da Cultura Builder. O acesso é restrito a assinantes ativos.
+O diagnóstico de dependências com IA, o Pest e o Red Teaming usam os modelos de segurança da Cultura Builder. O acesso é restrito a assinantes ativos.
 
-No Pest, a IA é opcional. A análise local continua disponível sem conta. Quando a IA está conectada, o app pede consentimento antes de enviar blocos de texto; `.env`, chaves, credenciais reconhecíveis, binários, lockfiles, dependências instaladas e arquivos grandes são ignorados ou mascarados. O parser valida os caminhos retornados pela LLM contra os arquivos permitidos.
+No Pest, a IA é obrigatória. Sem a conta conectada, a análise não começa. O app pede consentimento antes de enviar blocos de texto em cada análise manual; salvar uma rotina autoriza a execução diária daquele projeto. `.env`, chaves, credenciais reconhecíveis, binários, lockfiles, dependências instaladas e arquivos grandes são ignorados ou mascarados. O parser valida os caminhos retornados pela LLM contra os arquivos permitidos.
 
 Quando o Red Teaming for liberado:
 

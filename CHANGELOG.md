@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.2 — 2026-10-27
+
+- O Pest agora mantém uma lista de projetos escolhidos, com análise e rotina por projeto, sem precisar procurar a pasta a cada uso.
+- A lista mostra o horário da rotina de cada projeto e permite analisar ou configurar a rotina diretamente na linha.
+- Rotinas configuradas podem ser executadas manualmente pelo botão de play e continuam respeitando pelo menos 30 minutos entre execuções.
+- O Pest agora usa IA obrigatoriamente: o toggle "Usar IA quando disponível" foi removido e, sem a conta conectada, a análise não começa.
+- A próxima execução exibida para o projeto selecionado agora considera a rotina daquele projeto, não a próxima execução global.
+
 ## 1.2.1 — 2026-10-27
 
 - Pastas ignoradas em Ajustes > Pastas agora valem para todas as análises: varredura de dependências, Pest e Red Teaming.

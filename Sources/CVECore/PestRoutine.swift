@@ -51,19 +51,57 @@ public struct PestRoutine: Codable, Identifiable, Hashable, Sendable {
 public struct PestState: Codable, Sendable {
     public var routines: [PestRoutine]
     public var reports: [PestReport]
+    public var activeProjectPaths: [String]
+    public var hasCustomizedActiveProjects: Bool
     public var lastRunAt: Date?
     public var updatedAt: Date
 
     public init(
         routines: [PestRoutine] = [],
         reports: [PestReport] = [],
+        activeProjectPaths: [String] = [],
+        hasCustomizedActiveProjects: Bool = false,
         lastRunAt: Date? = nil,
         updatedAt: Date = Date()
     ) {
         self.routines = routines
         self.reports = reports
+        self.activeProjectPaths = activeProjectPaths
+        self.hasCustomizedActiveProjects = hasCustomizedActiveProjects
         self.lastRunAt = lastRunAt
         self.updatedAt = updatedAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case routines
+        case reports
+        case activeProjectPaths
+        case hasCustomizedActiveProjects
+        case lastRunAt
+        case updatedAt
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        routines = try container.decodeIfPresent([PestRoutine].self, forKey: .routines) ?? []
+        reports = try container.decodeIfPresent([PestReport].self, forKey: .reports) ?? []
+        activeProjectPaths = try container.decodeIfPresent([String].self, forKey: .activeProjectPaths) ?? []
+        hasCustomizedActiveProjects = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .hasCustomizedActiveProjects
+        ) ?? false
+        lastRunAt = try container.decodeIfPresent(Date.self, forKey: .lastRunAt)
+        updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? Date()
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(routines, forKey: .routines)
+        try container.encode(reports, forKey: .reports)
+        try container.encode(activeProjectPaths, forKey: .activeProjectPaths)
+        try container.encode(hasCustomizedActiveProjects, forKey: .hasCustomizedActiveProjects)
+        try container.encodeIfPresent(lastRunAt, forKey: .lastRunAt)
+        try container.encode(updatedAt, forKey: .updatedAt)
     }
 
     public static var empty: PestState { PestState() }

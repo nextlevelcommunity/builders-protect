@@ -158,6 +158,26 @@ final class PestCollectorTests: XCTestCase {
     }
 }
 
+final class PestStateTests: XCTestCase {
+    func testLegacyStateDecodesWithoutActiveProjects() throws {
+        let data = try XCTUnwrap("{}".data(using: .utf8))
+        let state = try JSONDecoder().decode(PestState.self, from: data)
+        XCTAssertTrue(state.activeProjectPaths.isEmpty)
+        XCTAssertFalse(state.hasCustomizedActiveProjects)
+    }
+
+    func testStateRoundTripsActiveProjects() throws {
+        let state = PestState(
+            activeProjectPaths: ["/b", "/a"],
+            hasCustomizedActiveProjects: true
+        )
+        let data = try JSONEncoder().encode(state)
+        let decoded = try JSONDecoder().decode(PestState.self, from: data)
+        XCTAssertEqual(decoded.activeProjectPaths, state.activeProjectPaths)
+        XCTAssertTrue(decoded.hasCustomizedActiveProjects)
+    }
+}
+
 final class PestPlannerTests: XCTestCase {
     func testSpacingConflictAndCircularMidnight() {
         let first = PestRoutine(projectPath: "/a", projectName: "A", hour: 23, minute: 50)

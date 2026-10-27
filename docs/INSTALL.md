@@ -51,7 +51,7 @@ O app pede acesso às pastas que você escolher. Ele precisa ler manifests e loc
 
 Na primeira checagem de **Minha rede**, o macOS pode pedir permissão de rede local. Ela é usada para consultar o endereço do roteador e ler os serviços visíveis. O app não captura tráfego, não testa senhas e não envia dados da rede para a Cultura Builder.
 
-O **Pest** lê apenas o projeto escolhido. A análise local não envia arquivos. Se você ativar a IA e marcar o consentimento, trechos de código e configuração são redigidos e enviados à LLM privada da Cultura Builder.
+O **Pest** lê apenas o projeto escolhido e usa a IA da Cultura Builder em todas as análises. Sem a conta conectada, ele não roda. Com o consentimento marcado antes de cada análise manual, ou com a autorização ao salvar a rotina, trechos de código e configuração são redigidos e enviados à LLM privada da Cultura Builder.
 
 ### Abrir ao iniciar
 

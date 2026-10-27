@@ -14,13 +14,13 @@ O Builders Protect encontra vulnerabilidades conhecidas nas dependências de um 
 - Pode falhar o job quando encontra achados acima do limite configurado.
 - Pode rodar em rotinas diárias, semanais ou mensais no GitHub Actions.
 - Detecta worktrees do Git e usa a pasta principal do repositório; no app, Gerenciar pastas lista todos os projetos encontrados, marca build, preview e artefatos e permite ignorar ou reativar várias pastas de uma vez. O que for ignorado vale para todas as análises, inclusive Pest e Red Teaming.
-- No app, o Pest revisa o código do projeto com um catálogo destilado de templates do Nuclei e gera um prompt de correção por achado.
+- No app, o Pest revisa o código do projeto com um catálogo destilado de templates do Nuclei, mantém uma lista de projetos escolhidos e permite analisar ou configurar a rotina de cada um sem procurar a pasta novamente.
 - A seção Minha rede faz uma leitura local da Wi-Fi, do roteador, dos dispositivos conhecidos e dos serviços do Mac visíveis na rede.
 - No app, pode gerar diagnóstico com IA e prompts de correção para agentes.
 
 ## Pest e Minha rede
 
-O **Pest** é uma revisão de segurança do código, não um scanner de rede. Ele usa um checklist destilado do catálogo de templates do Nuclei para procurar problemas de autenticação, injection, exposição de dados e configuração. A análise local é estática: não executa o projeto, não instala dependências e não faz requisições ao alvo. Com a conta conectada, o Pest pode somar uma revisão da LLM privada da Cultura Builder. O consentimento é pedido em um modal a cada análise com IA, vale apenas para aquela execução e volta a ser solicitado na próxima. A rotina diária segue a opção de IA do Pest. Você pode limpar o relatório do projeto atual ou todos os relatórios salvos na própria área do Pest, com confirmação.
+O **Pest** é uma revisão de segurança do código, não um scanner de rede. Ele usa um checklist destilado do catálogo de templates do Nuclei para procurar problemas de autenticação, injection, exposição de dados e configuração. A varredura de arquivos é estática: não executa o projeto, não instala dependências e não faz requisições ao alvo. O Pest usa a IA da Cultura Builder em todas as análises, com consentimento pedido em um modal antes de cada análise manual; a autorização vale apenas para aquela análise e volta a ser solicitada na próxima. Ao salvar uma rotina, você autoriza a execução diária daquele projeto. Na área do Pest, escolha os projetos que quer acompanhar; eles ficam listados com o horário da rotina, e cada um pode ser analisado ou configurado diretamente na linha. As rotinas continuam respeitando pelo menos 30 minutos entre si e só rodam com a conta conectada. Você pode limpar o relatório do projeto atual ou todos os relatórios salvos na própria área do Pest, com confirmação.
 
 A seção **Minha rede** é uma leitura local e passiva da conexão. Ela consulta o endereço do roteador, lê a segurança do Wi-Fi, lista dispositivos conhecidos e verifica serviços do Mac escutando na rede. O relatório explica o que está confirmado agora, o que é possível no seu cenário e o que não foi possível verificar. Ele não prova que alguém invadiu a rede. No topo do relatório, um prompt geral reúne todas as correções em um plano único; cada achado também tem seu próprio prompt.
 
@@ -39,8 +39,8 @@ A base de vulnerabilidades e os modelos de segurança são operados e validados 
 | Recurso | Acesso |
 | --- | --- |
 | Varredura de dependências, CLI e GitHub Action | Cultura Builder Community |
-| Pest local e Minha rede | Cultura Builder Community |
-| Diagnóstico com IA e Pest com IA no app | Assinantes ativos da Cultura Builder |
+| Minha rede | Cultura Builder Community |
+| Diagnóstico com IA e Pest no app | Assinantes ativos da Cultura Builder |
 | Red Teaming | Assinantes ativos, opt-in por projeto; em preparação |
 
 A CLI e a GitHub Action não usam IA nem Red Teaming. Elas não exigem assinatura para a varredura de dependências.
@@ -141,7 +141,7 @@ O app macOS tem agendamento local próprio e notificações. Veja [docs/ACTION.m
 ## Privacidade e segurança
 
 - A varredura de dependências envia nomes, versões e o conteúdo dos lockfiles. Não envia código-fonte.
-- O Pest local não sai do Mac. Com a IA conectada e consentimento explícito, ele envia trechos de código e configuração do projeto escolhido, em blocos pequenos e com segredos reconhecíveis mascarados.
+- O Pest não altera seus arquivos. Com a conta conectada e consentimento explícito em cada análise, ele envia trechos de código e configuração do projeto escolhido, em blocos pequenos e com segredos reconhecíveis mascarados.
 - Minha rede é uma checagem local: não envia dados da rede, não captura tráfego, não testa senhas e não entra no painel do roteador.
 - O diagnóstico de dependências com IA usa os achados e metadados do projeto; não envia código-fonte.
 - O Red Teaming, quando liberado, será opt-in por projeto, com modelos privados dedicados à segurança e guardrails específicos. Os arquivos selecionados não são enviados para laboratórios de IA nem usados para treinamento.

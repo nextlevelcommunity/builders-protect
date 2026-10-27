@@ -45,7 +45,6 @@ final class AppModel: ObservableObject {
     @Published private(set) var pestProgress: PestProgress?
     @Published private(set) var pestReport: PestReport?
     @Published private(set) var pestError: String?
-    @Published var pestUseAI = true
     @Published private(set) var networkState: NetworkState
     @Published private(set) var isNetworkRunning = false
     @Published private(set) var networkProgress: NetworkProgress?
@@ -190,6 +189,15 @@ final class AppModel: ObservableObject {
         return pestProjects.first { $0.path == pestProjectPath }
     }
 
+    var activePestProjects: [ProjectRef] {
+        let activePaths = Set(pestState.activeProjectPaths)
+        return pestProjects.filter { activePaths.contains($0.path) }
+    }
+
+    func isPestProjectActive(_ path: String) -> Bool {
+        pestState.activeProjectPaths.contains(path)
+    }
+
     var selectedPestReport: PestReport? {
         guard let path = pestProjectPath else { return nil }
         let exclusions = PathExclusions.normalized(settings.excludedPaths)
@@ -202,7 +210,7 @@ final class AppModel: ObservableObject {
     }
 
     var canRunPest: Bool {
-        !isPestRunning && selectedPestProject != nil
+        !isPestRunning && selectedPestProject != nil && authStatus.connected
     }
 
     var pestResumeAvailable: Bool {
@@ -215,7 +223,8 @@ final class AppModel: ObservableObject {
     }
 
     var pestNextRunDate: Date? {
-        pestScheduler?.nextRunDate()
+        guard let routine = pestRoutineForSelectedProject else { return nil }
+        return PestRoutinePlanner.nextRunDate(for: routine)
     }
 
     var latestNetworkReport: NetworkReport? {
@@ -459,17 +468,22 @@ final class AppModel: ObservableObject {
                 .map(\.ref)
                 .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
             self.isLoadingPestProjects = false
+            self.reconcilePestProjectSelection()
 
             let paths = Set(self.pestProjects.map(\.path))
-            if let current = self.pestProjectPath, !paths.contains(current) {
+            if let current = self.pestProjectPath,
+               !paths.contains(current) || !self.isPestProjectActive(current) {
                 self.pestProjectPath = nil
             }
             if self.pestProjectPath == nil {
                 let preferredPath = self.pestState.routines.first?.projectPath
                     ?? self.report?.alerts.first?.project.path
+                    ?? self.pestState.reports.first?.projectPath
                 self.pestProjectPath = self.pestProjects
-                    .first(where: { $0.path == preferredPath })?
-                    .path ?? self.pestProjects.first?.path
+                    .first(where: {
+                        $0.path == preferredPath && self.isPestProjectActive($0.path)
+                    })?
+                    .path ?? self.activePestProjects.first?.path
             }
             self.pestReport = self.pestProjectPath.flatMap { path in
                 self.pestState.reports.first { $0.projectPath == path }
@@ -480,14 +494,85 @@ final class AppModel: ObservableObject {
         }
     }
 
+    private func reconcilePestProjectSelection() {
+        guard !pestProjects.isEmpty else { return }
+        let available = Set(pestProjects.map(\.path))
+        var state = pestState
+        var active = state.activeProjectPaths.filter { available.contains($0) }
+
+        if !state.hasCustomizedActiveProjects {
+            var seen = Set<String>()
+            let seeds = state.routines.map(\.projectPath)
+                + state.reports.prefix(5).map(\.projectPath)
+                + [pestProjectPath].compactMap { $0 }
+            active = seeds.filter {
+                available.contains($0) && seen.insert($0).inserted
+            }
+            if active.isEmpty, let first = pestProjects.first?.path {
+                active = [first]
+            }
+            state.hasCustomizedActiveProjects = true
+        }
+
+        guard state.activeProjectPaths != active
+                || state.hasCustomizedActiveProjects != pestState.hasCustomizedActiveProjects else {
+            return
+        }
+        state.activeProjectPaths = active
+        pestState = state
+        persistPestState()
+    }
+
     func selectPestProject(_ path: String) {
+        guard pestProjects.contains(where: { $0.path == path }) else { return }
         pestProjectPath = path
         pestReport = pestState.reports.first { $0.projectPath == path }
         pestError = nil
+        if !isPestProjectActive(path) {
+            setPestProjectActive(path, active: true)
+        }
+    }
+
+    func setPestProjectActive(_ path: String, active: Bool) {
+        guard pestProjects.contains(where: { $0.path == path }) else { return }
+        var state = pestState
+        state.hasCustomizedActiveProjects = true
+        if active {
+            if !state.activeProjectPaths.contains(path) {
+                state.activeProjectPaths.append(path)
+            }
+        } else {
+            state.activeProjectPaths.removeAll { $0 == path }
+        }
+
+        guard state.activeProjectPaths != pestState.activeProjectPaths
+                || state.hasCustomizedActiveProjects != pestState.hasCustomizedActiveProjects else {
+            return
+        }
+        pestState = state
+        persistPestState()
+
+        if active {
+            if pestProjectPath == nil {
+                selectPestProject(path)
+            }
+        } else if pestProjectPath == path {
+            if let next = activePestProjects.first?.path {
+                selectPestProject(next)
+            } else {
+                pestProjectPath = nil
+                pestReport = nil
+                pestError = nil
+            }
+        }
     }
 
     func startPest(resume: Bool = false) {
         guard !isPestRunning else { return }
+        guard authStatus.connected else {
+            pestError = "Conecte a conta da Cultura Builder para usar o Pest com IA."
+            return
+        }
         guard let project = selectedPestProject else {
             pestError = "Selecione um projeto para analisar."
             return
@@ -501,7 +586,6 @@ final class AppModel: ObservableObject {
         pestTask = Task { [weak self] in
             await self?.performPest(
                 project: project,
-                useLLM: self?.pestUseAI == true,
                 routine: nil,
                 resume: resumeState
             )
@@ -672,8 +756,7 @@ final class AppModel: ObservableObject {
     func savePestRoutine(
         project: ProjectRef,
         hour: Int,
-        minute: Int,
-        useLLM: Bool
+        minute: Int
     ) -> String? {
         let normalizedHour = min(23, max(0, hour))
         let normalizedMinute = min(59, max(0, minute))
@@ -692,7 +775,7 @@ final class AppModel: ObservableObject {
             state.routines[index].projectName = project.name
             state.routines[index].hour = normalizedHour
             state.routines[index].minute = normalizedMinute
-            state.routines[index].useLLM = useLLM
+            state.routines[index].useLLM = true
             state.routines[index].enabled = true
             state.routines[index].updatedAt = Date()
         } else {
@@ -702,7 +785,7 @@ final class AppModel: ObservableObject {
                     projectName: project.name,
                     hour: normalizedHour,
                     minute: normalizedMinute,
-                    useLLM: useLLM
+                    useLLM: true
                 )
             )
         }
@@ -718,7 +801,6 @@ final class AppModel: ObservableObject {
         id: UUID,
         hour: Int,
         minute: Int,
-        useLLM: Bool,
         enabled: Bool
     ) -> String? {
         guard let index = pestState.routines.firstIndex(where: { $0.id == id }) else {
@@ -740,7 +822,7 @@ final class AppModel: ObservableObject {
         var state = pestState
         state.routines[index].hour = normalizedHour
         state.routines[index].minute = normalizedMinute
-        state.routines[index].useLLM = useLLM
+        state.routines[index].useLLM = true
         state.routines[index].enabled = enabled
         state.routines[index].updatedAt = Date()
         state.routines.sort { $0.timeLabel < $1.timeLabel }
@@ -756,7 +838,6 @@ final class AppModel: ObservableObject {
             id: id,
             hour: routine.hour,
             minute: routine.minute,
-            useLLM: routine.useLLM,
             enabled: enabled
         )
     }
@@ -771,11 +852,16 @@ final class AppModel: ObservableObject {
 
     private func performPest(
         project: ProjectRef,
-        useLLM: Bool,
         routine: PestRoutine?,
         resume: PestResumeState?
     ) async {
         guard !isPestRunning else { return }
+        guard authStatus.connected else {
+            pestError = "Conecte a conta da Cultura Builder para usar o Pest com IA."
+            pestProgress = nil
+            isPestRunning = false
+            return
+        }
 
         let excludedPaths = settings.excludedPaths
         if PathExclusions.contains(project.path, in: PathExclusions.normalized(excludedPaths)) {
@@ -813,7 +899,7 @@ final class AppModel: ObservableObject {
         do {
             let report = try await service.analyze(
                 project: project,
-                useLLM: useLLM && authStatus.connected,
+                useLLM: true,
                 routineID: routineID,
                 resume: resume,
                 excludedPaths: excludedPaths
@@ -886,10 +972,9 @@ final class AppModel: ObservableObject {
                 routines: pestState.routines,
                 lastRunAt: pestState.lastRunAt
             ) { [weak self] routine in
-                guard let self else { return }
+                guard let self, self.authStatus.connected else { return }
                 await self.performPest(
                     project: routine.project,
-                    useLLM: self.pestUseAI,
                     routine: routine,
                     resume: nil
                 )

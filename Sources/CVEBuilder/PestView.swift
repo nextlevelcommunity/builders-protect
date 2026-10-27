@@ -9,6 +9,7 @@ struct PestView: View {
     @State private var pendingResume = false
     @State private var showClearDialog = false
     @State private var clearAllReports = false
+    @State private var showProjectPicker = false
     @State private var routineHour = 9
     @State private var routineMinute = 0
     @State private var routineError: String?
@@ -19,17 +20,25 @@ struct PestView: View {
             header
             hairline
 
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
-                    intro
-                    projectCard
-                    memoryCard
-                    actionCard
-                    routineCard
-                    reportContent
+            ScrollViewReader { proxy in
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        intro
+                        projectCard { path in
+                            model.selectPestProject(path)
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                proxy.scrollTo("pest-routine", anchor: .top)
+                            }
+                        }
+                        memoryCard
+                        actionCard
+                        routineCard
+                            .id("pest-routine")
+                        reportContent
+                    }
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 24)
                 }
-                .padding(.horizontal, 28)
-                .padding(.vertical, 24)
             }
 
             hairline
@@ -60,12 +69,6 @@ struct PestView: View {
         .onChange(of: model.isPestRunning) { running in
             if !running { consent = false }
         }
-        .onChange(of: model.pestUseAI) { enabled in
-            if !enabled {
-                showConsentSheet = false
-                pendingResume = false
-            }
-        }
         .sheet(isPresented: $showConsentSheet, onDismiss: { pendingResume = false }) {
             PestConsentSheet(
                 projectName: model.selectedPestProject?.name ?? "este projeto",
@@ -76,6 +79,9 @@ struct PestView: View {
                 },
                 onAuthorize: authorizePestStart
             )
+        }
+        .sheet(isPresented: $showProjectPicker) {
+            PestProjectPickerSheet(model: model)
         }
         .confirmationDialog(
             clearAllReports ? "Limpar todos os relatórios do Pest?" : "Limpar este relatório do Pest?",
@@ -127,7 +133,7 @@ struct PestView: View {
                 Circle()
                     .fill(model.authStatus.connected ? CBTheme.mint : CBTheme.high)
                     .frame(width: 6, height: 6)
-                Text(model.authStatus.connected ? "IA conectada" : "Análise local")
+                Text(model.authStatus.connected ? "IA conectada" : "IA desconectada")
                     .font(.system(size: 11, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
             }
@@ -158,7 +164,7 @@ struct PestView: View {
                 Text("Um caçador de brechas, não um scanner de rede")
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .foregroundStyle(CBTheme.text)
-                Text("O Pest usa um checklist destilado do catálogo de templates do Nuclei para revisar autenticação, injection, exposição de dados, configuração e outros riscos do projeto escolhido. A análise local é estática: não executa o projeto, não instala dependências e não faz requisições ao alvo. Com a IA conectada, os arquivos são redigidos e enviados em blocos pequenos para a LLM privada da Cultura Builder.")
+                Text("O Pest usa um checklist destilado do catálogo de templates do Nuclei para revisar autenticação, injection, exposição de dados, configuração e outros riscos do projeto escolhido. A varredura é estática: não executa o projeto, não instala dependências e não faz requisições ao alvo. A revisão semântica usa a LLM privada da Cultura Builder; os arquivos são redigidos e enviados em blocos pequenos após o seu consentimento.")
                     .font(.system(size: 11.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
                     .lineSpacing(2)
@@ -172,16 +178,28 @@ struct PestView: View {
         )
     }
 
-    private var projectCard: some View {
+    private func projectCard(onConfigureRoutine: @escaping (String) -> Void) -> some View {
         SurfaceCard(padding: 16) {
             VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    SectionLabel(text: "Projeto")
+                HStack(spacing: 9) {
+                    SectionLabel(text: "Meus projetos")
                     Spacer()
                     if model.isLoadingPestProjects {
                         ProgressView()
                             .controlSize(.small)
                             .tint(CBTheme.lime)
+                    }
+                    if !model.pestProjects.isEmpty {
+                        Text("\(model.activePestProjects.count) de \(model.pestProjects.count)")
+                            .font(.system(size: 9.5, weight: .regular, design: .rounded))
+                            .foregroundStyle(CBTheme.textTertiary)
+                        Button {
+                            showProjectPicker = true
+                        } label: {
+                            Label("Gerenciar", systemImage: "slider.horizontal.3")
+                        }
+                        .buttonStyle(GhostButtonStyle())
+                        .disabled(model.isLoadingPestProjects || model.isPestRunning)
                     }
                 }
 
@@ -203,69 +221,131 @@ struct PestView: View {
                         actionTitle: "Abrir Pastas",
                         action: { model.settingsSection = .folders }
                     )
+                } else if model.activePestProjects.isEmpty {
+                    NoticeCard(
+                        kind: .info,
+                        title: "Nenhum projeto na lista",
+                        message: "Escolha os projetos que você acompanha no Pest. Eles ficam à mão para analisar e configurar a rotina sem procurar a pasta de novo.",
+                        actionTitle: "Escolher projetos",
+                        action: { showProjectPicker = true }
+                    )
                 } else {
-                    Menu {
-                        ForEach(model.pestProjects) { project in
-                            Button {
-                                model.selectPestProject(project.path)
-                            } label: {
-                                Text(project.name)
-                            }
+                    VStack(spacing: 8) {
+                        ForEach(model.activePestProjects) { project in
+                            projectRow(project, onConfigureRoutine: onConfigureRoutine)
                         }
-                    } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: "folder.fill")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(CBTheme.lime)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(model.selectedPestProject?.name ?? "Selecionar projeto")
-                                    .font(.system(size: 12.5, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(CBTheme.text)
-                                Text(
-                                    model.selectedPestProject?.path.homeAbbreviated
-                                        ?? "Escolha um projeto da lista"
-                                )
-                                .font(.system(size: 9, weight: .regular, design: .monospaced))
-                                .foregroundStyle(CBTheme.textTertiary)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.up.chevron.down")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(CBTheme.textTertiary)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                        .background(
-                            CBTheme.surfaceStrong,
-                            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        )
                     }
-                    .menuStyle(.borderlessButton)
-                    .disabled(model.isPestRunning)
 
-                    if let project = model.selectedPestProject {
-                        HStack(spacing: 8) {
-                            Label(project.ecosystems.joined(separator: ", "), systemImage: "shippingbox")
+                    Text("Clique em um projeto para abrir o relatório e ajustar a rotina. O botão de play analisa na hora; cada rotina usa um horário próprio, com pelo menos 30 minutos de diferença.")
+                        .font(.system(size: 9.5, weight: .regular, design: .rounded))
+                        .foregroundStyle(CBTheme.textTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    private func projectRow(
+        _ project: ProjectRef,
+        onConfigureRoutine: @escaping (String) -> Void
+    ) -> some View {
+        let selected = model.pestProjectPath == project.path
+        let routine = model.pestState.routines.first { $0.projectPath == project.path }
+
+        return HStack(spacing: 10) {
+            Button {
+                model.selectPestProject(project.path)
+            } label: {
+                HStack(spacing: 10) {
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(selected ? CBTheme.lime : Color.clear)
+                        .frame(width: 2, height: 30)
+
+                    Image(systemName: selected ? "folder.fill" : "folder")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(selected ? CBTheme.lime : CBTheme.textSecondary)
+                        .frame(width: 16)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(project.name)
+                            .font(.system(size: 12.5, weight: .semibold, design: .rounded))
+                            .foregroundStyle(CBTheme.text)
+                            .lineLimit(1)
+                        Text(project.path.homeAbbreviated)
+                            .font(.system(size: 9, weight: .regular, design: .monospaced))
+                            .foregroundStyle(CBTheme.textTertiary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        HStack(spacing: 6) {
+                            Text(project.ecosystems.joined(separator: ", "))
                             if !project.lockfiles.isEmpty {
                                 Text("·")
                                 Text(Vocabulary.quantity(project.lockfiles.count, "lockfile", "lockfiles"))
                             }
-                            if let routine = model.pestRoutineForSelectedProject {
-                                Text("·")
-                                Label(
-                                    routine.enabled ? "rotina \(routine.timeLabel)" : "rotina pausada",
-                                    systemImage: "clock"
+                            Text("·")
+                            if let routine {
+                                Text(
+                                    routine.enabled
+                                        ? "rotina \(routine.timeLabel)"
+                                        : "rotina pausada"
                                 )
+                                .foregroundStyle(routine.enabled ? CBTheme.mint : CBTheme.textTertiary)
+                            } else {
+                                Text("sem rotina")
                             }
                         }
-                        .font(.system(size: 9.5, weight: .regular, design: .rounded))
+                        .font(.system(size: 9, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
+                        .lineLimit(1)
                     }
+
+                    Spacer(minLength: 8)
                 }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(model.isPestRunning)
+
+            HStack(spacing: 6) {
+                Button {
+                    onConfigureRoutine(project.path)
+                } label: {
+                    Image(systemName: "clock.badge.checkmark")
+                }
+                .buttonStyle(
+                    IconButtonStyle(
+                        size: 28,
+                        tint: routine?.enabled == true ? CBTheme.mint : CBTheme.textSecondary
+                    )
+                )
+                .help("Configurar rotina deste projeto")
+                .disabled(model.isPestRunning)
+
+                Button {
+                    analyze(project)
+                } label: {
+                    Image(systemName: "play.fill")
+                }
+                .buttonStyle(IconButtonStyle(size: 28, tint: CBTheme.lime))
+                .help("Analisar este projeto agora")
+                .disabled(model.isPestRunning || !model.authStatus.connected)
             }
         }
+        .padding(.horizontal, 11)
+        .padding(.vertical, 9)
+        .background(
+            selected ? CBTheme.lime.opacity(0.07) : CBTheme.surface,
+            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(selected ? CBTheme.lime.opacity(0.35) : Color.clear, lineWidth: 1)
+        }
+    }
+
+    private func analyze(_ project: ProjectRef) {
+        model.selectPestProject(project.path)
+        requestPestStart()
     }
 
     private var memoryCard: some View {
@@ -345,7 +425,7 @@ struct PestView: View {
                     }
                 )
 
-                if consent && model.authStatus.connected && model.pestUseAI {
+                if consent {
                     HStack(spacing: 7) {
                         Image(systemName: "checkmark.shield.fill")
                         Text("Consentimento autorizado para esta análise.")
@@ -361,24 +441,46 @@ struct PestView: View {
                 }
                 .buttonStyle(SurfaceButtonStyle(tint: CBTheme.critical))
             } else {
-                Toggle(isOn: $model.pestUseAI) {
+                HStack(alignment: .top, spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(CBTheme.lime.opacity(0.12))
+                            .frame(width: 30, height: 30)
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(CBTheme.lime)
+                    }
+
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("Usar IA quando disponível")
+                        Text("Pest com IA")
                             .font(.system(size: 12, weight: .semibold, design: .rounded))
                             .foregroundStyle(CBTheme.text)
-                        Text("Sem IA, o Pest usa apenas o checklist local. A IA melhora a revisão semântica e o prompt de correção.")
+                        Text("A revisão usa a LLM privada da Cultura Builder. O consentimento é pedido antes de cada análise manual; salvar uma rotina autoriza a execução diária.")
                             .font(.system(size: 9.5, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                     }
+
+                    Spacer(minLength: 8)
+
+                    Text("OBRIGATÓRIO")
+                        .font(.system(size: 7.5, weight: .bold, design: .rounded))
+                        .tracking(0.7)
+                        .foregroundStyle(CBTheme.lime)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(CBTheme.lime.opacity(0.1), in: Capsule())
                 }
-                .toggleStyle(.switch)
-                .disabled(model.authStatus.connected == false)
+                .padding(11)
+                .background(
+                    CBTheme.lime.opacity(0.045),
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                )
 
                 if !model.authStatus.connected {
                     NoticeCard(
-                        kind: .info,
-                        title: "IA desconectada: o Pest roda a análise local",
-                        message: "O checklist local continua funcionando. Conecte a conta para somar a revisão semântica da LLM privada da Cultura Builder.",
+                        kind: .warning,
+                        title: "Conecte a conta para usar o Pest",
+                        message: "O Pest usa a IA da Cultura Builder em todas as análises. Entre na sua conta para liberar o botão de análise.",
                         actionTitle: "Abrir Conta",
                         action: { model.settingsSection = .account }
                     )
@@ -412,13 +514,9 @@ struct PestView: View {
                     .disabled(!canStart)
                 }
 
-                Text(
-                    model.authStatus.connected && model.pestUseAI
-                        ? "Com a IA ligada, o app pede consentimento a cada análise. A análise local não precisa de consentimento."
-                        : "O Pest não altera seus arquivos e não faz commit. Você pode continuar usando o app enquanto ele roda."
-                )
-                .font(.system(size: 9.5, weight: .regular, design: .rounded))
-                .foregroundStyle(CBTheme.textTertiary)
+                Text("O Pest não altera seus arquivos e não faz commit. Você pode continuar usando o app enquanto ele roda.")
+                    .font(.system(size: 9.5, weight: .regular, design: .rounded))
+                    .foregroundStyle(CBTheme.textTertiary)
             }
 
             if let error = model.pestError {
@@ -433,13 +531,8 @@ struct PestView: View {
 
     private func requestPestStart(resume: Bool = false) {
         guard canStart else { return }
-        if model.authStatus.connected && model.pestUseAI {
-            pendingResume = resume
-            showConsentSheet = true
-        } else {
-            consent = false
-            model.startPest(resume: resume)
-        }
+        pendingResume = resume
+        showConsentSheet = true
     }
 
     private func authorizePestStart() {
@@ -463,7 +556,7 @@ struct PestView: View {
                     }
                 }
 
-                Text("Agende o Pest para analisar este projeto uma vez por dia. O app respeita pelo menos 30 minutos entre rotinas e pausa se a memória ficar baixa.")
+                Text("Cada projeto pode ter a própria rotina diária. O Pest respeita pelo menos 30 minutos entre rotinas e pausa se a memória ficar baixa.")
                     .font(.system(size: 10.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -492,7 +585,7 @@ struct PestView: View {
 
                         Spacer()
 
-                        Text(model.pestUseAI ? "IA conforme acima" : "análise local")
+                        Text("com IA")
                             .font(.system(size: 9.5, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                     }
@@ -515,7 +608,7 @@ struct PestView: View {
                             .foregroundStyle(CBTheme.textTertiary)
                     }
 
-                    Text("A rotina segue a opção de IA acima. Com a IA ligada, salvar a rotina autoriza o envio recorrente dos mesmos arquivos redigidos para a LLM privada, uma vez ao dia.")
+                    Text("A rotina usa a IA da Cultura Builder e só roda com a conta conectada. Salvar a rotina autoriza o envio recorrente dos mesmos arquivos redigidos para a LLM privada, uma vez ao dia.")
                         .font(.system(size: 9, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -596,13 +689,26 @@ struct PestView: View {
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .foregroundStyle(CBTheme.text)
                     .lineLimit(1)
-                Text("\(routine.timeLabel) · \(model.pestUseAI ? "IA" : "local") · \(nextRunDescription(for: routine))")
+                Text("\(routine.timeLabel) · IA · \(nextRunDescription(for: routine))")
                     .font(.system(size: 9, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
                     .lineLimit(1)
             }
 
             Spacer(minLength: 0)
+
+            Button {
+                analyze(routine.project)
+            } label: {
+                Image(systemName: "play.fill")
+            }
+            .buttonStyle(IconButtonStyle(size: 26, tint: CBTheme.lime))
+            .help("Analisar este projeto agora")
+            .disabled(
+                model.isPestRunning
+                    || !model.authStatus.connected
+                    || !model.pestProjects.contains(where: { $0.path == routine.projectPath })
+            )
 
             Button {
                 if model.pestProjects.contains(where: { $0.path == routine.projectPath }) {
@@ -648,8 +754,7 @@ struct PestView: View {
         routineError = model.savePestRoutine(
             project: project,
             hour: routineHour,
-            minute: routineMinute,
-            useLLM: model.pestUseAI && model.authStatus.connected
+            minute: routineMinute
         )
         if routineError == nil {
             syncRoutineForm(force: true)
@@ -858,6 +963,225 @@ struct PestView: View {
     }
 }
 
+private struct PestProjectPickerSheet: View {
+    @ObservedObject var model: AppModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var query = ""
+
+    private var filteredProjects: [ProjectRef] {
+        let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !term.isEmpty else { return model.pestProjects }
+        return model.pestProjects.filter {
+            $0.name.localizedCaseInsensitiveContains(term)
+                || $0.path.localizedCaseInsensitiveContains(term)
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            header
+            divider
+            searchBar
+            divider
+
+            Group {
+                if model.isLoadingPestProjects && model.pestProjects.isEmpty {
+                    HStack(spacing: 9) {
+                        ProgressView()
+                            .controlSize(.small)
+                            .tint(CBTheme.lime)
+                        Text("Procurando projetos nas pastas monitoradas…")
+                            .font(.system(size: 11.5, weight: .regular, design: .rounded))
+                            .foregroundStyle(CBTheme.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if model.pestProjects.isEmpty {
+                    NoticeCard(
+                        kind: .warning,
+                        title: "Nenhum projeto encontrado",
+                        message: "Adicione uma pasta com manifests ou código em Ajustes > Pastas para liberar o Pest."
+                    )
+                    .padding(20)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                } else if filteredProjects.isEmpty {
+                    Text("Nenhum projeto corresponde à busca.")
+                        .font(.system(size: 11.5, weight: .regular, design: .rounded))
+                        .foregroundStyle(CBTheme.textTertiary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    projectList
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            divider
+            footer
+        }
+        .frame(minWidth: 760, minHeight: 620)
+        .background(CBTheme.background)
+        .preferredColorScheme(.dark)
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(CBTheme.limeMuted)
+                Image(systemName: "folder.badge.gearshape")
+                    .font(.system(size: 19, weight: .semibold))
+                    .foregroundStyle(CBTheme.lime)
+            }
+            .frame(width: 44, height: 44)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Projetos do Pest")
+                    .font(.system(size: 20, weight: .semibold, design: .rounded))
+                    .foregroundStyle(CBTheme.text)
+                Text("Escolha os projetos que ficam na lista de acesso rápido. Você pode analisar e configurar a rotina de cada um sem procurar a pasta novamente.")
+                    .font(.system(size: 10.5, weight: .regular, design: .rounded))
+                    .foregroundStyle(CBTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 12)
+
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+            }
+            .buttonStyle(IconButtonStyle(size: 27))
+            .help("Fechar")
+        }
+        .padding(20)
+    }
+
+    private var searchBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(CBTheme.textTertiary)
+            TextField("Buscar por nome ou caminho", text: $query)
+                .textFieldStyle(.plain)
+                .font(.system(size: 11, weight: .regular, design: .rounded))
+                .foregroundStyle(CBTheme.text)
+            if !query.isEmpty {
+                Button {
+                    query = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(CBTheme.textTertiary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 11)
+        .padding(.vertical, 8)
+        .background(CBTheme.surface, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+    }
+
+    private var projectList: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            LazyVStack(spacing: 8) {
+                ForEach(filteredProjects) { project in
+                    projectRow(project)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+    }
+
+    private func projectRow(_ project: ProjectRef) -> some View {
+        let active = model.isPestProjectActive(project.path)
+        let routine = model.pestState.routines.first { $0.projectPath == project.path }
+
+        return Button {
+            model.setPestProjectActive(project.path, active: !active)
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: active ? "checkmark.square.fill" : "square")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(active ? CBTheme.lime : CBTheme.textTertiary)
+                    .frame(width: 17)
+
+                Image(systemName: active ? "folder.fill" : "folder")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(active ? CBTheme.lime : CBTheme.textSecondary)
+                    .frame(width: 16)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(project.name)
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(CBTheme.text)
+                        .lineLimit(1)
+                    Text(project.path.homeAbbreviated)
+                        .font(.system(size: 9, weight: .regular, design: .monospaced))
+                        .foregroundStyle(CBTheme.textTertiary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+
+                Spacer(minLength: 8)
+
+                if let routine {
+                    Text(routine.enabled ? "Rotina \(routine.timeLabel)" : "Rotina pausada")
+                        .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                        .foregroundStyle(routine.enabled ? CBTheme.mint : CBTheme.textTertiary)
+                } else {
+                    Text("Sem rotina")
+                        .font(.system(size: 9.5, weight: .regular, design: .rounded))
+                        .foregroundStyle(CBTheme.textTertiary)
+                }
+
+                if active {
+                    Text("NA LISTA")
+                        .font(.system(size: 7.5, weight: .bold, design: .rounded))
+                        .tracking(0.7)
+                        .foregroundStyle(CBTheme.lime)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(CBTheme.lime.opacity(0.1), in: Capsule())
+                }
+            }
+            .padding(.horizontal, 11)
+            .padding(.vertical, 9)
+            .background(
+                active ? CBTheme.lime.opacity(0.06) : CBTheme.surface,
+                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(active ? CBTheme.lime.opacity(0.3) : Color.clear, lineWidth: 1)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var footer: some View {
+        HStack(spacing: 12) {
+            Text("\(model.activePestProjects.count) selecionado(s). As alterações são salvas automaticamente.")
+                .font(.system(size: 10, weight: .regular, design: .rounded))
+                .foregroundStyle(CBTheme.textTertiary)
+            Spacer()
+            Button("Concluir") {
+                dismiss()
+            }
+            .buttonStyle(LimeButtonStyle())
+        }
+        .padding(20)
+    }
+
+    private var divider: some View {
+        Rectangle()
+            .fill(CBTheme.hairline)
+            .frame(height: 1)
+    }
+}
+
 private struct PestConsentSheet: View {
     let projectName: String
     let isResume: Bool
@@ -892,7 +1216,7 @@ private struct PestConsentSheet: View {
             NoticeCard(
                 kind: .warning,
                 title: "Arquivos de texto do projeto serão enviados para a LLM privada",
-                message: "Somente arquivos de código e configuração do projeto escolhido são enviados, em blocos pequenos. A análise local continua disponível sem a IA."
+                message: "Somente arquivos de código e configuração do projeto escolhido são enviados, em blocos pequenos, para a LLM privada da Cultura Builder. Sem o consentimento, a análise não começa."
             )
 
             VStack(alignment: .leading, spacing: 9) {

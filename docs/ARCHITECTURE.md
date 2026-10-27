@@ -58,11 +58,11 @@ O Pest compartilha o scanner de projetos, mas tem pipeline próprio:
 2. Arquivos de texto são lidos just-in-time; `.env`, chaves, binários, lockfiles, dependências instaladas e arquivos grandes ficam de fora.
 3. O catálogo `PestKnowledge.json` seleciona checks por stack, extensão e sinais do projeto.
 4. O analisador estático procura padrões de risco e gera achados determinísticos.
-5. Com consentimento e IA conectada, blocos redigidos são enviados à LLM privada; caminhos retornados são validados contra os arquivos permitidos.
+5. Com a conta conectada e consentimento na análise manual ou autorização ao salvar a rotina, blocos redigidos são enviados à LLM privada; caminhos retornados são validados contra os arquivos permitidos.
 6. Cada achado recebe explicação, recomendação e prompt de correção.
 7. O orçamento de memória pode pausar a análise e salvar um estado retomável.
 
-As rotinas do Pest são locais, uma por projeto, com intervalo circular mínimo de 30 minutos. O scheduler não inicia uma rotina se a anterior ainda estiver rodando.
+As rotinas do Pest são locais, uma por projeto, com intervalo circular mínimo de 30 minutos. O scheduler não inicia uma rotina se a anterior ainda estiver rodando nem quando a conta está desconectada.
 
 ### Minha rede
 
@@ -76,7 +76,7 @@ Minha rede é uma pipeline local e passiva:
 
 ### IA
 
-O diagnóstico de dependências com IA, o Pest com IA e o Red Teaming usam os modelos de segurança da Cultura Builder. O acesso exige sessão de assinante. A CLI e a Action não usam IA. Minha rede não usa IA.
+O diagnóstico de dependências com IA, o Pest e o Red Teaming usam os modelos de segurança da Cultura Builder. O acesso exige sessão de assinante. A CLI e a Action não usam IA. Minha rede não usa IA.
 
 ## Fluxo de varredura
 

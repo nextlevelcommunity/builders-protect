@@ -6,7 +6,7 @@ Os dois. O app macOS é distribuído como DMG. A CLI e a GitHub Action são para
 
 ## Preciso ser assinante da Cultura Builder?
 
-Para a varredura de dependências, CLI, GitHub Action, Pest local e Minha rede, não. Para o diagnóstico com IA, o Pest com IA e o Red Teaming no app, sim.
+Para a varredura de dependências, CLI, GitHub Action e Minha rede, não. Para o diagnóstico com IA, o Pest e o Red Teaming no app, sim.
 
 ## O que é enviado?
 
@@ -14,7 +14,7 @@ A varredura de dependências envia nomes, versões e o conteúdo dos lockfiles. 
 
 O diagnóstico de dependências com IA envia os achados e metadados do projeto, não o código.
 
-O Pest local não envia nada. O Pest com IA só envia trechos de código e configuração do projeto escolhido depois de consentimento explícito, em blocos pequenos e com segredos reconhecíveis mascarados. `.env`, chaves, binários, lockfiles e dependências instaladas ficam de fora.
+O Pest sempre usa a IA da Cultura Builder e só envia trechos de código e configuração do projeto escolhido depois de consentimento explícito na análise manual ou ao salvar uma rotina, em blocos pequenos e com segredos reconhecíveis mascarados. `.env`, chaves, binários, lockfiles e dependências instaladas ficam de fora.
 
 Minha rede não envia dados para a Cultura Builder. Ela faz uma consulta local ao endereço do roteador e não captura tráfego.
 
@@ -22,7 +22,7 @@ O Red Teaming, quando liberado, enviará somente os arquivos selecionados após 
 
 ## O que é o Pest?
 
-É uma revisão de segurança do código do projeto, guiada por um catálogo destilado de templates do Nuclei. A análise local é estática: não executa o projeto, não instala dependências e não faz requisições ao alvo. Cada achado vem com explicação, recomendação e um prompt de correção. A IA é opcional e exige consentimento em um modal a cada análise; a autorização vale apenas para aquela execução. Na área do Pest, você pode limpar o relatório do projeto atual ou todos os relatórios salvos.
+É uma revisão de segurança do código do projeto, guiada por um catálogo destilado de templates do Nuclei. A varredura de arquivos é estática: não executa o projeto, não instala dependências e não faz requisições ao alvo. Cada achado vem com explicação, recomendação e um prompt de correção. O Pest usa a IA da Cultura Builder em todas as análises e exige consentimento em um modal antes de cada análise manual; a autorização vale apenas para aquela análise. Ao salvar uma rotina, você autoriza a execução diária daquele projeto. Sem a conta conectada, a análise não começa. Na área do Pest, você escolhe os projetos que quer acompanhar e eles ficam listados com o horário da rotina, prontos para analisar ou configurar. As rotinas respeitam pelo menos 30 minutos entre si. Você também pode limpar o relatório do projeto atual ou todos os relatórios salvos.
 
 ## O que é Minha rede?
 
@@ -49,7 +49,7 @@ A CLI e a GitHub Action funcionam nos três sistemas. A interface desktop para W
 | App | Action |
 | --- | --- |
 | Interface, agendamento local, notificações | Execução em PR, push ou cron |
-| Pest local, Minha rede, diagnóstico com IA | Varredura de dependências |
+| Pest, Minha rede, diagnóstico com IA | Varredura de dependências |
 | Red Teaming em preparação | SARIF e resumo no job |
 | macOS | Linux, Windows e macOS |
 
