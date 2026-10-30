@@ -49,10 +49,10 @@ struct NetworkView: View {
         HStack(spacing: 15) {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
-                    Text("Minha rede")
+                    Text(L10n.t("Minha rede"))
                         .font(.system(size: 30, weight: .ultraLight, design: .rounded))
                         .foregroundStyle(CBTheme.text)
-                    Text("CHECAGEM LOCAL")
+                    Text(L10n.t("CHECAGEM LOCAL"))
                         .font(.system(size: 7.5, weight: .bold, design: .rounded))
                         .tracking(1)
                         .foregroundStyle(CBTheme.lime)
@@ -60,7 +60,7 @@ struct NetworkView: View {
                         .padding(.vertical, 3)
                         .background(CBTheme.lime.opacity(0.1), in: Capsule())
                 }
-                Text("Sua Wi-Fi, seu roteador e seus dados, sem alarmismo")
+                Text(L10n.t("Sua Wi-Fi, seu roteador e seus dados, sem alarmismo"))
                     .font(.system(size: 12.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
             }
@@ -71,7 +71,7 @@ struct NetworkView: View {
                 Button {
                     model.copyNetworkGeneralPrompt(report)
                 } label: {
-                    Label("Prompt geral", systemImage: "wand.and.stars")
+                    Label(L10n.t("Prompt geral"), systemImage: "wand.and.stars")
                 }
                 .buttonStyle(LimeButtonStyle())
 
@@ -81,7 +81,7 @@ struct NetworkView: View {
                         .frame(width: 6, height: 6)
                     Text(
                         report.findings.isEmpty
-                            ? "Sem achados"
+                            ? L10n.t("Sem achados", "No findings")
                             : Vocabulary.quantity(report.findings.count, "ponto", "pontos")
                     )
                         .font(.system(size: 11, weight: .regular, design: .rounded))
@@ -104,10 +104,10 @@ struct NetworkView: View {
                 .padding(.top, 1)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Uma foto da rede, não uma prova de invasão")
+                Text(L10n.t("Uma foto da rede, não uma prova de invasão"))
                     .font(.system(size: 15.5, weight: .semibold, design: .rounded))
                     .foregroundStyle(CBTheme.text)
-                Text("O Builders Protect lê as configurações que o macOS mostra, consulta apenas o endereço do seu roteador e lista os aparelhos e serviços visíveis. Ele não captura tráfego, não testa senhas, não entra no painel do roteador e não consegue provar que alguém invadiu sua rede. O objetivo é explicar o que está exposto e o que vale corrigir primeiro.")
+                Text(L10n.t("O Builders Protect lê as configurações que o macOS mostra, consulta apenas o endereço do seu roteador e lista os aparelhos e serviços visíveis. Ele não captura tráfego, não testa senhas, não entra no painel do roteador e não consegue provar que alguém invadiu sua rede. O objetivo é explicar o que está exposto e o que vale corrigir primeiro."))
                     .font(.system(size: 12.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
                     .lineSpacing(2.5)
@@ -124,7 +124,7 @@ struct NetworkView: View {
     private var consentCard: some View {
         SurfaceCard(padding: 16) {
             VStack(alignment: .leading, spacing: 12) {
-                SectionLabel(text: "Antes de verificar")
+                SectionLabel(text: L10n.t("Antes de verificar"))
 
                 HStack(alignment: .top, spacing: 9) {
                     Image(systemName: "lock.shield")
@@ -132,10 +132,10 @@ struct NetworkView: View {
                         .foregroundStyle(CBTheme.lime)
                         .padding(.top, 1)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Autorizo uma consulta local à minha rede")
+                        Text(L10n.t("Autorizo uma consulta local à minha rede"))
                             .font(.system(size: 12.5, weight: .semibold, design: .rounded))
                             .foregroundStyle(CBTheme.text)
-                        Text("A checagem usa comandos do macOS, consulta o endereço do roteador por HTTP/HTTPS e não envia dados da rede para a Cultura Builder. Nenhuma senha é testada. Nenhum tráfego é gravado.")
+                        Text(L10n.t("A checagem usa comandos do macOS, consulta o endereço do roteador por HTTP/HTTPS e não envia dados da rede para a Cultura Builder. Nenhuma senha é testada. Nenhum tráfego é gravado."))
                             .font(.system(size: 11, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -143,7 +143,7 @@ struct NetworkView: View {
                 }
 
                 Toggle(isOn: $consent) {
-                    Text("Entendi e autorizo esta checagem local.")
+                    Text(L10n.t("Entendi e autorizo esta checagem local."))
                         .font(.system(size: 12.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textSecondary)
                 }
@@ -154,10 +154,10 @@ struct NetworkView: View {
 
                 Toggle(isOn: $model.networkIsPublic) {
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("Estou numa rede pública")
+                        Text(L10n.t("Estou numa rede pública"))
                             .font(.system(size: 12.5, weight: .semibold, design: .rounded))
                             .foregroundStyle(CBTheme.text)
-                        Text("Hotel, aeroporto, café, coworking ou uma rede que você não controla. Isso torna os cenários de confiança mais rigorosos.")
+                        Text(L10n.t("Hotel, aeroporto, café, coworking ou uma rede que você não controla. Isso torna os cenários de confiança mais rigorosos."))
                             .font(.system(size: 11, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -183,7 +183,7 @@ struct NetworkView: View {
                 Button {
                     model.cancelNetworkAnalysis()
                 } label: {
-                    Label("Cancelar checagem", systemImage: "xmark")
+                    Label(L10n.t("Cancelar checagem"), systemImage: "xmark")
                 }
                 .buttonStyle(SurfaceButtonStyle(tint: CBTheme.critical))
             } else {
@@ -191,22 +191,22 @@ struct NetworkView: View {
                     consent = false
                     model.startNetworkAnalysis()
                 } label: {
-                    Label("Analisar minha rede", systemImage: "wifi")
+                    Label(L10n.t("Analisar minha rede"), systemImage: "wifi")
                 }
                 .buttonStyle(LimeButtonStyle(fullWidth: true))
                 .disabled(!canStart)
 
                 Text(
                     consent
-                        ? "A checagem leva alguns segundos. Você pode continuar usando o Mac."
-                        : "Marque a autorização acima para liberar a checagem."
+                        ? L10n.t("A checagem leva alguns segundos. Você pode continuar usando o Mac.", "The check takes a few seconds. You can keep using the Mac.")
+                        : L10n.t("Marque a autorização acima para liberar a checagem.", "Check the authorization above to enable the check.")
                 )
                 .font(.system(size: 11, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
             }
 
             if let error = model.networkError {
-                NoticeCard(kind: .error, title: "A checagem não terminou", message: error)
+                NoticeCard(kind: .error, title: L10n.t("A checagem não terminou"), message: error)
             }
         }
     }
@@ -218,8 +218,8 @@ struct NetworkView: View {
     private var emptyState: some View {
         NoticeCard(
             kind: .info,
-            title: "Ainda não verificado",
-            message: "Faça a primeira leitura para ver a proteção da Wi-Fi, o estado do roteador e os serviços do Mac visíveis para a rede. Nenhuma alteração será feita."
+            title: L10n.t("Ainda não verificado"),
+            message: L10n.t("Faça a primeira leitura para ver a proteção da Wi-Fi, o estado do roteador e os serviços do Mac visíveis para a rede. Nenhuma alteração será feita.")
         )
     }
 
@@ -238,15 +238,15 @@ struct NetworkView: View {
                 HStack(alignment: .top, spacing: 14) {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 7) {
-                            SectionLabel(text: "Última checagem")
+                            SectionLabel(text: L10n.t("Última checagem"))
                             if !report.findings.isEmpty {
                                 RiskBadge(risk: report.risk, compact: true)
                             }
                         }
-                        Text(report.snapshot.ssid ?? "Sua Wi-Fi")
+                        Text(report.snapshot.ssid ?? L10n.t("Sua Wi-Fi", "Your Wi-Fi"))
                             .font(.system(size: 20, weight: .light, design: .rounded))
                             .foregroundStyle(CBTheme.text)
-                        Text("\(report.finishedAt.relativeShort) · \(report.snapshot.securityLabel)")
+                        Text("\(report.finishedAt.relativeShort) · \(L10n.t(report.snapshot.securityLabel))")
                             .font(.system(size: 11, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                     }
@@ -260,7 +260,9 @@ struct NetworkView: View {
                             .foregroundStyle(
                                 report.findings.isEmpty ? CBTheme.mint : report.risk.color
                             )
-                        Text(report.findings.isEmpty ? "SEM ACHADOS" : (report.findings.count == 1 ? "PONTO" : "PONTOS"))
+                        Text(report.findings.isEmpty
+                            ? L10n.t("SEM ACHADOS", "NO FINDINGS")
+                            : (report.findings.count == 1 ? L10n.t("PONTO", "POINT") : L10n.t("PONTOS", "POINTS")))
                             .font(.system(size: 8.5, weight: .bold, design: .rounded))
                             .tracking(0.6)
                             .foregroundStyle(CBTheme.textTertiary)
@@ -276,20 +278,22 @@ struct NetworkView: View {
 
                 HStack(spacing: 22) {
                     networkMetric(
-                        "Roteador",
-                        report.snapshot.gateway ?? "não identificado"
+                        L10n.t("Roteador", "Router"),
+                        report.snapshot.gateway ?? L10n.t("não identificado", "not identified")
                     )
                     networkMetric(
-                        "Dispositivos",
+                        L10n.t("Dispositivos", "Devices"),
                         "\(report.snapshot.devices.count)"
                     )
                     networkMetric(
-                        "Serviços expostos",
+                        L10n.t("Serviços expostos", "Exposed services"),
                         "\(report.exposedServices.count)"
                     )
                     networkMetric(
                         "VPN",
-                        report.snapshot.vpnActive ? "ativa" : "não detectada"
+                        report.snapshot.vpnActive
+                            ? L10n.t("ativa", "active")
+                            : L10n.t("não detectada", "not detected")
                     )
                 }
 
@@ -297,20 +301,22 @@ struct NetworkView: View {
                     Button {
                         model.copyNetworkGeneralPrompt(report)
                     } label: {
-                        Label("Copiar prompt geral", systemImage: "wand.and.stars")
+                        Label(L10n.t("Copiar prompt geral"), systemImage: "wand.and.stars")
                     }
                     .buttonStyle(LimeButtonStyle())
 
                     Button {
                         model.copyNetworkSummary(report)
                     } label: {
-                        Label("Copiar resumo", systemImage: "doc.on.doc")
+                        Label(L10n.t("Copiar resumo"), systemImage: "doc.on.doc")
                     }
                     .buttonStyle(GhostButtonStyle(tint: CBTheme.lime))
 
                     Spacer()
 
-                    Text(report.context.isPublicNetwork ? "rede marcada como pública" : "rede tratada como confiável")
+                    Text(report.context.isPublicNetwork
+                        ? L10n.t("rede marcada como pública", "network marked as public")
+                        : L10n.t("rede tratada como confiável", "network treated as trusted"))
                         .font(.system(size: 10.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                 }
@@ -335,8 +341,8 @@ struct NetworkView: View {
 
     private func scenarioSection(_ report: NetworkReport) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            SectionLabel(text: "O que pode acontecer")
-            Text("Cada cenário mostra o que foi confirmado agora, o que é possível no seu tipo de rede e o que não foi possível verificar.")
+            SectionLabel(text: L10n.t("O que pode acontecer"))
+            Text(L10n.t("Cada cenário mostra o que foi confirmado agora, o que é possível no seu tipo de rede e o que não foi possível verificar."))
                 .font(.system(size: 12, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -352,12 +358,12 @@ struct NetworkView: View {
         if report.findings.isEmpty {
             NoticeCard(
                 kind: .success,
-                title: "Nenhum ponto de atenção visível",
-                message: "Não encontrei falha grave nas configurações que consegui verificar. Isso não prova que a rede é invulnerável, mas não há nada urgente para corrigir nesta foto."
+                title: L10n.t("Nenhum ponto de atenção visível"),
+                message: L10n.t("Não encontrei falha grave nas configurações que consegui verificar. Isso não prova que a rede é invulnerável, mas não há nada urgente para corrigir nesta foto.")
             )
         } else {
             VStack(alignment: .leading, spacing: 8) {
-                SectionLabel(text: "Pontos de atenção")
+                SectionLabel(text: L10n.t("Pontos de atenção"))
                 ForEach(report.findings) { finding in
                     NetworkFindingCard(finding: finding) {
                         model.copyNetworkFixPrompt(finding)
@@ -375,9 +381,11 @@ struct NetworkView: View {
                 }
             } label: {
                 HStack(spacing: 8) {
-                    SectionLabel(text: "Detalhes técnicos")
+                    SectionLabel(text: L10n.t("Detalhes técnicos"))
                     Spacer()
-                    Text(showDetails ? "Ocultar" : "Mostrar")
+                    Text(showDetails
+                        ? L10n.t("Ocultar", "Hide")
+                        : L10n.t("Mostrar", "Show"))
                         .font(.system(size: 10.5, weight: .medium, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                     Image(systemName: showDetails ? "chevron.up" : "chevron.down")
@@ -390,23 +398,23 @@ struct NetworkView: View {
             if showDetails {
                 SurfaceCard(padding: 14) {
                     VStack(alignment: .leading, spacing: 10) {
-                        detailRow("Wi-Fi", report.snapshot.ssid ?? "não identificada")
-                        detailRow("Proteção", report.snapshot.securityLabel)
-                        detailRow("Interface", report.snapshot.interfaceName ?? "não identificada")
-                        detailRow("Canal", report.snapshot.channel ?? "não informado")
-                        detailRow("Sinal", report.snapshot.signal ?? "não informado")
-                        detailRow("Gateway", report.snapshot.gateway ?? "não identificado")
+                        detailRow("Wi-Fi", report.snapshot.ssid ?? L10n.t("não identificada", "not identified"))
+                        detailRow(L10n.t("Proteção", "Protection"), L10n.t(report.snapshot.securityLabel))
+                        detailRow(L10n.t("Interface", "Interface"), report.snapshot.interfaceName ?? L10n.t("não identificada", "not identified"))
+                        detailRow(L10n.t("Canal", "Channel"), report.snapshot.channel ?? L10n.t("não informado", "not provided"))
+                        detailRow(L10n.t("Sinal", "Signal"), report.snapshot.signal ?? L10n.t("não informado", "not provided"))
+                        detailRow("Gateway", report.snapshot.gateway ?? L10n.t("não identificado", "not identified"))
                         detailRow("DNS", report.snapshot.dnsServers.joined(separator: ", "))
                         detailRow("Host", report.snapshot.hostName)
                         if !report.snapshot.vpnInterfaces.isEmpty {
-                            detailRow("Interfaces VPN", report.snapshot.vpnInterfaces.joined(separator: ", "))
+                            detailRow(L10n.t("Interfaces VPN", "VPN interfaces"), report.snapshot.vpnInterfaces.joined(separator: ", "))
                         }
 
                         if !report.snapshot.devices.isEmpty {
                             Divider().overlay(CBTheme.hairline)
                             ForEach(report.snapshot.devices) { device in
                                 detailRow(
-                                    device.isGateway ? "Roteador" : device.macKind,
+                                    device.isGateway ? L10n.t("Roteador", "Router") : device.macKind,
                                     "\(device.ip) · \(device.mac)"
                                 )
                             }
@@ -416,7 +424,9 @@ struct NetworkView: View {
                             Divider().overlay(CBTheme.hairline)
                             ForEach(report.snapshot.listeningServices) { service in
                                 detailRow(
-                                    service.exposedToLAN ? "Serviço exposto" : "Serviço local",
+                                    service.exposedToLAN
+                                        ? L10n.t("Serviço exposto", "Exposed service")
+                                        : L10n.t("Serviço local", "Local service"),
                                     "\(service.process) · \(service.bind):\(service.port)"
                                 )
                             }
@@ -444,7 +454,7 @@ struct NetworkView: View {
 
     private func limitations(_ items: [String]) -> some View {
         VStack(alignment: .leading, spacing: 7) {
-            SectionLabel(text: "Limites desta análise")
+            SectionLabel(text: L10n.t("Limites desta análise"))
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 HStack(alignment: .top, spacing: 8) {
                     Circle()
@@ -463,14 +473,14 @@ struct NetworkView: View {
 
     private var footer: some View {
         HStack(spacing: 8) {
-            Text("Minha rede: leitura local. Não captura tráfego, não testa senhas e não prova invasão.")
+            Text(L10n.t("Minha rede: leitura local. Não captura tráfego, não testa senhas e não prova invasão."))
                 .font(.system(size: 11.5, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
             Spacer()
             Button {
                 model.settingsSection = .routine
             } label: {
-                Label("Notificações", systemImage: "bell")
+                Label(L10n.t("Notificações"), systemImage: "bell")
             }
             .buttonStyle(GhostButtonStyle())
         }
@@ -496,7 +506,7 @@ private struct NetworkScenarioCard: View {
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
                         .foregroundStyle(CBTheme.text)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text(scenario.status.label.uppercased())
+                    Text(L10n.t(scenario.status.label).uppercased())
                         .font(.system(size: 9.5, weight: .bold, design: .rounded))
                         .tracking(0.7)
                         .foregroundStyle(color)
@@ -511,10 +521,10 @@ private struct NetworkScenarioCard: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             if !scenario.whatCouldHappen.isEmpty {
-                scenarioLabel("O que poderia acontecer", scenario.whatCouldHappen)
+                scenarioLabel(L10n.t("O que poderia acontecer", "What could happen"), scenario.whatCouldHappen)
             }
             if !scenario.protection.isEmpty {
-                scenarioLabel("Como se proteger", scenario.protection)
+                scenarioLabel(L10n.t("Como se proteger", "How to protect yourself"), scenario.protection)
             }
 
             Text(Vocabulary.prose(scenario.basedOn))
@@ -571,7 +581,7 @@ private struct NetworkFindingCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 7) {
                         RiskBadge(risk: finding.severity, compact: true)
-                        Text(finding.category.uppercased())
+                        Text(L10n.t(finding.category).uppercased())
                             .font(.system(size: 9.5, weight: .bold, design: .rounded))
                             .tracking(0.7)
                             .foregroundStyle(CBTheme.textTertiary)
@@ -602,15 +612,15 @@ private struct NetworkFindingCard: View {
                     .textSelection(.enabled)
             }
 
-            labeledText("O que significa", finding.whatItMeans)
-            labeledText("No seu cenário", finding.scenario)
-            labeledText("Chance", finding.likelihood)
-            labeledText("Como corrigir", finding.recommendation)
+            labeledText(L10n.t("O que significa", "What it means"), finding.whatItMeans)
+            labeledText(L10n.t("No seu cenário", "In your scenario"), finding.scenario)
+            labeledText(L10n.t("Chance", "Likelihood"), finding.likelihood)
+            labeledText(L10n.t("Como corrigir", "How to fix"), finding.recommendation)
 
             Button {
                 onCopyPrompt()
             } label: {
-                Label("Copiar prompt de correção", systemImage: "doc.on.doc.fill")
+                Label(L10n.t("Copiar prompt de correção"), systemImage: "doc.on.doc.fill")
             }
             .buttonStyle(GhostButtonStyle(tint: CBTheme.lime))
         }

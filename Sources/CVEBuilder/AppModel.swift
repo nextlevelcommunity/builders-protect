@@ -28,6 +28,9 @@ final class AppModel: ObservableObject {
     @Published private(set) var scanError: String?
     @Published private(set) var launchAtLoginEnabled = false
     @Published private(set) var isRefreshingAuth = false
+    @Published private(set) var isTestingLLM = false
+    @Published private(set) var llmTestResult: String?
+    @Published private(set) var llmTestOK = false
     @Published private(set) var folderPreview: FolderPreview?
     @Published private(set) var isPreviewingFolders = false
     @Published private(set) var redTeamProjects: [ProjectRef] = []
@@ -37,6 +40,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var redTeamProgress: RedTeamProgress?
     @Published private(set) var redTeamReport: RedTeamReport?
     @Published private(set) var redTeamError: String?
+    @Published private(set) var redTeamState: RedTeamState
+    @Published private(set) var redTeamRoutineError: String?
     @Published private(set) var pestProjects: [ProjectRef] = []
     @Published private(set) var isLoadingPestProjects = false
     @Published var pestProjectPath: String?
@@ -54,6 +59,7 @@ final class AppModel: ObservableObject {
     @Published var expandedProjectID: String?
     @Published var settingsSection: SettingsSection = .analysis
     @Published private(set) var toast: String?
+    @Published private(set) var language: AppLanguage
 
     var onOpenSettings: (() -> Void)?
     var onOpenAlert: ((ProjectAlert) -> Void)?
@@ -70,6 +76,7 @@ final class AppModel: ObservableObject {
     private let networkService: NetworkService
     private var scheduler: ScanScheduler?
     private var pestScheduler: PestScheduler?
+    private var redTeamScheduler: RedTeamScheduler?
     private var toastTask: Task<Void, Never>?
     private var previewTask: Task<Void, Never>?
     private var exclusionRescanTask: Task<Void, Never>?
@@ -96,15 +103,19 @@ final class AppModel: ObservableObject {
         self.redTeamService = redTeamService
         self.pestService = pestService
         self.networkService = networkService
-        self.settings = store.loadSettings()
+        let loadedSettings = store.loadSettings()
+        self.settings = loadedSettings
         self.report = store.loadReport()
         self.authStatus = authStore.status()
         self.launchAtLoginEnabled = LaunchAtLogin.isEnabled
         self.redTeamReports = store.loadRedTeamReports()
+        self.redTeamState = store.loadRedTeamState()
         self.pestState = store.loadPestState()
         let networkState = store.loadNetworkState()
         self.networkState = networkState
         self.networkReport = networkState.latest
+        self.language = loadedSettings.appLanguage
+        L10n.language = loadedSettings.appLanguage
     }
 
     var isConfigured: Bool {
@@ -136,9 +147,9 @@ final class AppModel: ObservableObject {
     }
 
     var lastScanLabel: String {
-        if isScanning { return "Verificando agora" }
-        if let report { return "Verificado \(report.finishedAt.relativeShort)" }
-        return "Ainda não verificado"
+        if isScanning { return L10n.t("Verificando agora", "Checking now") }
+        if let report { return L10n.t("Verificado \(report.finishedAt.relativeShort)", "Checked \(report.finishedAt.relativeShort)") }
+        return L10n.t("Ainda não verificado", "Not checked yet")
     }
 
     var lastScanDate: Date? {
@@ -146,7 +157,7 @@ final class AppModel: ObservableObject {
     }
 
     var nextRunLabel: String {
-        guard settings.scheduleEnabled else { return "Rotina desligada" }
+        guard settings.scheduleEnabled else { return L10n.t("Rotina desligada", "Routine off") }
         let calendar = Calendar.current
         guard var target = calendar.date(
             bySettingHour: settings.scheduleHour,
@@ -154,7 +165,7 @@ final class AppModel: ObservableObject {
             second: 0,
             of: Date()
         ) else {
-            return "Rotina diária"
+            return L10n.t("Rotina diária", "Daily routine")
         }
         if target <= Date() {
             target = calendar.date(byAdding: .day, value: 1, to: target) ?? target
@@ -163,13 +174,21 @@ final class AppModel: ObservableObject {
         formatter.dateFormat = "HH:mm"
         let time = formatter.string(from: target)
         return calendar.isDateInToday(target)
-            ? "Hoje às \(time)"
-            : "Amanhã às \(time)"
+            ? L10n.t("Hoje às \(time)", "Today at \(time)")
+            : L10n.t("Amanhã às \(time)", "Tomorrow at \(time)")
     }
 
     var authLabel: String {
-        authStatus.connected ? "IA conectada" : "IA desconectada"
+        authStatus.connected ? L10n.t("IA conectada", "AI connected") : L10n.t("IA desconectada", "AI disconnected")
     }
+
+    /// A IA está utilizável no modo escolhido: sessão do proxy no padrão,
+    /// chave dedicada no modo RTX.
+    var llmReady: Bool {
+        settings.analysisMode.isHack ? settings.hasRTXKey : authStatus.connected
+    }
+
+    var isHackMode: Bool { settings.analysisMode.isHack }
 
     var canScan: Bool {
         !isScanning && !settings.folders.isEmpty
@@ -181,7 +200,26 @@ final class AppModel: ObservableObject {
     }
 
     var canRunRedTeam: Bool {
-        !isRedTeamRunning && selectedRedTeamProject != nil && authStatus.connected
+        !isRedTeamRunning && selectedRedTeamProject != nil && llmReady
+    }
+
+    var redTeamResumeAvailable: Bool {
+        selectedRedTeamReport?.resumeState != nil
+    }
+
+    var selectedRedTeamReport: RedTeamReport? {
+        guard let path = redTeamProjectPath else { return nil }
+        if let redTeamReport, redTeamReport.projectPath == path { return redTeamReport }
+        return redTeamReports[path]
+    }
+
+    var redTeamRoutineForSelectedProject: RedTeamRoutine? {
+        guard let path = redTeamProjectPath else { return nil }
+        return redTeamState.routines.first { $0.projectPath == path }
+    }
+
+    var redTeamNextRunDate: Date? {
+        RedTeamRoutinePlanner.nextRunDate(routines: redTeamState.routines)
     }
 
     var selectedPestProject: ProjectRef? {
@@ -210,7 +248,7 @@ final class AppModel: ObservableObject {
     }
 
     var canRunPest: Bool {
-        !isPestRunning && selectedPestProject != nil && authStatus.connected
+        !isPestRunning && selectedPestProject != nil && llmReady
     }
 
     var pestResumeAvailable: Bool {
@@ -242,6 +280,7 @@ final class AppModel: ObservableObject {
         launchAtLoginEnabled = LaunchAtLogin.isEnabled
         startScheduler()
         startPestScheduler()
+        startRedTeamScheduler()
         purgePestFindings(excludedPaths: settings.excludedPaths)
 
         guard settings.hasCompletedOnboarding, !settings.folders.isEmpty else {
@@ -257,6 +296,7 @@ final class AppModel: ObservableObject {
     func stop() {
         scheduler?.stop()
         pestScheduler?.stop()
+        redTeamScheduler?.stop()
         toastTask?.cancel()
         previewTask?.cancel()
         exclusionRescanTask?.cancel()
@@ -275,7 +315,7 @@ final class AppModel: ObservableObject {
     func scan() {
         guard !isScanning else { return }
         guard !settings.folders.isEmpty else {
-            scanError = "Adicione uma pasta com projetos antes de verificar."
+            scanError = L10n.t("Adicione uma pasta com projetos antes de verificar.", "Add a folder with projects before checking.")
             return
         }
 
@@ -286,8 +326,8 @@ final class AppModel: ObservableObject {
         scanError = nil
         expandedProjectID = nil
         scanProgress = ScanProgress(
-            phase: "Preparando",
-            detail: "Organizando as pastas monitoradas…",
+            phase: L10n.t("Preparando", "Preparing"),
+            detail: L10n.t("Organizando as pastas monitoradas…"),
             fraction: 0
         )
 
@@ -327,7 +367,7 @@ final class AppModel: ObservableObject {
             } catch {
                 self.isScanning = false
                 self.scanProgress = nil
-                self.scanError = error.localizedDescription
+                self.scanError = L10n.t(error.localizedDescription)
             }
         }
     }
@@ -338,7 +378,7 @@ final class AppModel: ObservableObject {
             NotificationService.requestAuthorization()
         }
         if settings.folders.isEmpty {
-            showToast("Adicione uma pasta depois em Ajustes.")
+            showToast(L10n.t("Adicione uma pasta depois em Ajustes.", "Add a folder later in Settings."))
         } else {
             scan()
         }
@@ -374,7 +414,7 @@ final class AppModel: ObservableObject {
             }
             self.redTeamReport = self.redTeamProjectPath.flatMap { self.redTeamReports[$0] }
             if self.redTeamProjects.isEmpty {
-                self.redTeamError = discovery.warnings.first
+                self.redTeamError = discovery.warnings.first.map(L10n.t)
             }
         }
     }
@@ -386,19 +426,44 @@ final class AppModel: ObservableObject {
     }
 
     func startRedTeam() {
+        startRedTeam(projectPath: redTeamProjectPath, resume: redTeamResumeAvailable)
+    }
+
+    /// Aciona o Red Teaming a partir de qualquer tela. Sem consentimento salvo,
+    /// abre Ajustes no Red Teaming para a pessoa autorizar uma vez.
+    func requestRedTeam(projectPath: String) {
+        settingsSection = .redTeam
+        redTeamProjectPath = projectPath
+        redTeamReport = redTeamReports[projectPath]
+        redTeamError = nil
+        openSettings()
+        if settings.redTeamConsent {
+            startRedTeam(projectPath: projectPath, resume: false)
+        }
+    }
+
+    func startRedTeam(projectPath: String?, resume: Bool = false) {
         guard RedTeamingFeature.isEnabled else { return }
         guard !isRedTeamRunning else { return }
-        guard let project = selectedRedTeamProject else {
-            redTeamError = "Selecione um projeto para analisar."
+        guard let path = projectPath, let project = redTeamProjects.first(where: { $0.path == path })
+                ?? projectRef(for: path) else {
+            redTeamError = L10n.t("Selecione um projeto para analisar.", "Select a project to analyze.")
             return
         }
-        guard authStatus.connected else {
-            redTeamError = "Conecte sua conta da Cultura Builder para usar o Red Teaming."
+        guard llmReady else {
+            redTeamError = isHackMode
+                ? L10n.t("Cole a chave RTX em Ajustes > Análises para usar o Red Teaming.", "Paste the RTX key in Settings > AI and security to use Red Teaming.")
+                : L10n.t("Conecte sua conta da Cultura Builder para usar o Red Teaming.", "Connect your Cultura Builder account to use Red Teaming.")
             return
         }
+        guard settings.redTeamConsent else {
+            redTeamError = L10n.t("Autorize o envio do código deste projeto antes de iniciar.", "Authorize sending this project's code before starting.")
+            return
+        }
+        let resumeState = resume ? redTeamReports[project.path]?.resumeState : nil
         let excludedPaths = settings.excludedPaths
         if PathExclusions.contains(project.path, in: PathExclusions.normalized(excludedPaths)) {
-            redTeamError = RedTeamError.projectExcluded.localizedDescription
+            redTeamError = L10n.t(RedTeamError.projectExcluded.localizedDescription)
             return
         }
 
@@ -406,8 +471,12 @@ final class AppModel: ObservableObject {
         isRedTeamRunning = true
         redTeamError = nil
         redTeamProgress = RedTeamProgress(
-            phase: "Preparando",
-            detail: "Lendo a estrutura do projeto…",
+            phase: resumeState == nil
+                ? L10n.t("Preparando", "Preparing")
+                : L10n.t("Retomando", "Resuming"),
+            detail: resumeState == nil
+                ? L10n.t("Lendo a estrutura do projeto…", "Reading the project structure…")
+                : L10n.t("Retomando a análise pausada.", "Resuming the paused analysis."),
             fraction: 0.02
         )
 
@@ -416,6 +485,7 @@ final class AppModel: ObservableObject {
             do {
                 let report = try await service.analyze(
                     project: project,
+                    resume: resumeState,
                     excludedPaths: excludedPaths
                 ) { [weak self] progress in
                     Task { @MainActor in
@@ -423,21 +493,63 @@ final class AppModel: ObservableObject {
                     }
                 }
                 guard let self else { return }
-                self.redTeamReport = report
-                self.redTeamReports[project.path] = report
-                self.store.saveRedTeamReport(report)
-                self.isRedTeamRunning = false
-                self.redTeamProgress = nil
-                self.showToast("Análise Red Teaming concluída")
+                self.finishRedTeam(report)
             } catch is CancellationError {
                 self?.isRedTeamRunning = false
                 self?.redTeamProgress = nil
             } catch {
                 self?.isRedTeamRunning = false
                 self?.redTeamProgress = nil
-                self?.redTeamError = error.localizedDescription
+                self?.redTeamError = L10n.t(error.localizedDescription)
             }
         }
+    }
+
+    private func finishRedTeam(_ report: RedTeamReport) {
+        redTeamReport = report
+        redTeamReports[report.projectPath] = report
+        store.saveRedTeamReport(report)
+        isRedTeamRunning = false
+        redTeamProgress = nil
+
+        var state = redTeamState
+        state.lastRunAt = report.startedAt
+        for index in state.routines.indices where state.routines[index].projectPath == report.projectPath {
+            state.routines[index].lastRunAt = report.startedAt
+            state.routines[index].lastReportID = report.id
+            state.routines[index].updatedAt = Date()
+        }
+        redTeamState = state
+        persistRedTeamState()
+
+        if report.paused {
+            redTeamError = L10n.t("Red Team pausou: \(L10n.t(report.pauseReason ?? "memória insuficiente"))", "Red Team paused: \(L10n.t(report.pauseReason ?? "low memory"))")
+            showToast(L10n.t("Red Team pausou. Retome quando quiser.", "Red Team paused. Resume whenever you want."))
+            NotificationService.notifyRedTeamPaused(report)
+        } else {
+            redTeamError = nil
+            showToast(
+                report.findings.isEmpty
+                    ? L10n.t("Red Team concluído sem achados", "Red Team finished with no findings")
+                    : L10n.t("Red Team concluído: \(report.findings.count) achado(s)", "Red Team finished: \(report.findings.count) finding(s)")
+            )
+            if settings.notifyOnFindings, !report.findings.isEmpty {
+                NotificationService.notifyRedTeam(report)
+            }
+        }
+    }
+
+    private func projectRef(for path: String?) -> ProjectRef? {
+        guard let path else { return nil }
+        if let match = redTeamProjects.first(where: { $0.path == path }) { return match }
+        if let match = pestProjects.first(where: { $0.path == path }) { return match }
+        let url = URL(fileURLWithPath: path)
+        return ProjectRef(
+            path: path,
+            name: url.lastPathComponent,
+            lockfiles: [],
+            ecosystems: []
+        )
     }
 
     func cancelRedTeam() {
@@ -445,7 +557,131 @@ final class AppModel: ObservableObject {
         redTeamTask = nil
         isRedTeamRunning = false
         redTeamProgress = nil
-        showToast("Análise Red Teaming cancelada")
+        showToast(L10n.t("Análise Red Teaming cancelada", "Red Team analysis canceled"))
+    }
+
+    func setRedTeamConsent(_ granted: Bool) {
+        guard settings.redTeamConsent != granted else { return }
+        var next = settings
+        next.redTeamConsent = granted
+        updateSettings(next, announce: false)
+    }
+
+    func redTeamRoutineConflict(
+        hour: Int,
+        minute: Int,
+        routine: RedTeamRoutine,
+        excluding slotID: UUID? = nil
+    ) -> String? {
+        RedTeamRoutinePlanner.conflict(
+            hour: hour,
+            minute: minute,
+            routine: routine,
+            excluding: slotID
+        )
+    }
+
+    private func routine(
+        for projectPath: String,
+        projectName: String
+    ) -> (state: RedTeamState, index: Int?) {
+        var state = redTeamState
+        if let index = state.routines.firstIndex(where: { $0.projectPath == projectPath }) {
+            return (state, index)
+        }
+        state.routines.append(
+            RedTeamRoutine(projectPath: projectPath, projectName: projectName, slots: [])
+        )
+        return (state, state.routines.count - 1)
+    }
+
+    @discardableResult
+    func addRedTeamTime(
+        projectPath: String,
+        projectName: String,
+        hour: Int,
+        minute: Int
+    ) -> String? {
+        var (state, index) = routine(for: projectPath, projectName: projectName)
+        guard let index else { return L10n.t("Não consegui criar a rotina.", "Could not create the routine.") }
+        guard state.routines[index].slots.count < RedTeamRoutinePlanner.maxSlots else {
+            return L10n.t("Esta rotina já tem \(RedTeamRoutinePlanner.maxSlots) horários por dia.", "This routine already has \(RedTeamRoutinePlanner.maxSlots) times a day.")
+        }
+        if let conflict = RedTeamRoutinePlanner.conflict(
+            hour: hour,
+            minute: minute,
+            routine: state.routines[index]
+        ) {
+            return conflict
+        }
+        state.routines[index].slots.append(RedTeamSlot(hour: hour, minute: minute))
+        state.routines[index].slots.sort { $0.minutesOfDay < $1.minutesOfDay }
+        state.routines[index].enabled = true
+        state.routines[index].updatedAt = Date()
+        redTeamState = state
+        persistRedTeamState()
+        showToast(L10n.t("Horário do Red Team salvo", "Red Team time saved"))
+        return nil
+    }
+
+    func removeRedTeamTime(projectPath: String, slotID: UUID) {
+        var state = redTeamState
+        guard let index = state.routines.firstIndex(where: { $0.projectPath == projectPath }) else {
+            return
+        }
+        state.routines[index].slots.removeAll { $0.id == slotID }
+        state.routines[index].updatedAt = Date()
+        redTeamState = state
+        persistRedTeamState()
+        showToast(L10n.t("Horário do Red Team removido", "Red Team time removed"))
+    }
+
+    func setRedTeamRoutineEnabled(projectPath: String, enabled: Bool) {
+        var state = redTeamState
+        guard let index = state.routines.firstIndex(where: { $0.projectPath == projectPath }) else {
+            return
+        }
+        state.routines[index].enabled = enabled
+        state.routines[index].updatedAt = Date()
+        redTeamState = state
+        persistRedTeamState()
+        showToast(enabled ? L10n.t("Rotina do Red Team ativada", "Red Team routine enabled") : L10n.t("Rotina do Red Team pausada", "Red Team routine paused"))
+    }
+
+    func removeRedTeamRoutine(projectPath: String) {
+        var state = redTeamState
+        state.routines.removeAll { $0.projectPath == projectPath }
+        redTeamState = state
+        persistRedTeamState()
+        showToast(L10n.t("Rotina do Red Team removida", "Red Team routine removed"))
+    }
+
+    private func persistRedTeamState() {
+        store.saveRedTeamState(redTeamState)
+        redTeamScheduler?.update(
+            routines: redTeamState.routines,
+            lastRunAt: redTeamState.lastRunAt
+        )
+    }
+
+    private func startRedTeamScheduler() {
+        if redTeamScheduler == nil {
+            redTeamScheduler = RedTeamScheduler(
+                routines: redTeamState.routines,
+                lastRunAt: redTeamState.lastRunAt
+            ) { [weak self] routine in
+                guard let self, self.llmReady, self.settings.redTeamConsent else { return }
+                self.settingsSection = .redTeam
+                self.redTeamProjectPath = routine.projectPath
+                self.startRedTeam(projectPath: routine.projectPath, resume: true)
+            }
+        } else {
+            redTeamScheduler?.update(
+                routines: redTeamState.routines,
+                lastRunAt: redTeamState.lastRunAt
+            )
+        }
+        redTeamScheduler?.start()
     }
 
     func loadPestProjects() {
@@ -489,7 +725,7 @@ final class AppModel: ObservableObject {
                 self.pestState.reports.first { $0.projectPath == path }
             }
             if self.pestProjects.isEmpty {
-                self.pestError = discovery.warnings.first
+                self.pestError = discovery.warnings.first.map(L10n.t)
             }
         }
     }
@@ -569,17 +805,19 @@ final class AppModel: ObservableObject {
 
     func startPest(resume: Bool = false) {
         guard !isPestRunning else { return }
-        guard authStatus.connected else {
-            pestError = "Conecte a conta da Cultura Builder para usar o Pest com IA."
+        guard llmReady else {
+            pestError = isHackMode
+                ? L10n.t("Cole a chave RTX em Ajustes > Análises para usar o Pest.", "Paste the RTX key in Settings > AI and security to use Pest.")
+                : L10n.t("Conecte a conta da Cultura Builder para usar o Pest com IA.", "Connect the Cultura Builder account to use Pest with AI.")
             return
         }
         guard let project = selectedPestProject else {
-            pestError = "Selecione um projeto para analisar."
+            pestError = L10n.t("Selecione um projeto para analisar.", "Select a project to analyze.")
             return
         }
         let resumeState = resume ? selectedPestReport?.resumeState : nil
         if resume, resumeState == nil {
-            pestError = "Não há uma análise pausada para retomar."
+            pestError = L10n.t("Não há uma análise pausada para retomar.", "There is no paused analysis to resume.")
             return
         }
         pestTask?.cancel()
@@ -598,11 +836,11 @@ final class AppModel: ObservableObject {
         pestTask = nil
         isPestRunning = false
         pestProgress = nil
-        showToast("Análise Pest cancelada")
+        showToast(L10n.t("Análise Pest cancelada", "Pest analysis canceled"))
     }
 
     func copyPestFixPrompt(_ finding: PestFinding) {
-        copyText(Vocabulary.prompt(finding.fixPrompt), toast: "Prompt de correção copiado")
+        copyText(Vocabulary.prompt(finding.fixPrompt), toast: L10n.t("Prompt de correção copiado", "Fix prompt copied"))
     }
 
     func copyPestSummary(_ report: PestReport) {
@@ -611,10 +849,10 @@ final class AppModel: ObservableObject {
             report.summary,
             "",
             report.findings.map { finding in
-                "[\(finding.severity.label.uppercased())] \(finding.title) · \(finding.file)\(finding.line.map { ":\($0)" } ?? "")"
+                "[\(L10n.t(finding.severity.label).uppercased())] \(finding.title) · \(finding.file)\(finding.line.map { ":\($0)" } ?? "")"
             }.joined(separator: "\n")
         ]
-        copyText(lines.joined(separator: "\n"), toast: "Resumo do Pest copiado")
+        copyText(lines.joined(separator: "\n"), toast: L10n.t("Resumo do Pest copiado", "Pest summary copied"))
     }
 
     func clearSelectedPestReport() {
@@ -629,7 +867,7 @@ final class AppModel: ObservableObject {
         pestState = state
         pestReport = nil
         persistPestState()
-        showToast("Relatório do Pest removido")
+        showToast(L10n.t("Relatório do Pest removido", "Pest report removed"))
     }
 
     func clearAllPestReports() {
@@ -642,7 +880,7 @@ final class AppModel: ObservableObject {
         pestState = state
         pestReport = nil
         persistPestState()
-        showToast("Todos os relatórios do Pest foram removidos")
+        showToast(L10n.t("Todos os relatórios do Pest foram removidos", "All Pest reports were removed"))
     }
 
     func startNetworkAnalysis() {
@@ -654,8 +892,8 @@ final class AppModel: ObservableObject {
         isNetworkRunning = true
         networkError = nil
         networkProgress = NetworkProgress(
-            phase: "Preparando",
-            detail: "Lendo a rede atual sem capturar tráfego.",
+            phase: L10n.t("Preparando", "Preparing"),
+            detail: L10n.t("Lendo a rede atual sem capturar tráfego."),
             fraction: 0.01
         )
 
@@ -679,42 +917,42 @@ final class AppModel: ObservableObject {
         networkTask = nil
         isNetworkRunning = false
         networkProgress = nil
-        showToast("Análise da rede cancelada")
+        showToast(L10n.t("Análise da rede cancelada", "Network analysis canceled"))
     }
 
     func copyNetworkFixPrompt(_ finding: NetworkFinding) {
-        copyText(Vocabulary.prompt(finding.fixPrompt), toast: "Prompt de correção copiado")
+        copyText(Vocabulary.prompt(finding.fixPrompt), toast: L10n.t("Prompt de correção copiado", "Fix prompt copied"))
     }
 
     func copyNetworkGeneralPrompt(_ report: NetworkReport) {
         copyText(
             Vocabulary.prompt(NetworkPromptBuilder.generalPrompt(for: report)),
-            toast: "Prompt geral da rede copiado"
+            toast: L10n.t("Prompt geral da rede copiado", "General network prompt copied")
         )
     }
 
     func copyNetworkSummary(_ report: NetworkReport) {
         var lines = [
-            "Minha rede",
+            L10n.t("Minha rede", "My network"),
             report.summary,
             "",
             report.assurance
         ]
         if !report.findings.isEmpty {
             lines.append("")
-            lines.append("Pontos de atenção:")
+            lines.append(L10n.t("Pontos de atenção:", "Points of attention:"))
             lines.append(contentsOf: report.findings.map { finding in
-                "[\(finding.severity.label.uppercased())] \(finding.title) · \(finding.target)"
+                "[\(L10n.t(finding.severity.label).uppercased())] \(finding.title) · \(finding.target)"
             })
         }
         if !report.scenarios.isEmpty {
             lines.append("")
-            lines.append("Cenários:")
+            lines.append(L10n.t("Cenários:", "Scenarios:"))
             lines.append(contentsOf: report.scenarios.map { scenario in
-                "\(scenario.status.label): \(scenario.title). \(scenario.explanation)"
+                "\(L10n.t(scenario.status.label)): \(scenario.title). \(scenario.explanation)"
             })
         }
-        copyText(lines.joined(separator: "\n"), toast: "Resumo da rede copiado")
+        copyText(lines.joined(separator: "\n"), toast: L10n.t("Resumo da rede copiado", "Network summary copied"))
     }
 
     private func finishNetwork(_ report: NetworkReport) {
@@ -729,8 +967,8 @@ final class AppModel: ObservableObject {
 
         showToast(
             report.findings.isEmpty
-                ? "Rede verificada sem achados"
-                : "Rede verificada: \(Vocabulary.quantity(report.findings.count, "ponto de atenção", "pontos de atenção"))"
+                ? L10n.t("Rede verificada sem achados", "Network checked with no findings")
+                : L10n.t("Rede verificada: \(Vocabulary.quantity(report.findings.count, "ponto de atenção", "pontos de atenção"))", "Network checked: \(Vocabulary.quantity(report.findings.count, "point of attention", "points of attention"))")
         )
         if settings.notifyOnFindings, !report.findings.isEmpty {
             NotificationService.notifyNetwork(report)
@@ -792,7 +1030,7 @@ final class AppModel: ObservableObject {
         state.routines.sort { $0.timeLabel < $1.timeLabel }
         pestState = state
         persistPestState()
-        showToast("Rotina Pest salva")
+        showToast(L10n.t("Rotina Pest salva", "Pest routine saved"))
         return nil
     }
 
@@ -804,7 +1042,7 @@ final class AppModel: ObservableObject {
         enabled: Bool
     ) -> String? {
         guard let index = pestState.routines.firstIndex(where: { $0.id == id }) else {
-            return "Rotina não encontrada."
+            return L10n.t("Rotina não encontrada.", "Routine not found.")
         }
         let current = pestState.routines[index]
         let normalizedHour = min(23, max(0, hour))
@@ -828,7 +1066,7 @@ final class AppModel: ObservableObject {
         state.routines.sort { $0.timeLabel < $1.timeLabel }
         pestState = state
         persistPestState()
-        showToast(enabled ? "Rotina Pest atualizada" : "Rotina Pest pausada")
+        showToast(enabled ? L10n.t("Rotina Pest atualizada", "Pest routine updated") : L10n.t("Rotina Pest pausada", "Pest routine paused"))
         return nil
     }
 
@@ -847,7 +1085,7 @@ final class AppModel: ObservableObject {
         state.routines.removeAll { $0.id == id }
         pestState = state
         persistPestState()
-        showToast("Rotina Pest removida")
+        showToast(L10n.t("Rotina Pest removida", "Pest routine removed"))
     }
 
     private func performPest(
@@ -856,8 +1094,10 @@ final class AppModel: ObservableObject {
         resume: PestResumeState?
     ) async {
         guard !isPestRunning else { return }
-        guard authStatus.connected else {
-            pestError = "Conecte a conta da Cultura Builder para usar o Pest com IA."
+        guard llmReady else {
+            pestError = isHackMode
+                ? L10n.t("Cole a chave RTX em Ajustes > Análises para usar o Pest.", "Paste the RTX key in Settings > AI and security to use Pest.")
+                : L10n.t("Conecte a conta da Cultura Builder para usar o Pest com IA.", "Connect the Cultura Builder account to use Pest with AI.")
             pestProgress = nil
             isPestRunning = false
             return
@@ -865,7 +1105,7 @@ final class AppModel: ObservableObject {
 
         let excludedPaths = settings.excludedPaths
         if PathExclusions.contains(project.path, in: PathExclusions.normalized(excludedPaths)) {
-            pestError = PestError.projectExcluded.localizedDescription
+            pestError = L10n.t(PestError.projectExcluded.localizedDescription)
             pestProgress = nil
             isPestRunning = false
             return
@@ -876,10 +1116,12 @@ final class AppModel: ObservableObject {
         isPestRunning = true
         pestError = nil
         pestProgress = PestProgress(
-            phase: resume == nil ? "Preparando" : "Retomando",
+            phase: resume == nil
+                ? L10n.t("Preparando", "Preparing")
+                : L10n.t("Retomando", "Resuming"),
             detail: resume == nil
-                ? "Mapeando arquivos com orçamento de memória."
-                : "Retomando a análise pausada.",
+                ? L10n.t("Mapeando arquivos com orçamento de memória.", "Mapping files with a memory budget.")
+                : L10n.t("Retomando a análise pausada.", "Resuming the paused analysis."),
             fraction: 0.01
         )
 
@@ -918,7 +1160,7 @@ final class AppModel: ObservableObject {
             guard pestRunID == runID else { return }
             isPestRunning = false
             pestProgress = nil
-            pestError = error.localizedDescription
+            pestError = L10n.t(error.localizedDescription)
         }
     }
 
@@ -941,16 +1183,16 @@ final class AppModel: ObservableObject {
         pestProgress = nil
 
         if report.paused {
-            let reason = report.pauseReason ?? "memória insuficiente"
-            pestError = "Pest pausou: \(reason)"
-            showToast("Pest pausou. Abra o relatório para retomar.")
+            let reason = report.pauseReason ?? L10n.t("memória insuficiente", "low memory")
+            pestError = L10n.t("Pest pausou: \(L10n.t(reason))", "Pest paused: \(L10n.t(reason))")
+            showToast(L10n.t("Pest pausou. Abra o relatório para retomar.", "Pest paused. Open the report to resume."))
             NotificationService.notifyPestPaused(report)
         } else {
             pestError = nil
             showToast(
                 report.findings.isEmpty
-                    ? "Pest concluído sem achados"
-                    : "Pest concluído: \(report.findings.count) achado(s)"
+                    ? L10n.t("Pest concluído sem achados", "Pest finished with no findings")
+                    : L10n.t("Pest concluído: \(report.findings.count) achado(s)", "Pest finished: \(report.findings.count) finding(s)")
             )
             if settings.notifyOnFindings, !report.findings.isEmpty {
                 NotificationService.notifyPest(report)
@@ -972,7 +1214,7 @@ final class AppModel: ObservableObject {
                 routines: pestState.routines,
                 lastRunAt: pestState.lastRunAt
             ) { [weak self] routine in
-                guard let self, self.authStatus.connected else { return }
+                guard let self, self.llmReady else { return }
                 await self.performPest(
                     project: routine.project,
                     routine: routine,
@@ -998,7 +1240,12 @@ final class AppModel: ObservableObject {
         let wasCompleted = settings.hasCompletedOnboarding
         let previousFolders = settings.folders.map(\.path)
         let previousExclusions = settings.excludedPaths
+        let previousLanguage = settings.appLanguage
         settings = next
+        if next.appLanguage != previousLanguage {
+            language = next.appLanguage
+            L10n.language = next.appLanguage
+        }
         store.saveSettings(next)
         startScheduler()
         if next.notifyOnFindings {
@@ -1013,7 +1260,7 @@ final class AppModel: ObservableObject {
             scheduleExclusionRescan()
         }
         if announce {
-            showToast("Ajustes salvos")
+            showToast(L10n.t("Ajustes salvos", "Settings saved"))
         }
     }
 
@@ -1046,7 +1293,7 @@ final class AppModel: ObservableObject {
         )
         launchAtLoginEnabled = LaunchAtLogin.isEnabled
         if enabled, !ok {
-            showToast("Abra o app instalado para ativar a inicialização automática.")
+            showToast(L10n.t("Abra o app instalado para ativar a inicialização automática.", "Open the installed app to enable launch at login."))
         }
     }
 
@@ -1063,28 +1310,90 @@ final class AppModel: ObservableObject {
             }
             authStatus = authStore.status()
             if force {
-                showToast(authStatus.connected ? "Conta conectada" : "Sessão não encontrada")
+                showToast(authStatus.connected ? L10n.t("Conta conectada", "Account connected") : L10n.t("Sessão não encontrada", "Session not found"))
             }
         } catch {
             authStatus = authStore.status()
             if force {
-                showToast("Não consegui renovar a sessão.")
+                showToast(L10n.t("Não consegui renovar a sessão.", "Could not renew the session."))
             }
         }
     }
 
     func copyLoginCommand() {
-        copyText(authStatus.loginCommand, toast: "Comando copiado")
+        copyText(authStatus.loginCommand, toast: L10n.t("Comando copiado", "Command copied"))
+    }
+
+    func testLLMConnection() async {
+        guard !isTestingLLM else { return }
+        isTestingLLM = true
+        llmTestResult = nil
+        llmTestOK = false
+        defer { isTestingLLM = false }
+
+        if !isHackMode {
+            do {
+                _ = try await authStore.validAccessToken()
+                llmTestOK = true
+                llmTestResult = L10n.t("Sessão da Cultura Builder válida.", "Valid Cultura Builder session.")
+            } catch {
+                llmTestResult = L10n.t(error.localizedDescription)
+            }
+            return
+        }
+
+        guard settings.hasRTXKey else {
+            llmTestResult = LLMConfigurationError.missingKey.localizedDescription
+            return
+        }
+        guard var components = URLComponents(string: settings.rtxEndpointValue) else {
+            llmTestResult = LLMConfigurationError.invalidEndpoint.localizedDescription
+            return
+        }
+        var path = components.path
+        if !path.hasSuffix("/models") {
+            path += path.hasSuffix("/") ? "models" : "/models"
+        }
+        components.path = path
+        guard let url = components.url else {
+            llmTestResult = LLMConfigurationError.invalidEndpoint.localizedDescription
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 25
+        request.setValue("Bearer \(settings.rtxKey)", forHTTPHeaderField: "Authorization")
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+                llmTestResult = L10n.t("O endpoint respondeu com erro \((response as? HTTPURLResponse)?.statusCode ?? 0). Confira a chave.", "The endpoint answered with error \((response as? HTTPURLResponse)?.statusCode ?? 0). Check the key.")
+                return
+            }
+            let models = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])
+                .flatMap { $0["data"] as? [[String: Any]] }?
+                .compactMap { $0["id"] as? String } ?? []
+            if models.contains(settings.rtxModelValue) {
+                llmTestOK = true
+                llmTestResult = L10n.t("Endpoint e chave válidos. Modelo \(settings.rtxModelValue) disponível.", "Endpoint and key valid. Model \(settings.rtxModelValue) available.")
+            } else if models.isEmpty {
+                llmTestOK = true
+                llmTestResult = L10n.t("Endpoint e chave responderam, mas sem lista de modelos.", "Endpoint and key answered, but with no model list.")
+            } else {
+                llmTestResult = L10n.t("A chave funciona, mas o modelo configurado não aparece na lista.", "The key works, but the configured model is not in the list.")
+            }
+        } catch {
+            llmTestResult = L10n.t("Não consegui falar com o endpoint RTX. Confira a URL e a rede.", "Could not reach the RTX endpoint. Check the URL and the network.")
+        }
     }
 
     func copyFixPrompt(_ alert: ProjectAlert) {
-        copyText(Vocabulary.prompt(alert.fixPrompt), toast: "Prompt de correção copiado")
+        copyText(Vocabulary.prompt(alert.fixPrompt), toast: L10n.t("Prompt de correção copiado", "Fix prompt copied"))
     }
 
     func copyAllFixPrompts(_ alerts: [ProjectAlert]) {
         guard !alerts.isEmpty else { return }
         let prompt = PromptBuilder.buildCombined(for: alerts)
-        copyText(Vocabulary.prompt(prompt), toast: "Prompt geral copiado")
+        copyText(Vocabulary.prompt(prompt), toast: L10n.t("Prompt geral copiado", "General prompt copied"))
     }
 
     func copyText(_ text: String, toast message: String) {
@@ -1136,13 +1445,13 @@ final class AppModel: ObservableObject {
                 let projectPath = standardizedPath(item.project.path)
                 return projectPath == path || projectPath.hasPrefix(path + "/")
             }
-            current.summary = "Atualizando a análise após ignorar uma pasta…"
+            current.summary = L10n.t("Atualizando a análise após ignorar uma pasta…", "Updating the analysis after ignoring a folder…")
             current.nextSteps = []
             report = current
             store.saveReport(current)
         }
 
-        showToast("Pasta ignorada. Atualizando a análise…")
+        showToast(L10n.t("Pasta ignorada. Atualizando a análise…", "Folder ignored. Updating the analysis…"))
         scheduleExclusionRescan()
     }
 
@@ -1156,7 +1465,7 @@ final class AppModel: ObservableObject {
         }
         settings = next
         store.saveSettings(next)
-        showToast("Pasta monitorada novamente")
+        showToast(L10n.t("Pasta monitorada novamente", "Folder monitored again"))
     }
 
     private func scheduleExclusionRescan() {
@@ -1196,9 +1505,9 @@ final class AppModel: ObservableObject {
 
     func pickFolders() -> FolderPickResult {
         let panel = NSOpenPanel()
-        panel.title = "Escolher pastas de projetos"
-        panel.message = "A varredura lê apenas manifests e lockfiles. Worktrees do Git são ignoradas automaticamente e podem ser reativadas em Ajustes > Pastas."
-        panel.prompt = "Monitorar"
+        panel.title = L10n.t("Escolher pastas de projetos", "Choose project folders")
+        panel.message = L10n.t("A varredura lê apenas manifests e lockfiles. Worktrees do Git são ignoradas automaticamente e podem ser reativadas em Ajustes > Pastas.", "The scan reads only manifests and lockfiles. Git worktrees are ignored automatically and can be reactivated in Settings > Folders.")
+        panel.prompt = L10n.t("Monitorar", "Monitor")
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = true

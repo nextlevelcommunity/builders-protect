@@ -59,27 +59,27 @@ public enum LLMError: Error, LocalizedError {
 }
 
 public final class LLMClient: @unchecked Sendable {
-    private let endpoint = URL(
-        string: "https://hub.culturabuilder.com/api/builder-ai/gateway/v1/chat/completions"
-    )!
     private let authStore: BuilderAuthStore
     private let session: URLSession
+    private let settingsProvider: @Sendable () -> AppSettings
 
     public init(
         authStore: BuilderAuthStore = .shared,
-        session: URLSession = .shared
+        session: URLSession = .shared,
+        settingsProvider: @escaping @Sendable () -> AppSettings = { SettingsStore.shared.loadSettings() }
     ) {
         self.authStore = authStore
         self.session = session
+        self.settingsProvider = settingsProvider
+    }
+
+    private var outputLanguage: String {
+        settingsProvider().appLanguage.isPortuguese ? "português do Brasil" : "English"
     }
 
     public func diagnose(alerts: [ProjectAlert]) async throws -> LLMDiagnosis {
-        let token: String
-        do {
-            token = try await authStore.validAccessToken()
-        } catch {
-            throw LLMError.authUnavailable(error.localizedDescription)
-        }
+        let configuration = try await resolveConfiguration()
+        let language = outputLanguage
 
         let payload = try makePayload(alerts: alerts)
         let system = """
@@ -92,7 +92,7 @@ public final class LLMClient: @unchecked Sendable {
         - Não invente uma versão corrigida quando o campo estiver ausente; diga "atualizar para a última versão corrigida compatível".
         - Não cite cve.now e não inclua contagens de vulnerabilidades nos headlines; descreva o risco e os pacotes afetados.
         - Trate KEV como prioridade máxima, seguido de CVSS alto e dependências de produção.
-        - Seja específico, direto e escreva em português do Brasil.
+        - Seja específico, direto e escreva em \(language).
         - Não produza análise passo a passo; vá direto ao objeto JSON.
         - Cada item de projects deve usar exatamente um dos caminhos fornecidos em projetos[].caminho.
         - diagnosis deve explicar o risco real e o que priorizar.
@@ -109,7 +109,7 @@ public final class LLMClient: @unchecked Sendable {
         \(payload)
         """
 
-        let content = try await complete(system: system, user: user, token: token)
+        let content = try await complete(system: system, user: user, configuration: configuration)
         return try parseDiagnosis(content, alerts: alerts)
     }
 
@@ -119,12 +119,8 @@ public final class LLMClient: @unchecked Sendable {
         chunkIndex: Int,
         chunkCount: Int
     ) async throws -> RedTeamLLMResult {
-        let token: String
-        do {
-            token = try await authStore.validAccessToken()
-        } catch {
-            throw LLMError.authUnavailable(error.localizedDescription)
-        }
+        let configuration = try await resolveConfiguration()
+        let language = outputLanguage
 
         let payload = try makeRedTeamPayload(
             project: project,
@@ -151,7 +147,7 @@ public final class LLMClient: @unchecked Sendable {
         - Não reporte dependências desatualizadas, CVEs de pacotes ou problemas já cobertos pela análise de lockfiles.
         - Não inclua segredos, tokens ou valores sensíveis na resposta.
         - Máximo de 15 achados, priorizando os de maior impacto e maior confiança.
-        - Escreva em português do Brasil, de forma direta e técnica.
+        - Escreva em \(language), de forma direta e técnica.
         - Se não houver achados, devolva findings vazio e um summary explicando o que foi revisado.
 
         Formato exato:
@@ -167,7 +163,7 @@ public final class LLMClient: @unchecked Sendable {
         \(payload)
         """
 
-        let content = try await completeRedTeam(system: system, user: user, token: token)
+        let content = try await completeRedTeam(system: system, user: user, configuration: configuration)
         return try parseRedTeam(content)
     }
 
@@ -178,12 +174,8 @@ public final class LLMClient: @unchecked Sendable {
         chunkIndex: Int,
         chunkCount: Int
     ) async throws -> PestLLMResult {
-        let token: String
-        do {
-            token = try await authStore.validAccessToken()
-        } catch {
-            throw LLMError.authUnavailable(error.localizedDescription)
-        }
+        let configuration = try await resolveConfiguration()
+        let language = outputLanguage
 
         let payload = try makePestPayload(
             project: project,
@@ -214,7 +206,7 @@ public final class LLMClient: @unchecked Sendable {
         - Não inclua segredos, tokens ou valores sensíveis na resposta.
         - Máximo de 8 achados por bloco, priorizando impacto e confiança.
         - Todo achado precisa de fix_prompt completo, pronto para colar em um agente de código.
-        - Escreva em português do Brasil, de forma direta e técnica.
+        - Escreva em \(language), de forma direta e técnica.
         - Se não houver achados, devolva findings vazio e um summary explicando o que foi revisado.
 
         Formato exato:
@@ -230,7 +222,7 @@ public final class LLMClient: @unchecked Sendable {
         \(payload)
         """
 
-        let content = try await completePest(system: system, user: user, token: token)
+        let content = try await completePest(system: system, user: user, configuration: configuration)
         return try parsePest(
             content,
             project: project,
@@ -239,16 +231,36 @@ public final class LLMClient: @unchecked Sendable {
         )
     }
 
+    private func resolveConfiguration() async throws -> LLMConfiguration {
+        let settings = settingsProvider()
+        let configuration: LLMConfiguration
+        do {
+            configuration = try settings.llmConfiguration()
+        } catch {
+            throw LLMError.authUnavailable(error.localizedDescription)
+        }
+
+        guard configuration.mode == .standard else { return configuration }
+
+        var resolved = configuration
+        do {
+            resolved.token = try await authStore.validAccessToken()
+        } catch {
+            throw LLMError.authUnavailable(error.localizedDescription)
+        }
+        return resolved
+    }
+
     private func completePest(
         system: String,
         user: String,
-        token: String
+        configuration: LLMConfiguration
     ) async throws -> String {
         do {
             return try await requestCompletion(
                 system: system,
                 user: user,
-                token: token,
+                configuration: configuration,
                 jsonMode: true,
                 maxTokens: 6_000,
                 timeout: 240,
@@ -259,7 +271,7 @@ public final class LLMClient: @unchecked Sendable {
             return try await requestCompletion(
                 system: system,
                 user: user,
-                token: token,
+                configuration: configuration,
                 jsonMode: false,
                 maxTokens: 6_000,
                 timeout: 240,
@@ -268,16 +280,11 @@ public final class LLMClient: @unchecked Sendable {
             )
         } catch LLMError.requestFailed(let message)
             where message.contains("401") || message.contains("403") {
-            let refreshed: String
-            do {
-                refreshed = try await authStore.forceRefresh()
-            } catch {
-                throw LLMError.authUnavailable(error.localizedDescription)
-            }
+            let refreshed = try await refreshedConfiguration(configuration)
             return try await requestCompletion(
                 system: system,
                 user: user,
-                token: refreshed,
+                configuration: refreshed,
                 jsonMode: true,
                 maxTokens: 6_000,
                 timeout: 240,
@@ -290,13 +297,13 @@ public final class LLMClient: @unchecked Sendable {
     private func completeRedTeam(
         system: String,
         user: String,
-        token: String
+        configuration: LLMConfiguration
     ) async throws -> String {
         do {
             return try await requestCompletion(
                 system: system,
                 user: user,
-                token: token,
+                configuration: configuration,
                 jsonMode: true,
                 maxTokens: 8_000,
                 timeout: 300,
@@ -307,7 +314,7 @@ public final class LLMClient: @unchecked Sendable {
             return try await requestCompletion(
                 system: system,
                 user: user,
-                token: token,
+                configuration: configuration,
                 jsonMode: false,
                 maxTokens: 8_000,
                 timeout: 300,
@@ -316,16 +323,11 @@ public final class LLMClient: @unchecked Sendable {
             )
         } catch LLMError.requestFailed(let message)
             where message.contains("401") || message.contains("403") {
-            let refreshed: String
-            do {
-                refreshed = try await authStore.forceRefresh()
-            } catch {
-                throw LLMError.authUnavailable(error.localizedDescription)
-            }
+            let refreshed = try await refreshedConfiguration(configuration)
             return try await requestCompletion(
                 system: system,
                 user: user,
-                token: refreshed,
+                configuration: refreshed,
                 jsonMode: true,
                 maxTokens: 8_000,
                 timeout: 300,
@@ -338,51 +340,67 @@ public final class LLMClient: @unchecked Sendable {
     private func complete(
         system: String,
         user: String,
-        token: String
+        configuration: LLMConfiguration
     ) async throws -> String {
         do {
             return try await requestCompletion(
                 system: system,
                 user: user,
-                token: token,
+                configuration: configuration,
                 jsonMode: true
             )
         } catch LLMError.requestFailed(let message) where message.contains("400") {
             return try await requestCompletion(
                 system: system,
                 user: user,
-                token: token,
+                configuration: configuration,
                 jsonMode: false
             )
         } catch LLMError.requestFailed(let message)
             where message.contains("401") || message.contains("403") {
-            let refreshed: String
-            do {
-                refreshed = try await authStore.forceRefresh()
-            } catch {
-                throw LLMError.authUnavailable(error.localizedDescription)
-            }
+            let refreshed = try await refreshedConfiguration(configuration)
             return try await requestCompletion(
                 system: system,
                 user: user,
-                token: refreshed,
+                configuration: refreshed,
                 jsonMode: true
             )
         }
     }
 
+    private func refreshedConfiguration(_ configuration: LLMConfiguration) async throws -> LLMConfiguration {
+        guard configuration.mode == .standard else {
+            // A chave RTX é fixa; se ela falhar, o erro real volta para a tela.
+            return configuration
+        }
+        var refreshed = configuration
+        do {
+            refreshed.token = try await authStore.forceRefresh()
+        } catch {
+            throw LLMError.authUnavailable(error.localizedDescription)
+        }
+        return refreshed
+    }
+
     private func requestCompletion(
         system: String,
         user: String,
-        token: String,
+        configuration: LLMConfiguration,
         jsonMode: Bool,
         maxTokens: Int = 16_000,
         timeout: TimeInterval = 120,
         reasoningEffort: String = "minimal",
         temperature: Double = 0.15
     ) async throws -> String {
+        guard let token = configuration.token, !token.isEmpty else {
+            throw LLMError.authUnavailable(
+                configuration.mode == .rtx
+                    ? LLMConfigurationError.missingKey.localizedDescription
+                    : "Conecte sua conta da Cultura Builder."
+            )
+        }
         var body: [String: Any] = [
-            "model": "builder-auto",
+            "model": configuration.model,
             "messages": [
                 ["role": "system", "content": system],
                 ["role": "user", "content": user]
@@ -396,7 +414,7 @@ public final class LLMClient: @unchecked Sendable {
         }
 
         let data = try JSONSerialization.data(withJSONObject: body)
-        var request = URLRequest(url: endpoint)
+        var request = URLRequest(url: configuration.endpoint)
         request.httpMethod = "POST"
         request.timeoutInterval = timeout
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -409,7 +427,11 @@ public final class LLMClient: @unchecked Sendable {
         do {
             (responseData, response) = try await session.data(for: request)
         } catch {
-            throw LLMError.requestFailed("Não consegui falar com a LLM da Cultura Builder.")
+            throw LLMError.requestFailed(
+                configuration.mode == .rtx
+                    ? "Não consegui falar com o endpoint RTX. Confira a URL e a chave em Ajustes > Análises."
+                    : "Não consegui falar com a LLM da Cultura Builder."
+            )
         }
 
         guard let http = response as? HTTPURLResponse else {
@@ -417,7 +439,11 @@ public final class LLMClient: @unchecked Sendable {
         }
         guard http.statusCode == 200 else {
             if http.statusCode == 401 || http.statusCode == 403 {
-                throw LLMError.requestFailed("401 não autorizado")
+                throw LLMError.requestFailed(
+                    configuration.mode == .rtx
+                        ? "401 não autorizado. Confira a chave RTX em Ajustes > Análises."
+                        : "401 não autorizado"
+                )
             }
             if http.statusCode == 400 {
                 throw LLMError.requestFailed("400 requisição recusada")

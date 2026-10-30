@@ -63,7 +63,7 @@ struct AlertDetailView: View {
                 BrandMark(size: 44)
 
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("ALERTA DE SEGURANÇA")
+                    Text(L10n.t("ALERTA DE SEGURANÇA"))
                         .font(.system(size: 9.5, weight: .bold, design: .rounded))
                         .tracking(1.6)
                         .foregroundStyle(CBTheme.textTertiary)
@@ -88,13 +88,13 @@ struct AlertDetailView: View {
                         RiskBadge(risk: alert.risk)
                         if alert.hasKEV { KEVBadge() }
                     }
-                    Text("Gerado \(alert.generatedAt.relativeShort)")
+                    Text(L10n.t("Gerado \(alert.generatedAt.relativeShort)", "Generated \(alert.generatedAt.relativeShort)"))
                         .font(.system(size: 9.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                     if alert.llmUsed {
                         HStack(spacing: 3) {
                             Image(systemName: "sparkles")
-                            Text("análise da Cultura Builder")
+                            Text(L10n.t("análise da Cultura Builder"))
                         }
                         .font(.system(size: 9.5, weight: .semibold, design: .rounded))
                         .foregroundStyle(CBTheme.lime)
@@ -106,22 +106,30 @@ struct AlertDetailView: View {
                 Button {
                     model.copyFixPrompt(alert)
                 } label: {
-                    Label("Copiar prompt de correção", systemImage: "doc.on.doc")
+                    Label(L10n.t("Copiar prompt de correção"), systemImage: "doc.on.doc")
                 }
                 .buttonStyle(LimeButtonStyle())
 
                 Button {
                     model.openProjectFolder(alert)
                 } label: {
-                    Label("Abrir pasta", systemImage: "folder")
+                    Label(L10n.t("Abrir pasta"), systemImage: "folder")
                 }
                 .buttonStyle(SurfaceButtonStyle())
+
+                Button {
+                    model.requestRedTeam(projectPath: alert.project.path)
+                } label: {
+                    Label(L10n.t("Acionar Red Team"), systemImage: "shield.lefthalf.filled")
+                }
+                .buttonStyle(SurfaceButtonStyle())
+                .disabled(model.isRedTeamRunning)
 
                 if let first = alert.findings.first {
                     Button {
                         model.openURL(first.url)
                     } label: {
-                        Label("Abrir detalhes", systemImage: "arrow.up.forward")
+                        Label(L10n.t("Abrir detalhes"), systemImage: "arrow.up.forward")
                     }
                     .buttonStyle(GhostButtonStyle())
                 }
@@ -135,7 +143,7 @@ struct AlertDetailView: View {
         HStack(spacing: 0) {
             detailStat(
                 "\(alert.packageCount)",
-                alert.packageCount == 1 ? "pacote" : "pacotes",
+                Vocabulary.quantity(alert.packageCount, "pacote", "pacotes"),
                 CBTheme.text
             )
         }
@@ -161,13 +169,13 @@ struct AlertDetailView: View {
     private var diagnosisGrid: some View {
         HStack(alignment: .top, spacing: 12) {
             infoCard(
-                label: "Diagnóstico",
+                label: L10n.t("Diagnóstico"),
                 symbol: "stethoscope",
                 text: Vocabulary.prose(alert.diagnosis),
                 tint: alert.risk.color
             )
             infoCard(
-                label: "O que fazer",
+                label: L10n.t("O que fazer"),
                 symbol: "wrench.and.screwdriver",
                 text: Vocabulary.prose(alert.recommendation),
                 tint: CBTheme.lime
@@ -203,7 +211,7 @@ struct AlertDetailView: View {
     private var packagesSection: some View {
         VStack(alignment: .leading, spacing: 9) {
             HStack {
-                SectionLabel(text: "Pacotes afetados")
+                SectionLabel(text: L10n.t("Pacotes afetados"))
                 Spacer()
                 Text(Vocabulary.quantity(alert.packageCount, "pacote", "pacotes"))
                     .font(.system(size: 10, weight: .semibold, design: .rounded))
@@ -232,12 +240,12 @@ struct AlertDetailView: View {
     private var promptSection: some View {
         VStack(alignment: .leading, spacing: 9) {
             HStack {
-                SectionLabel(text: "Prompt de correção")
+                SectionLabel(text: L10n.t("Prompt de correção"))
                 Spacer()
                 Button {
                     model.copyFixPrompt(alert)
                 } label: {
-                    Label("Copiar", systemImage: "doc.on.doc")
+                    Label(L10n.t("Copiar"), systemImage: "doc.on.doc")
                 }
                 .buttonStyle(SurfaceButtonStyle(tint: CBTheme.lime))
             }
@@ -254,7 +262,7 @@ struct AlertDetailView: View {
             .frame(maxHeight: 250)
             .background(Color.black.opacity(0.25), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-            Text("Revise o prompt antes de aplicar. Ele foi escrito para um agente de código e não faz commit sozinho.")
+            Text(L10n.t("Revise o prompt antes de aplicar. Ele foi escrito para um agente de código e não faz commit sozinho."))
                 .font(.system(size: 10.5, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
         }
@@ -262,14 +270,14 @@ struct AlertDetailView: View {
 
     private var footer: some View {
         HStack(spacing: 8) {
-            Text("Fonte: base de vulnerabilidades · análise: Cultura Builder")
+            Text(L10n.t("Fonte: base de vulnerabilidades · análise: Cultura Builder"))
                 .font(.system(size: 10, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
             Spacer()
             Button {
                 model.openProjectFolder(alert)
             } label: {
-                Label("Abrir pasta no Finder", systemImage: "folder")
+                Label(L10n.t("Abrir pasta no Finder"), systemImage: "folder")
             }
             .buttonStyle(GhostButtonStyle())
         }
@@ -347,7 +355,7 @@ private struct FindingRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 7) {
-                Text("Vulnerabilidade")
+                Text(L10n.t("Vulnerabilidade"))
                     .font(.system(size: 10.5, weight: .bold, design: .monospaced))
                     .foregroundStyle(finding.severity.color)
 
@@ -356,7 +364,7 @@ private struct FindingRow: View {
                 Spacer(minLength: 4)
 
                 if let fixed = finding.fixedVersion {
-                    Text("corrigido em \(fixed)")
+                    Text(L10n.t("corrigido em \(fixed)", "fixed in \(fixed)"))
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
                         .foregroundStyle(CBTheme.mint)
                 }
@@ -368,7 +376,7 @@ private struct FindingRow: View {
                         .font(.system(size: 9.5, weight: .bold))
                 }
                 .buttonStyle(IconButtonStyle(size: 21))
-                .help("Abrir detalhes da vulnerabilidade")
+                .help(L10n.t("Abrir detalhes da vulnerabilidade"))
             }
 
             Text(Vocabulary.prose(finding.title))

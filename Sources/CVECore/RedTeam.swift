@@ -14,6 +14,18 @@ public struct RedTeamSourceFile: Codable, Identifiable, Sendable {
     }
 }
 
+public struct RedTeamFileRef: Codable, Identifiable, Hashable, Sendable {
+    public var path: String
+    public var bytes: Int
+
+    public var id: String { path }
+
+    public init(path: String, bytes: Int) {
+        self.path = path
+        self.bytes = bytes
+    }
+}
+
 public struct RedTeamFinding: Codable, Identifiable, Sendable {
     public var severity: RiskLevel
     public var title: String
@@ -54,6 +66,40 @@ public struct RedTeamFinding: Codable, Identifiable, Sendable {
     }
 }
 
+public struct RedTeamResumeState: Codable, Sendable {
+    public var startedAt: Date
+    public var processedPaths: [String]
+    public var findings: [RedTeamFinding]
+    public var summaryParts: [String]
+    public var limitations: [String]
+    public var filesAnalyzed: Int
+    public var bytesAnalyzed: Int
+    public var chunksAnalyzed: Int
+    public var routineID: UUID?
+
+    public init(
+        startedAt: Date,
+        processedPaths: [String],
+        findings: [RedTeamFinding],
+        summaryParts: [String],
+        limitations: [String],
+        filesAnalyzed: Int,
+        bytesAnalyzed: Int,
+        chunksAnalyzed: Int,
+        routineID: UUID?
+    ) {
+        self.startedAt = startedAt
+        self.processedPaths = processedPaths
+        self.findings = findings
+        self.summaryParts = summaryParts
+        self.limitations = limitations
+        self.filesAnalyzed = filesAnalyzed
+        self.bytesAnalyzed = bytesAnalyzed
+        self.chunksAnalyzed = chunksAnalyzed
+        self.routineID = routineID
+    }
+}
+
 public struct RedTeamReport: Codable, Identifiable, Sendable {
     public var id: UUID
     public var projectPath: String
@@ -67,6 +113,11 @@ public struct RedTeamReport: Codable, Identifiable, Sendable {
     public var chunksAnalyzed: Int
     public var limitations: [String]
     public var llmUsed: Bool
+    public var paused: Bool
+    public var pauseReason: String?
+    public var resumeState: RedTeamResumeState?
+    public var memoryBudgetBytes: Int?
+    public var availableMemoryAtStart: Int?
 
     public init(
         id: UUID = UUID(),
@@ -80,7 +131,12 @@ public struct RedTeamReport: Codable, Identifiable, Sendable {
         bytesAnalyzed: Int,
         chunksAnalyzed: Int,
         limitations: [String],
-        llmUsed: Bool = true
+        llmUsed: Bool = true,
+        paused: Bool = false,
+        pauseReason: String? = nil,
+        resumeState: RedTeamResumeState? = nil,
+        memoryBudgetBytes: Int? = nil,
+        availableMemoryAtStart: Int? = nil
     ) {
         self.id = id
         self.projectPath = projectPath
@@ -94,10 +150,64 @@ public struct RedTeamReport: Codable, Identifiable, Sendable {
         self.chunksAnalyzed = chunksAnalyzed
         self.limitations = limitations
         self.llmUsed = llmUsed
+        self.paused = paused
+        self.pauseReason = pauseReason
+        self.resumeState = resumeState
+        self.memoryBudgetBytes = memoryBudgetBytes
+        self.availableMemoryAtStart = availableMemoryAtStart
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case projectPath
+        case projectName
+        case startedAt
+        case finishedAt
+        case summary
+        case findings
+        case filesAnalyzed
+        case bytesAnalyzed
+        case chunksAnalyzed
+        case limitations
+        case llmUsed
+        case paused
+        case pauseReason
+        case resumeState
+        case memoryBudgetBytes
+        case availableMemoryAtStart
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        projectPath = try container.decode(String.self, forKey: .projectPath)
+        projectName = try container.decodeIfPresent(String.self, forKey: .projectName) ?? "projeto"
+        startedAt = try container.decodeIfPresent(Date.self, forKey: .startedAt) ?? Date()
+        finishedAt = try container.decodeIfPresent(Date.self, forKey: .finishedAt) ?? Date()
+        summary = try container.decodeIfPresent(String.self, forKey: .summary) ?? ""
+        findings = try container.decodeIfPresent([RedTeamFinding].self, forKey: .findings) ?? []
+        filesAnalyzed = try container.decodeIfPresent(Int.self, forKey: .filesAnalyzed) ?? 0
+        bytesAnalyzed = try container.decodeIfPresent(Int.self, forKey: .bytesAnalyzed) ?? 0
+        chunksAnalyzed = try container.decodeIfPresent(Int.self, forKey: .chunksAnalyzed) ?? 0
+        limitations = try container.decodeIfPresent([String].self, forKey: .limitations) ?? []
+        llmUsed = try container.decodeIfPresent(Bool.self, forKey: .llmUsed) ?? true
+        paused = try container.decodeIfPresent(Bool.self, forKey: .paused) ?? false
+        pauseReason = try container.decodeIfPresent(String.self, forKey: .pauseReason)
+        resumeState = try container.decodeIfPresent(RedTeamResumeState.self, forKey: .resumeState)
+        memoryBudgetBytes = try container.decodeIfPresent(Int.self, forKey: .memoryBudgetBytes)
+        availableMemoryAtStart = try container.decodeIfPresent(Int.self, forKey: .availableMemoryAtStart)
     }
 
     public var risk: RiskLevel {
         findings.map(\.severity).max() ?? .unknown
+    }
+
+    public var criticalCount: Int {
+        findings.filter { $0.severity == .critical }.count
+    }
+
+    public var highCount: Int {
+        findings.filter { $0.severity == .high }.count
     }
 }
 
@@ -105,11 +215,21 @@ public struct RedTeamProgress: Sendable {
     public var phase: String
     public var detail: String
     public var fraction: Double
+    public var availableMemoryBytes: UInt64?
+    public var budgetBytes: UInt64?
 
-    public init(phase: String, detail: String, fraction: Double) {
+    public init(
+        phase: String,
+        detail: String,
+        fraction: Double,
+        availableMemoryBytes: UInt64? = nil,
+        budgetBytes: UInt64? = nil
+    ) {
         self.phase = phase
         self.detail = detail
         self.fraction = fraction
+        self.availableMemoryBytes = availableMemoryBytes
+        self.budgetBytes = budgetBytes
     }
 }
 
@@ -139,10 +259,26 @@ public struct RedTeamCollection: Sendable {
     }
 }
 
+public struct RedTeamInventory: Sendable {
+    public var files: [RedTeamFileRef]
+    public var warnings: [String]
+    public var skippedFiles: Int
+    public var totalBytes: Int
+
+    public init(files: [RedTeamFileRef], warnings: [String], skippedFiles: Int, totalBytes: Int) {
+        self.files = files
+        self.warnings = warnings
+        self.skippedFiles = skippedFiles
+        self.totalBytes = totalBytes
+    }
+}
+
 public enum RedTeamError: Error, LocalizedError {
     case projectNotFound
     case projectExcluded
     case noFiles
+    case insufficientMemory(String)
+    case insufficientDisk(String)
     case analysisFailed(String)
 
     public var errorDescription: String? {
@@ -153,9 +289,89 @@ public enum RedTeamError: Error, LocalizedError {
             return "Este projeto está ignorado em Ajustes > Pastas. Reative a pasta para analisar."
         case .noFiles:
             return "Nenhum arquivo de código legível foi encontrado neste projeto."
+        case .insufficientMemory(let detail):
+            return detail
+        case .insufficientDisk(let detail):
+            return detail
         case .analysisFailed(let detail):
             return detail
         }
+    }
+}
+
+public struct RedTeamBudget: Sendable, Equatable {
+    public var maxFiles: Int
+    public var maxFileBytes: Int
+    public var maxTotalBytes: Int
+    public var maxChunkBytes: Int
+    public var maxChunks: Int
+    public var maxRSSGrowthBytes: UInt64
+    public var minimumAvailableBytes: UInt64
+
+    public init(
+        maxFiles: Int,
+        maxFileBytes: Int,
+        maxTotalBytes: Int,
+        maxChunkBytes: Int,
+        maxChunks: Int,
+        maxRSSGrowthBytes: UInt64,
+        minimumAvailableBytes: UInt64
+    ) {
+        self.maxFiles = maxFiles
+        self.maxFileBytes = maxFileBytes
+        self.maxTotalBytes = maxTotalBytes
+        self.maxChunkBytes = maxChunkBytes
+        self.maxChunks = maxChunks
+        self.maxRSSGrowthBytes = maxRSSGrowthBytes
+        self.minimumAvailableBytes = minimumAvailableBytes
+    }
+}
+
+/// O Red Teaming segura pouca coisa em memória: a lista de arquivos primeiro,
+/// um bloco de cada vez depois. O orçamento cai junto com a memória livre.
+public enum RedTeamMemoryGuard {
+    public static let minimumAvailableBytes = PestMemoryGuard.minimumAvailableBytes
+    public static let minimumDiskBytes = PestMemoryGuard.minimumDiskBytes
+    public static let hardRSSGrowthCap: UInt64 = 96 * 1024 * 1024
+    public static let minimumRSSGrowth: UInt64 = 24 * 1024 * 1024
+
+    public static func budget(for snapshot: PestMemorySnapshot) -> RedTeamBudget? {
+        guard snapshot.availableBytes >= minimumAvailableBytes else { return nil }
+        guard (snapshot.diskAvailableBytes ?? Int64.max) >= minimumDiskBytes else { return nil }
+
+        let quarter = snapshot.availableBytes / 4
+        let growth = max(minimumRSSGrowth, min(hardRSSGrowthCap, quarter))
+        let fullRun = snapshot.availableBytes >= 512 * 1024 * 1024
+
+        return RedTeamBudget(
+            maxFiles: fullRun ? 90 : 40,
+            maxFileBytes: fullRun ? 48_000 : 32_000,
+            maxTotalBytes: fullRun ? 700_000 : 320_000,
+            maxChunkBytes: fullRun ? 60_000 : 34_000,
+            maxChunks: fullRun ? 14 : 8,
+            maxRSSGrowthBytes: growth,
+            minimumAvailableBytes: minimumAvailableBytes
+        )
+    }
+
+    public static func pauseReason(
+        baselineRSS: UInt64,
+        budget: RedTeamBudget
+    ) -> String? {
+        let current = PestMemoryGuard.snapshot()
+        if current.availableBytes < budget.minimumAvailableBytes {
+            return "O Mac está com \(PestMemoryGuard.formatBytes(current.availableBytes)) de memória disponível; o mínimo seguro para o Red Teaming é \(PestMemoryGuard.formatBytes(budget.minimumAvailableBytes))."
+        }
+        let growth = current.residentBytes > baselineRSS
+            ? current.residentBytes - baselineRSS
+            : 0
+        if growth > budget.maxRSSGrowthBytes {
+            return "O Red Teaming chegou a \(PestMemoryGuard.formatBytes(growth)) de memória adicional, acima do limite de \(PestMemoryGuard.formatBytes(budget.maxRSSGrowthBytes))."
+        }
+        if let disk = current.diskAvailableBytes, disk < minimumDiskBytes {
+            return "O disco está com apenas \(PestMemoryGuard.formatBytes(UInt64(max(disk, 0)))) livres; o mínimo para salvar o relatório é \(PestMemoryGuard.formatBytes(UInt64(minimumDiskBytes)))."
+        }
+        return nil
     }
 }
 
@@ -166,9 +382,9 @@ public struct RedTeamCollector: Sendable {
     public var maxDepth: Int
 
     public init(
-        maxFiles: Int = 120,
-        maxFileBytes: Int = 60_000,
-        maxTotalBytes: Int = 600_000,
+        maxFiles: Int = 90,
+        maxFileBytes: Int = 48_000,
+        maxTotalBytes: Int = 700_000,
         maxDepth: Int = 12
     ) {
         self.maxFiles = maxFiles
@@ -210,10 +426,12 @@ public struct RedTeamCollector: Sendable {
         "id_rsa", "id_ed25519", "id_ecdsa", "id_dsa"
     ]
 
-    public func collect(
+    /// Lista os arquivos elegíveis sem ler o conteúdo. É a etapa que define o
+    /// teto de memória do Red Teaming.
+    public func inventory(
         projectPath: String,
         excludedPaths: [String] = []
-    ) throws -> RedTeamCollection {
+    ) throws -> RedTeamInventory {
         let root = URL(fileURLWithPath: projectPath, isDirectory: true)
             .standardizedFileURL
             .resolvingSymlinksInPath()
@@ -231,7 +449,7 @@ public struct RedTeamCollector: Sendable {
         let keys: [URLResourceKey] = [
             .isDirectoryKey, .isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey
         ]
-        var files: [RedTeamSourceFile] = []
+        var files: [RedTeamFileRef] = []
         var warnings: [String] = []
         var skipped = 0
         var totalBytes = 0
@@ -299,38 +517,49 @@ public struct RedTeamCollector: Sendable {
                 break
             }
 
-            guard let data = try? Data(contentsOf: url),
-                  !data.contains(0),
-                  let text = String(data: data, encoding: .utf8) else {
-                skipped += 1
-                continue
-            }
-
-            let relative = relativePath(of: url, root: root)
-            let redacted = Self.redact(text)
-            files.append(
-                RedTeamSourceFile(
-                    path: relative,
-                    content: redacted,
-                    bytes: data.count
-                )
-            )
-            totalBytes += data.count
+            files.append(RedTeamFileRef(path: relativePath(of: url, root: root), bytes: size))
+            totalBytes += size
         }
 
-        let redactedCount = files.filter { $0.content.contains("[REDACTED]") }.count
-        if redactedCount > 0 {
-            warnings.append("Valores com aparência de segredo foram redigidos em \(redactedCount) arquivo(s).")
-        }
         if skipped > 0 {
             warnings.append("\(skipped) arquivo(s) sensível(is), binário(s) ou grande(s) ficaram fora da análise.")
         }
 
-        return RedTeamCollection(
+        return RedTeamInventory(
             files: files,
             warnings: warnings,
             skippedFiles: skipped,
             totalBytes: totalBytes
+        )
+    }
+
+    /// Conveniência para leituras completas (testes e usos pequenos).
+    public func collect(
+        projectPath: String,
+        excludedPaths: [String] = []
+    ) throws -> RedTeamCollection {
+        let inventory = try inventory(projectPath: projectPath, excludedPaths: excludedPaths)
+        let reader = RedTeamReader()
+        var files: [RedTeamSourceFile] = []
+        for ref in inventory.files {
+            if let source = try? reader.read(
+                ref,
+                projectPath: projectPath,
+                maxBytes: maxFileBytes
+            ) {
+                files.append(source)
+            }
+        }
+        var warnings = inventory.warnings
+        let redactedCount = files.filter { $0.content.contains("[REDACTED]") }.count
+        if redactedCount > 0 {
+            warnings.append("Valores com aparência de segredo foram redigidos em \(redactedCount) arquivo(s).")
+        }
+        return RedTeamCollection(
+            files: files,
+            warnings: warnings,
+            skippedFiles: inventory.skippedFiles,
+            totalBytes: inventory.totalBytes
         )
     }
 
@@ -354,6 +583,37 @@ public struct RedTeamCollector: Sendable {
         }
         return false
     }
+}
+
+public struct RedTeamReader: Sendable {
+    public init() {}
+
+    public func read(
+        _ ref: RedTeamFileRef,
+        projectPath: String,
+        maxBytes: Int
+    ) throws -> RedTeamSourceFile? {
+        let root = URL(fileURLWithPath: projectPath, isDirectory: true)
+            .standardizedFileURL
+            .resolvingSymlinksInPath()
+        let url = root.appendingPathComponent(ref.path)
+        let values = try url.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
+        guard values.isRegularFile == true else { return nil }
+        let size = values.fileSize ?? ref.bytes
+        guard size <= maxBytes else { return nil }
+
+        guard let data = try? Data(contentsOf: url, options: [.mappedIfSafe]),
+              !data.contains(0),
+              let text = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+
+        return RedTeamSourceFile(
+            path: ref.path,
+            content: Self.redact(text),
+            bytes: data.count
+        )
+    }
 
     private static func redact(_ text: String) -> String {
         var value = text
@@ -376,98 +636,217 @@ public struct RedTeamCollector: Sendable {
 
 public final class RedTeamService: @unchecked Sendable {
     private let collector: RedTeamCollector
+    private let reader: RedTeamReader
     private let llmClient: LLMClient
-    private let maxChunkCharacters: Int
 
     public init(
         collector: RedTeamCollector = RedTeamCollector(),
-        llmClient: LLMClient = LLMClient(),
-        maxChunkCharacters: Int = 70_000
+        reader: RedTeamReader = RedTeamReader(),
+        llmClient: LLMClient = LLMClient()
     ) {
         self.collector = collector
+        self.reader = reader
         self.llmClient = llmClient
-        self.maxChunkCharacters = maxChunkCharacters
     }
 
     public func analyze(
         project: ProjectRef,
+        routineID: UUID? = nil,
+        resume: RedTeamResumeState? = nil,
         excludedPaths: [String] = [],
         progress: @escaping @Sendable (RedTeamProgress) -> Void
     ) async throws -> RedTeamReport {
-        let startedAt = Date()
+        let startedAt = resume?.startedAt ?? Date()
+        let startSnapshot = PestMemoryGuard.snapshot()
+        guard startSnapshot.availableBytes >= RedTeamMemoryGuard.minimumAvailableBytes else {
+            throw RedTeamError.insufficientMemory(
+                "O Mac tem \(PestMemoryGuard.formatBytes(startSnapshot.availableBytes)) de memória disponível. Feche apps pesados e tente de novo; o mínimo seguro para o Red Teaming é \(PestMemoryGuard.formatBytes(RedTeamMemoryGuard.minimumAvailableBytes))."
+            )
+        }
+        if let disk = startSnapshot.diskAvailableBytes,
+           disk < RedTeamMemoryGuard.minimumDiskBytes {
+            throw RedTeamError.insufficientDisk(
+                "O disco tem \(PestMemoryGuard.formatBytes(UInt64(max(disk, 0)))) livres. Libere pelo menos \(PestMemoryGuard.formatBytes(UInt64(RedTeamMemoryGuard.minimumDiskBytes))) para o Red Teaming montar o relatório."
+            )
+        }
+        guard let budget = RedTeamMemoryGuard.budget(for: startSnapshot) else {
+            throw RedTeamError.insufficientMemory(
+                "O Red Teaming não conseguiu reservar um orçamento seguro de memória. Feche apps pesados e tente de novo."
+            )
+        }
+
+        let collector = RedTeamCollector(
+            maxFiles: budget.maxFiles,
+            maxFileBytes: budget.maxFileBytes,
+            maxTotalBytes: budget.maxTotalBytes
+        )
+
         progress(
             RedTeamProgress(
-                phase: "Lendo arquivos",
-                detail: "Selecionando código e ignorando segredos e binários…",
-                fraction: 0.04
+                phase: resume == nil ? "Lendo arquivos" : "Retomando",
+                detail: resume == nil
+                    ? "Mapeando o projeto com orçamento de \(PestMemoryGuard.formatBytes(UInt64(budget.maxTotalBytes)))."
+                    : "Retomando a análise pausada.",
+                fraction: 0.04,
+                availableMemoryBytes: startSnapshot.availableBytes,
+                budgetBytes: budget.maxRSSGrowthBytes
             )
         )
 
-        let collection = try collector.collect(
+        let inventory = try collector.inventory(
             projectPath: project.path,
             excludedPaths: excludedPaths
         )
-        guard !collection.files.isEmpty else {
+        guard !inventory.files.isEmpty else {
             throw RedTeamError.noFiles
         }
 
-        let chunks = chunk(collection.files)
-        var findings: [RedTeamFinding] = []
-        var summaries: [String] = []
-        var limitations = collection.warnings
+        var findings = resume?.findings ?? []
+        var summaries = resume?.summaryParts ?? []
+        var limitations = resume?.limitations ?? []
+        limitations.append(contentsOf: inventory.warnings)
         limitations.append(
             "A análise cobre apenas arquivos de texto enviados; binários, dependências instaladas, lockfiles e arquivos grandes ficaram de fora."
         )
+        limitations.append(
+            "Limites desta execução: até \(budget.maxFiles) arquivos, \(PestMemoryGuard.formatBytes(UInt64(budget.maxTotalBytes))) de código e \(PestMemoryGuard.formatBytes(budget.maxRSSGrowthBytes)) de memória adicional."
+        )
+
+        let processed = Set(resume?.processedPaths ?? [])
+        let remaining = inventory.files.filter { !processed.contains($0.path) }
+        let chunks = Self.chunk(remaining, maxBytes: budget.maxChunkBytes)
+        let totalChunks = chunks.count
+        var processedPaths = resume?.processedPaths ?? []
+        var filesAnalyzed = resume?.filesAnalyzed ?? 0
+        var bytesAnalyzed = resume?.bytesAnalyzed ?? 0
+        var chunksAnalyzed = resume?.chunksAnalyzed ?? 0
+        var paused = false
+        var pauseReason: String? = nil
 
         for (index, chunk) in chunks.enumerated() {
             try Task.checkCancellation()
-            let fraction = 0.10 + (Double(index) / Double(max(chunks.count, 1))) * 0.78
+
+            if let reason = RedTeamMemoryGuard.pauseReason(
+                baselineRSS: startSnapshot.residentBytes,
+                budget: budget
+            ) {
+                pauseReason = reason
+                paused = true
+                break
+            }
+
+            let fraction = 0.10 + (Double(index) / Double(max(totalChunks, 1))) * 0.78
             progress(
                 RedTeamProgress(
-                    phase: "Analisando bloco \(index + 1) de \(chunks.count)",
+                    phase: "Analisando bloco \(index + 1) de \(totalChunks)",
                     detail: "\(chunk.count) arquivo(s) neste bloco. Isso pode levar alguns minutos.",
-                    fraction: fraction
+                    fraction: fraction,
+                    availableMemoryBytes: PestMemoryGuard.snapshot().availableBytes,
+                    budgetBytes: budget.maxRSSGrowthBytes
                 )
             )
+
+            var sources: [RedTeamSourceFile] = []
+            var chunkBytes = 0
+            for ref in chunk {
+                if let source = try? reader.read(
+                    ref,
+                    projectPath: project.path,
+                    maxBytes: budget.maxFileBytes
+                ) {
+                    sources.append(source)
+                    chunkBytes += source.bytes
+                } else {
+                    limitations.append("Não consegui ler \(ref.path) nesta rodada.")
+                }
+            }
+            guard !sources.isEmpty else { continue }
+
             let result = try await llmClient.analyzeRedTeam(
                 project: project,
-                files: chunk,
+                files: sources,
                 chunkIndex: index + 1,
-                chunkCount: chunks.count
+                chunkCount: totalChunks
             )
             findings.append(contentsOf: result.findings)
             if !result.summary.isEmpty {
                 summaries.append(result.summary)
             }
             limitations.append(contentsOf: result.limitations)
+
+            processedPaths.append(contentsOf: chunk.map(\.path))
+            filesAnalyzed += sources.count
+            bytesAnalyzed += chunkBytes
+            chunksAnalyzed += 1
+            sources.removeAll(keepingCapacity: false)
+
+            if let reason = RedTeamMemoryGuard.pauseReason(
+                baselineRSS: startSnapshot.residentBytes,
+                budget: budget
+            ) {
+                paused = true
+                pauseReason = reason
+                break
+            }
+        }
+
+        if !paused, totalChunks > 0, chunksAnalyzed < totalChunks {
+            limitations.append("A análise parou antes do fim do orçamento de blocos.")
         }
 
         progress(
             RedTeamProgress(
                 phase: "Consolidando",
                 detail: "Removendo duplicatas e ordenando os achados…",
-                fraction: 0.94
+                fraction: 0.94,
+                availableMemoryBytes: PestMemoryGuard.snapshot().availableBytes,
+                budgetBytes: budget.maxRSSGrowthBytes
             )
         )
 
-        let uniqueFindings = deduplicated(findings)
+        let uniqueFindings = Self.deduplicated(findings)
         let summary = summaries
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
             .joined(separator: " ")
-        let finalSummary = summary.isEmpty
-            ? "A análise não encontrou falhas de segurança no código enviado."
-            : String(summary.prefix(2_400))
+        let finalSummary: String
+        if paused {
+            finalSummary = summary.isEmpty
+                ? "O Red Teaming pausou para proteger a memória do Mac antes de concluir."
+                : String(summary.prefix(2_400))
+        } else {
+            finalSummary = summary.isEmpty
+                ? "A análise não encontrou falhas de segurança no código enviado."
+                : String(summary.prefix(2_400))
+        }
 
         if chunks.count > 1 {
             limitations.append("O projeto foi dividido em \(chunks.count) blocos para caber no contexto da LLM.")
         }
 
+        let resumeState = paused
+            ? RedTeamResumeState(
+                startedAt: startedAt,
+                processedPaths: processedPaths,
+                findings: uniqueFindings,
+                summaryParts: summaries,
+                limitations: Self.unique(limitations),
+                filesAnalyzed: filesAnalyzed,
+                bytesAnalyzed: bytesAnalyzed,
+                chunksAnalyzed: chunksAnalyzed,
+                routineID: routineID
+            )
+            : nil
+
         progress(
             RedTeamProgress(
-                phase: "Concluído",
-                detail: "\(uniqueFindings.count) achado(s) no código.",
-                fraction: 1
+                phase: paused ? "Pausado" : "Concluído",
+                detail: paused
+                    ? (pauseReason ?? "O Red Teaming pausou para proteger a memória do Mac.")
+                    : "\(uniqueFindings.count) achado(s) no código.",
+                fraction: 1,
+                availableMemoryBytes: PestMemoryGuard.snapshot().availableBytes,
+                budgetBytes: budget.maxRSSGrowthBytes
             )
         )
 
@@ -478,27 +857,33 @@ public final class RedTeamService: @unchecked Sendable {
             finishedAt: Date(),
             summary: finalSummary,
             findings: uniqueFindings,
-            filesAnalyzed: collection.files.count,
-            bytesAnalyzed: collection.totalBytes,
-            chunksAnalyzed: chunks.count,
-            limitations: Array(Set(limitations)).sorted()
+            filesAnalyzed: filesAnalyzed,
+            bytesAnalyzed: bytesAnalyzed,
+            chunksAnalyzed: chunksAnalyzed,
+            limitations: Self.unique(limitations),
+            llmUsed: true,
+            paused: paused,
+            pauseReason: pauseReason,
+            resumeState: resumeState,
+            memoryBudgetBytes: Int(budget.maxRSSGrowthBytes),
+            availableMemoryAtStart: Int(startSnapshot.availableBytes)
         )
     }
 
-    private func chunk(_ files: [RedTeamSourceFile]) -> [[RedTeamSourceFile]] {
-        var chunks: [[RedTeamSourceFile]] = []
-        var current: [RedTeamSourceFile] = []
-        var currentCharacters = 0
+    private static func chunk(_ files: [RedTeamFileRef], maxBytes: Int) -> [[RedTeamFileRef]] {
+        var chunks: [[RedTeamFileRef]] = []
+        var current: [RedTeamFileRef] = []
+        var currentBytes = 0
 
         for file in files {
-            let cost = file.content.count + file.path.count + 80
-            if !current.isEmpty && currentCharacters + cost > maxChunkCharacters {
+            let cost = file.bytes + file.path.count + 80
+            if !current.isEmpty && currentBytes + cost > maxBytes {
                 chunks.append(current)
                 current = []
-                currentCharacters = 0
+                currentBytes = 0
             }
             current.append(file)
-            currentCharacters += cost
+            currentBytes += cost
         }
         if !current.isEmpty {
             chunks.append(current)
@@ -506,7 +891,7 @@ public final class RedTeamService: @unchecked Sendable {
         return chunks
     }
 
-    private func deduplicated(_ findings: [RedTeamFinding]) -> [RedTeamFinding] {
+    private static func deduplicated(_ findings: [RedTeamFinding]) -> [RedTeamFinding] {
         var seen = Set<String>()
         var unique: [RedTeamFinding] = []
         for finding in findings {
@@ -521,5 +906,16 @@ public final class RedTeamService: @unchecked Sendable {
             }
             return (lhs.line ?? 0) < (rhs.line ?? 0)
         }
+    }
+
+    private static func unique(_ values: [String]) -> [String] {
+        var seen = Set<String>()
+        var result: [String] = []
+        for value in values {
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty, seen.insert(trimmed).inserted else { continue }
+            result.append(trimmed)
+        }
+        return result
     }
 }

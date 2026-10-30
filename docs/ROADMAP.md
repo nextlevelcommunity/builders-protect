@@ -9,10 +9,13 @@
 - Diagnóstico com IA para assinantes no app.
 - Pest: análise estática de código por projeto, com catálogo Nuclei destilado, prompts de correção, rotinas e LLM opcional.
 - Minha rede: leitura local e passiva de Wi-Fi, roteador, dispositivos e serviços do Mac, com explicações leigas e cenários condicionais.
+- Red Teaming opt-in por projeto, com consentimento, orçamento de memória, pausa, retomada e várias rodadas por dia.
+- Modo RTX (`The Psy RTX`) com chave dedicada e modelo sem censura, além do modo padrão com login no proxy.
+- Idioma da interface em inglês, português ou automático pelo sistema.
 
 ## Em preparação
 
-- Red Teaming opt-in no app, após estabilização do consumo de recursos.
+- Reduzir ainda mais o pico de memória do Red Team em projetos grandes.
 - Interface desktop para Windows e Linux como app instalável, com atalho no menu de aplicativos, ícone de bandeja, instância única, painel rápido e janela principal.
 - Build macOS assinado e notarizado.
 - Checksums e artefatos de release para todas as plataformas suportadas.

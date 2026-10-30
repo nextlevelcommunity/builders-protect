@@ -9,7 +9,7 @@ struct RiskBadge: View {
         HStack(spacing: 5) {
             Image(systemName: risk.symbol)
                 .font(.system(size: compact ? 10 : 10.5, weight: .bold))
-            Text(compact ? risk.label : risk.label.uppercased())
+            Text(compact ? L10n.t(risk.label) : L10n.t(risk.label).uppercased())
                 .font(.system(size: 10.5, weight: .bold, design: .rounded))
                 .tracking(compact ? 0 : 0.5)
         }
@@ -22,7 +22,7 @@ struct RiskBadge: View {
 
 struct KEVBadge: View {
     var body: some View {
-        Text("KEV")
+        Text(L10n.t("KEV"))
             .font(.system(size: 9.5, weight: .heavy, design: .rounded))
             .tracking(0.7)
             .foregroundStyle(CBTheme.critical)
@@ -69,10 +69,10 @@ struct ScanProgressCard: View {
                     .controlSize(.small)
                     .tint(CBTheme.lime)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(progress?.phase ?? "Verificando dependências")
+                    Text(L10n.t(progress?.phase ?? L10n.t("Verificando dependências", "Checking dependencies")))
                         .font(.system(size: 12.5, weight: .semibold, design: .rounded))
                         .foregroundStyle(CBTheme.text)
-                    Text(progress?.detail ?? "Preparando a varredura…")
+                    Text(L10n.t(progress?.detail ?? L10n.t("Preparando a varredura…", "Preparing the scan…")))
                         .font(.system(size: 10, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textSecondary)
                         .lineLimit(2)
@@ -188,10 +188,10 @@ struct AuthMiniCard: View {
                 .frame(width: 30, height: 30)
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Diagnóstico da IA desligado")
+                    Text(L10n.t("Diagnóstico da IA desligado"))
                         .font(.system(size: 11.5, weight: .semibold, design: .rounded))
                         .foregroundStyle(CBTheme.text)
-                    Text("A varredura de vulnerabilidades continua. Entre na Cultura Builder para receber a análise e o prompt de correção.")
+                    Text(L10n.t("A varredura de vulnerabilidades continua. Entre na Cultura Builder para receber a análise e o prompt de correção."))
                         .font(.system(size: 9.8, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -203,14 +203,14 @@ struct AuthMiniCard: View {
                 Button {
                     model.copyLoginCommand()
                 } label: {
-                    Label("Copiar comando", systemImage: "doc.on.doc")
+                    Label(L10n.t("Copiar comando"), systemImage: "doc.on.doc")
                 }
                 .buttonStyle(SurfaceButtonStyle(tint: CBTheme.high))
 
                 Button {
                     Task { await model.refreshAuth(force: false) }
                 } label: {
-                    Text(model.isRefreshingAuth ? "Verificando…" : "Já fiz login")
+                    Text(model.isRefreshingAuth ? L10n.t("Verificando…", "Checking…") : L10n.t("Já fiz login", "I signed in"))
                 }
                 .buttonStyle(GhostButtonStyle())
                 .disabled(model.isRefreshingAuth)
@@ -333,7 +333,7 @@ struct ProjectAlertCard: View {
                                 Image(systemName: "sparkles")
                                     .font(.system(size: 9, weight: .semibold))
                                     .foregroundStyle(CBTheme.lime)
-                                    .help("Diagnóstico gerado pela Cultura Builder")
+                                    .help(L10n.t("Diagnóstico gerado pela Cultura Builder"))
                             }
                             Image(systemName: expanded ? "chevron.up" : "chevron.down")
                                 .font(.system(size: 9, weight: .bold))
@@ -359,7 +359,7 @@ struct ProjectAlertCard: View {
                             .fixedSize(horizontal: false, vertical: true)
 
                         HStack(spacing: 9) {
-                            Label("Vulnerabilidades", systemImage: "shield.lefthalf.filled")
+                            Label(L10n.t("Vulnerabilidades"), systemImage: "shield.lefthalf.filled")
                             Label(Vocabulary.quantity(alert.packageCount, "pacote", "pacotes"), systemImage: "shippingbox")
                         }
                         .font(.system(size: 8.5, weight: .semibold, design: .rounded))
@@ -402,7 +402,7 @@ struct ProjectAlertCard: View {
 
                 VStack(alignment: .leading, spacing: 13) {
                     VStack(alignment: .leading, spacing: 4) {
-                        SectionLabel(text: "Diagnóstico")
+                        SectionLabel(text: L10n.t("Diagnóstico"))
                         Text(Vocabulary.prose(alert.diagnosis))
                             .font(.system(size: 11, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textSecondary)
@@ -412,7 +412,7 @@ struct ProjectAlertCard: View {
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
-                        SectionLabel(text: "O que fazer")
+                        SectionLabel(text: L10n.t("O que fazer"))
                         Text(Vocabulary.prose(alert.recommendation))
                             .font(.system(size: 11, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textSecondary)
@@ -423,7 +423,7 @@ struct ProjectAlertCard: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         HStack {
-                            SectionLabel(text: "Pacotes afetados")
+                            SectionLabel(text: L10n.t("Pacotes afetados"))
                             Spacer()
                             Text("\(alert.packageCount)")
                                 .font(.system(size: 8.5, weight: .bold, design: .monospaced))
@@ -433,7 +433,7 @@ struct ProjectAlertCard: View {
                             PackageRow(package: package)
                         }
                         if alert.packageCount > 5 {
-                            Text("+ \(Vocabulary.quantity(alert.packageCount - 5, "pacote", "pacotes")) no detalhe completo")
+                            Text(L10n.t("+ \(Vocabulary.quantity(alert.packageCount - 5, "pacote", "pacotes")) no detalhe completo", "+ \(Vocabulary.quantity(alert.packageCount - 5, "pacote", "pacotes")) in the full details"))
                                 .font(.system(size: 9, weight: .medium, design: .rounded))
                                 .foregroundStyle(CBTheme.textTertiary)
                                 .padding(.top, 2)
@@ -442,12 +442,12 @@ struct ProjectAlertCard: View {
 
                     HStack(spacing: 7) {
                         Button(action: onCopy) {
-                            Label("Copiar prompt", systemImage: "doc.on.doc")
+                            Label(L10n.t("Copiar prompt"), systemImage: "doc.on.doc")
                         }
                         .buttonStyle(LimeButtonStyle())
 
                         Button(action: onDetails) {
-                            Text("Abrir detalhes")
+                            Text(L10n.t("Abrir detalhes"))
                         }
                         .buttonStyle(SurfaceButtonStyle())
 
@@ -457,7 +457,7 @@ struct ProjectAlertCard: View {
                             Image(systemName: "folder")
                         }
                         .buttonStyle(IconButtonStyle(size: 30))
-                        .help("Abrir pasta no Finder")
+                        .help(L10n.t("Abrir pasta no Finder"))
                     }
                 }
                 .padding(.leading, 13)
@@ -501,12 +501,12 @@ struct WarningSummary: View {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundStyle(CBTheme.high)
-                Text("Avisos da varredura")
+                Text(L10n.t("Avisos da varredura"))
                     .font(.system(size: 9.5, weight: .semibold, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
             }
             ForEach(Array(warnings.prefix(3)), id: \.self) { warning in
-                Text("· \(warning)")
+                Text("· \(L10n.t(warning))")
                     .font(.system(size: 9, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
                     .fixedSize(horizontal: false, vertical: true)

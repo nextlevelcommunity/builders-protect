@@ -34,7 +34,9 @@ O app e a CLI não compartilham código binário. Eles compartilham o contrato d
 - Agendamento local e item de login do usuário.
 - Pest com análise estática local, orçamento de memória, rotinas por projeto e LLM opcional.
 - Minha rede com coleta local passiva de Wi-Fi/LAN e relatório em linguagem leiga.
-- Red Teaming em preparação, desativado nesta versão.
+- Red Teaming ativo por projeto, com consentimento salvo, análise em blocos, orçamento de memória, pausa, retomada e várias rodadas por dia.
+- Dois modos de IA: gateway padrão com sessão do proxy e endpoint RTX com chave dedicada e modelo sem censura.
+- Idioma da interface em inglês (padrão), português ou automático pelo sistema.
 - No Windows e no Linux, o app desktop seguirá o mesmo fluxo: atalho no menu de aplicativos, ícone de bandeja, painel rápido e janela principal.
 
 ### CLI e Action
@@ -74,9 +76,19 @@ Minha rede é uma pipeline local e passiva:
 4. O auditor transforma os sinais em achados e em cenários com status confirmado, possível, não encontrado ou não verificável.
 5. O relatório inclui o que a checagem não prova e limita a conclusão a uma foto do momento.
 
+### Red Teaming
+
+O Red Team tem pipeline próprio:
+
+1. O projeto é inventariado sem ler conteúdo, só com limites de arquivos, bytes e profundidade.
+2. A lista de arquivos é dividida em blocos por orçamento de bytes.
+3. Cada bloco é lido do disco just-in-time, redigido e enviado à LLM; o conteúdo do bloco é liberado antes do próximo.
+4. O orçamento de memória cai junto com a memória livre e pode pausar a análise, salvando um estado retomável.
+5. O scheduler aceita vários horários por dia por projeto, com intervalo mínimo de 20 minutos.
+
 ### IA
 
-O diagnóstico de dependências com IA, o Pest e o Red Teaming usam os modelos de segurança da Cultura Builder. O acesso exige sessão de assinante. A CLI e a Action não usam IA. Minha rede não usa IA.
+O diagnóstico de dependências com IA, o Pest e o Red Teaming usam um dos dois modos configurados em Ajustes > IA e segurança: o gateway da Cultura Builder com sessão de assinante (`builder-auto`) ou o endpoint RTX com chave dedicada e modelo sem censura. O modo RTX não depende da sessão do proxy. A CLI e a Action não usam IA. Minha rede não usa IA.
 
 ## Fluxo de varredura
 
@@ -94,7 +106,7 @@ O diagnóstico de dependências com IA, o Pest e o Red Teaming usam os modelos d
 
 ```text
 Sources/
-  CVECore/          núcleo do app macOS
+  CVECore/          núcleo do app macOS (inclui AnalysisMode, RedTeamRoutine e Localization)
   CVEBuilder/       interface SwiftUI/AppKit
 bin/
   builders-protect.js
@@ -125,7 +137,7 @@ A CLI envia o conteúdo do lockfile em vez de reimplementar todos os parsers. Is
 
 ### Pest e Red Teaming separados
 
-O Pest é uma revisão estática de código, com catálogo local e LLM opcional. O Red Teaming será uma análise mais profunda, com fluxo, consentimento e modelos próprios. Nenhum dos dois é executado pela CLI nem pela Action; ambos ficam no app macOS e o Red Teaming permanece em preparação nesta versão.
+O Pest é uma revisão estática de código, com catálogo local e LLM. O Red Team é uma análise mais profunda, com fluxo, consentimento, orçamento de memória e modelos próprios. Nenhum dos dois é executado pela CLI nem pela Action; ambos ficam no app macOS.
 
 ### Minha rede sem varredura ativa
 

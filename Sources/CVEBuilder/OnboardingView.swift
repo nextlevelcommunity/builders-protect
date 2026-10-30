@@ -12,13 +12,15 @@ struct OnboardingView: View {
     @State private var isPreviewing = false
     @State private var loaded = false
 
-    private let stepTitles = [
-        "Boas-vindas",
-        "Conta",
-        "Pastas",
-        "Rotina",
-        "Pronto"
-    ]
+    private var stepTitles: [String] {
+        [
+            L10n.t("Boas-vindas"),
+            L10n.t("Conta"),
+            L10n.t("Pastas"),
+            L10n.t("Rotina"),
+            L10n.t("Pronto")
+        ]
+    }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -85,7 +87,7 @@ struct OnboardingView: View {
             .padding(.top, 38)
             .padding(.horizontal, 30)
 
-            Text("Um radar de dependências para quem constrói.")
+            Text(L10n.t("Um radar de dependências para quem constrói."))
                 .font(.system(size: 12, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -106,13 +108,13 @@ struct OnboardingView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "lock.shield.fill")
                         .font(.system(size: 9, weight: .semibold))
-                    Text("PRIVACIDADE POR PADRÃO")
+                    Text(L10n.t("PRIVACIDADE POR PADRÃO"))
                         .font(.system(size: 7.5, weight: .bold, design: .rounded))
                         .tracking(1.2)
                 }
                 .foregroundStyle(CBTheme.lime)
 
-                Text("Nesta varredura, só nomes, versões e lockfiles saem deste Mac.")
+                Text(L10n.t("Nesta varredura, só nomes, versões e lockfiles saem deste Mac."))
                     .font(.system(size: 9.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
                     .lineSpacing(1.5)
@@ -172,7 +174,7 @@ struct OnboardingView: View {
     private var topBar: some View {
         VStack(spacing: 12) {
             HStack(alignment: .center) {
-                Text("PASSO \(String(format: "%02d", step + 1)) / \(String(format: "%02d", stepTitles.count))")
+                Text(L10n.t("PASSO \(String(format: "%02d", step + 1)) / \(String(format: "%02d", stepTitles.count))", "STEP \(String(format: "%02d", step + 1)) / \(String(format: "%02d", stepTitles.count))"))
                     .font(.system(size: 8.5, weight: .bold, design: .rounded))
                     .tracking(1.5)
                     .foregroundStyle(CBTheme.textTertiary)
@@ -220,13 +222,13 @@ struct OnboardingView: View {
     private var welcomeStep: some View {
         VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Dependência antiga não precisa ser uma surpresa.")
+                Text(L10n.t("Dependência antiga não precisa ser uma surpresa."))
                     .font(.system(size: 34, weight: .light, design: .rounded))
                     .foregroundStyle(CBTheme.text)
                     .lineSpacing(1)
                     .fixedSize(horizontal: false, vertical: true)
 
-                Text("O Builders Protect lê os lockfiles dos seus projetos, compara cada versão com a base de vulnerabilidades e explica o que corrigir — com um prompt pronto para o seu agente de código.")
+                Text(L10n.t("O Builders Protect lê os lockfiles dos seus projetos, compara cada versão com a base de vulnerabilidades e explica o que corrigir — com um prompt pronto para o seu agente de código."))
                     .font(.system(size: 13, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
                     .lineSpacing(2.5)
@@ -237,18 +239,18 @@ struct OnboardingView: View {
             VStack(spacing: 8) {
                 featureRow(
                     symbol: "magnifyingglass",
-                    title: "Achados reais, não ruído",
-                    detail: "Vulnerabilidades confirmadas para as versões instaladas, com KEV e versão corrigida."
+                    title: L10n.t("Achados reais, não ruído"),
+                    detail: L10n.t("Vulnerabilidades confirmadas para as versões instaladas, com KEV e versão corrigida.")
                 )
                 featureRow(
                     symbol: "sparkles",
-                    title: "Diagnóstico da Cultura Builder",
-                    detail: "A IA prioriza o que reduz risco mais rápido e escreve o plano por projeto."
+                    title: L10n.t("Diagnóstico da Cultura Builder"),
+                    detail: L10n.t("A IA prioriza o que reduz risco mais rápido e escreve o plano por projeto.")
                 )
                 featureRow(
                     symbol: "doc.on.doc",
-                    title: "Correção em um clique",
-                    detail: "Copie um prompt completo e cole no Claude Code, Codex ou Cursor."
+                    title: L10n.t("Correção em um clique"),
+                    detail: L10n.t("Copie um prompt completo e cole no Claude Code, Codex ou Cursor.")
                 )
             }
             .frame(maxWidth: 540)
@@ -286,13 +288,19 @@ struct OnboardingView: View {
     private var accountStep: some View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Conecte sua conta Cultura Builder.")
+                Text(L10n.t("Conecte sua conta Cultura Builder."))
                     .font(.system(size: 32, weight: .light, design: .rounded))
                     .foregroundStyle(CBTheme.text)
-                Text("A conta libera o diagnóstico da IA e o prompt de correção. A verificação de vulnerabilidades funciona mesmo sem login.")
+                Text(L10n.t("A conta libera o diagnóstico da IA e o prompt de correção. A verificação de vulnerabilidades funciona mesmo sem login."))
                     .font(.system(size: 12.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
                     .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: 550, alignment: .leading)
+
+                Text(L10n.t("Prefere o modo RTX? A chave dedicada substitui o login e é configurada depois em Ajustes > IA e segurança."))
+                    .font(.system(size: 10.5, weight: .regular, design: .rounded))
+                    .foregroundStyle(CBTheme.textTertiary)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: 550, alignment: .leading)
             }
@@ -318,21 +326,23 @@ struct OnboardingView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(
                             model.authStatus.connected
-                                ? "Conta conectada"
-                                : "Sessão não encontrada"
+                                ? L10n.t("Conta conectada", "Connected account")
+                                : L10n.t("Sessão não encontrada", "Session not found")
                         )
                         .font(.system(size: 13.5, weight: .semibold, design: .rounded))
                         .foregroundStyle(CBTheme.text)
 
                         if model.authStatus.connected {
                             Text(
-                                model.authStatus.expiryLabel.map { "Token válido até \($0)" }
-                                    ?? "Sessão da Cultura Builder ativa"
+                                model.authStatus.localizedExpiryLabel.map {
+                                    L10n.t("Token válido até \($0)", "Token valid until \($0)")
+                                }
+                                    ?? L10n.t("Sessão da Cultura Builder ativa", "Cultura Builder session active")
                             )
                             .font(.system(size: 9.5, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                         } else {
-                            Text("Entre pelo terminal para liberar a análise da IA.")
+                            Text(L10n.t("Entre pelo terminal para liberar a análise da IA."))
                                 .font(.system(size: 9.5, weight: .regular, design: .rounded))
                                 .foregroundStyle(CBTheme.textTertiary)
                         }
@@ -342,7 +352,7 @@ struct OnboardingView: View {
 
                 if !model.authStatus.connected {
                     VStack(alignment: .leading, spacing: 7) {
-                        Text("Rode este comando no terminal:")
+                        Text(L10n.t("Rode este comando no terminal:"))
                             .font(.system(size: 9.5, weight: .medium, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                         Text(model.authStatus.loginCommand)
@@ -359,21 +369,21 @@ struct OnboardingView: View {
                         Button {
                             model.copyLoginCommand()
                         } label: {
-                            Label("Copiar comando", systemImage: "doc.on.doc")
+                            Label(L10n.t("Copiar comando"), systemImage: "doc.on.doc")
                         }
                         .buttonStyle(LimeButtonStyle())
 
                         Button {
                             Task { await model.refreshAuth(force: false) }
                         } label: {
-                            Text(model.isRefreshingAuth ? "Verificando…" : "Já fiz login")
+                            Text(model.isRefreshingAuth ? L10n.t("Verificando…", "Checking…") : L10n.t("Já fiz login", "I signed in"))
                         }
                         .buttonStyle(SurfaceButtonStyle())
                         .disabled(model.isRefreshingAuth)
 
                         Spacer(minLength: 0)
 
-                        Button("Abrir o Hub") {
+                        Button(L10n.t("Abrir o Hub")) {
                             model.openHub()
                         }
                         .buttonStyle(GhostButtonStyle())
@@ -383,11 +393,11 @@ struct OnboardingView: View {
                         Button {
                             model.copyLoginCommand()
                         } label: {
-                            Label("Copiar comando de login", systemImage: "doc.on.doc")
+                            Label(L10n.t("Copiar comando de login"), systemImage: "doc.on.doc")
                         }
                         .buttonStyle(SurfaceButtonStyle())
                         Spacer(minLength: 0)
-                        Button("Abrir o Hub") {
+                        Button(L10n.t("Abrir o Hub")) {
                             model.openHub()
                         }
                         .buttonStyle(GhostButtonStyle())
@@ -402,7 +412,7 @@ struct OnboardingView: View {
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(CBTheme.textTertiary)
                     .padding(.top, 1)
-                Text("Você pode continuar sem login e entrar depois em Ajustes. Nesse caso, o diagnóstico da IA fica desligado.")
+                Text(L10n.t("Você pode continuar sem login e entrar depois em Ajustes. Nesse caso, o diagnóstico da IA fica desligado."))
                     .font(.system(size: 9.8, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -415,10 +425,10 @@ struct OnboardingView: View {
     private var foldersStep: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Onde estão seus projetos?")
+                Text(L10n.t("Onde estão seus projetos?"))
                     .font(.system(size: 32, weight: .light, design: .rounded))
                     .foregroundStyle(CBTheme.text)
-                Text("Adicione as pastas que contêm seus repositórios. O app desce até 8 níveis, ignora node_modules e procura lockfiles de npm, Python, Rust, Go, Ruby, Elixir e Nix.")
+                Text(L10n.t("Adicione as pastas que contêm seus repositórios. O app desce até 8 níveis, ignora node_modules e procura lockfiles de npm, Python, Rust, Go, Ruby, Elixir e Nix."))
                     .font(.system(size: 12.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
                     .lineSpacing(2)
@@ -433,11 +443,11 @@ struct OnboardingView: View {
                     Image(systemName: "folder.badge.plus")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(CBTheme.lime)
-                    Text("Adicionar pasta de projetos")
+                    Text(L10n.t("Adicionar pasta de projetos"))
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundStyle(CBTheme.text)
                     Spacer()
-                    Text("⌘ O")
+                    Text(L10n.t("⌘ O"))
                         .font(.system(size: 9, weight: .medium, design: .monospaced))
                         .foregroundStyle(CBTheme.textTertiary)
                 }
@@ -454,7 +464,7 @@ struct OnboardingView: View {
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(CBTheme.lime)
                         .padding(.top, 1)
-                    Text("\(Vocabulary.quantity(draft.excludedPaths.count, "worktree ignorada", "worktrees ignoradas")) automaticamente. Você pode reativar em Ajustes > Pastas.")
+                    Text(L10n.t("\(Vocabulary.quantity(draft.excludedPaths.count, "worktree ignorada", "worktrees ignoradas")) automaticamente. Você pode reativar em Ajustes > Pastas.", "\(Vocabulary.quantity(draft.excludedPaths.count, "worktree ignorada", "worktrees ignoradas")) automatically. You can reactivate them in Settings > Folders."))
                         .font(.system(size: 9.8, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -485,7 +495,7 @@ struct OnboardingView: View {
                                 Image(systemName: "xmark")
                             }
                             .buttonStyle(IconButtonStyle(size: 22))
-                            .help("Remover pasta")
+                            .help(L10n.t("Remover pasta"))
                         }
                         .padding(.horizontal, 11)
                         .padding(.vertical, 8)
@@ -507,7 +517,7 @@ struct OnboardingView: View {
                 HStack(spacing: 8) {
                     ProgressView()
                         .controlSize(.small)
-                    Text("Procurando projetos e lockfiles…")
+                    Text(L10n.t("Procurando projetos e lockfiles…"))
                         .font(.system(size: 10, weight: .medium, design: .rounded))
                         .foregroundStyle(CBTheme.textSecondary)
                 }
@@ -526,7 +536,7 @@ struct OnboardingView: View {
                         .foregroundStyle(CBTheme.textTertiary)
                         .lineLimit(2)
                     if preview.projects.count > 4 {
-                        Text("e mais \(preview.projects.count - 4)…")
+                        Text(L10n.t("e mais \(preview.projects.count - 4)…", "and \(preview.projects.count - 4) more…"))
                             .font(.system(size: 8.5, weight: .medium, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                     }
@@ -536,14 +546,14 @@ struct OnboardingView: View {
                             .font(.system(size: 10, weight: .semibold))
                             .foregroundStyle(CBTheme.high)
                             .padding(.top, 1)
-                        Text("Nenhum lockfile encontrado nessas pastas. Adicione a raiz onde ficam os repositórios, não uma pasta interna.")
+                        Text(L10n.t("Nenhum lockfile encontrado nessas pastas. Adicione a raiz onde ficam os repositórios, não uma pasta interna."))
                             .font(.system(size: 9.8, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             } else if draft.folders.isEmpty {
-                Text("Nenhuma pasta adicionada ainda.")
+                Text(L10n.t("Nenhuma pasta adicionada ainda."))
                     .font(.system(size: 9.8, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
             }
@@ -556,10 +566,10 @@ struct OnboardingView: View {
     private var routineStep: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Uma varredura por dia, sem lembrar de nada.")
+                Text(L10n.t("Uma varredura por dia, sem lembrar de nada."))
                     .font(.system(size: 31, weight: .light, design: .rounded))
                     .foregroundStyle(CBTheme.text)
-                Text("O Builders Protect verifica suas dependências no horário escolhido e avisa quando aparece uma vulnerabilidade nova.")
+                Text(L10n.t("O Builders Protect verifica suas dependências no horário escolhido e avisa quando aparece uma vulnerabilidade nova."))
                     .font(.system(size: 12.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
                     .lineSpacing(2)
@@ -569,8 +579,8 @@ struct OnboardingView: View {
 
             VStack(spacing: 0) {
                 routineToggle(
-                    title: "Rotina diária",
-                    detail: "Verifica todos os projetos uma vez por dia.",
+                    title: L10n.t("Rotina diária"),
+                    detail: L10n.t("Verifica todos os projetos uma vez por dia."),
                     isOn: $draft.scheduleEnabled
                 )
 
@@ -578,10 +588,10 @@ struct OnboardingView: View {
                     Divider().overlay(CBTheme.hairline)
                     HStack(spacing: 14) {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("Horário da varredura")
+                            Text(L10n.t("Horário da varredura"))
                                 .font(.system(size: 11.5, weight: .semibold, design: .rounded))
                                 .foregroundStyle(CBTheme.text)
-                            Text("O Mac precisa estar ligado ou acordar depois do horário.")
+                            Text(L10n.t("O Mac precisa estar ligado ou acordar depois do horário."))
                                 .font(.system(size: 9.2, weight: .regular, design: .rounded))
                                 .foregroundStyle(CBTheme.textTertiary)
                         }
@@ -604,15 +614,15 @@ struct OnboardingView: View {
 
                 Divider().overlay(CBTheme.hairline)
                 routineToggle(
-                    title: "Abrir ao iniciar o Mac",
-                    detail: "Mantém o radar ativo sem abrir o app manualmente.",
+                    title: L10n.t("Abrir ao iniciar o Mac"),
+                    detail: L10n.t("Mantém o radar ativo sem abrir o app manualmente."),
                     isOn: $launchAtLogin
                 )
 
                 Divider().overlay(CBTheme.hairline)
                 routineToggle(
-                    title: "Avisar sobre novas vulnerabilidades",
-                    detail: "Uma notificação por varredura, sem repetir achados antigos.",
+                    title: L10n.t("Avisar sobre novas vulnerabilidades"),
+                    detail: L10n.t("Uma notificação por varredura, sem repetir achados antigos."),
                     isOn: $draft.notifyOnFindings
                 )
             }
@@ -623,7 +633,7 @@ struct OnboardingView: View {
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(CBTheme.textTertiary)
                     .padding(.top, 1)
-                Text("Se o Mac estiver dormindo no horário, a varredura acontece quando ele acordar. Ao abrir o app, o Builders Protect também recupera uma rotina perdida.")
+                Text(L10n.t("Se o Mac estiver dormindo no horário, a varredura acontece quando ele acordar. Ao abrir o app, o Builders Protect também recupera uma rotina perdida."))
                     .font(.system(size: 9.8, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -661,10 +671,10 @@ struct OnboardingView: View {
     private var readyStep: some View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Tudo pronto para começar.")
+                Text(L10n.t("Tudo pronto para começar."))
                     .font(.system(size: 33, weight: .light, design: .rounded))
                     .foregroundStyle(CBTheme.text)
-                Text("A primeira varredura começa assim que você concluir. O resultado aparece no menu bar e no painel do app.")
+                Text(L10n.t("A primeira varredura começa assim que você concluir. O resultado aparece no menu bar e no painel do app."))
                     .font(.system(size: 12.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
                     .lineSpacing(2)
@@ -675,27 +685,27 @@ struct OnboardingView: View {
             HStack(spacing: 8) {
                 summaryTile(
                     value: "\(draft.folders.count)",
-                    label: "pastas",
+                    label: L10n.t("pastas", "folders"),
                     symbol: "folder.fill"
                 )
                 summaryTile(
                     value: draft.scheduleEnabled ? draft.scheduleLabel : "—",
-                    label: "rotina diária",
+                    label: L10n.t("rotina diária", "daily routine"),
                     symbol: "clock.fill"
                 )
                 summaryTile(
-                    value: model.authStatus.connected ? "on" : "off",
-                    label: "diagnóstico IA",
+                    value: model.authStatus.connected ? L10n.t("ligado", "on") : L10n.t("desligado", "off"),
+                    label: L10n.t("diagnóstico IA", "AI diagnosis"),
                     symbol: "sparkles"
                 )
             }
             .frame(maxWidth: 560)
 
             VStack(alignment: .leading, spacing: 10) {
-                SectionLabel(text: "O que acontece agora")
-                readyRow("1", "Lemos os lockfiles e comparamos com a base de vulnerabilidades.")
-                readyRow("2", "A Cultura Builder explica o risco e monta o plano.")
-                readyRow("3", "Você copia o prompt e corrige com seu agente de código.")
+                SectionLabel(text: L10n.t("O que acontece agora"))
+                readyRow("1", L10n.t("Lemos os lockfiles e comparamos com a base de vulnerabilidades.", "We read the lockfiles and compare them with the vulnerability database."))
+                readyRow("2", L10n.t("A Cultura Builder explica o risco e monta o plano.", "Cultura Builder explains the risk and builds the plan."))
+                readyRow("3", L10n.t("Você copia o prompt e corrige com seu agente de código.", "You copy the prompt and fix it with your coding agent."))
             }
             .padding(14)
             .frame(maxWidth: 560, alignment: .leading)
@@ -706,7 +716,7 @@ struct OnboardingView: View {
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(CBTheme.lime)
                     .padding(.top, 1)
-                Text("Você pode revisar tudo depois em Ajustes. O prompt de correção fica em cada alerta do painel.")
+                Text(L10n.t("Você pode revisar tudo depois em Ajustes. O prompt de correção fica em cada alerta do painel."))
                     .font(.system(size: 9.8, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -757,7 +767,7 @@ struct OnboardingView: View {
                         step -= 1
                     }
                 } label: {
-                    Label("Voltar", systemImage: "chevron.left")
+                    Label(L10n.t("Voltar"), systemImage: "chevron.left")
                 }
                 .buttonStyle(GhostButtonStyle())
             }
@@ -778,7 +788,7 @@ struct OnboardingView: View {
                 }
             } label: {
                 HStack(spacing: 7) {
-                    Text(step == stepTitles.count - 1 ? "Começar a monitorar" : "Continuar")
+                    Text(step == stepTitles.count - 1 ? L10n.t("Começar a monitorar", "Start monitoring") : L10n.t("Continuar", "Continue"))
                     Image(systemName: step == stepTitles.count - 1 ? "shield.checkered" : "arrow.right")
                         .font(.system(size: 10, weight: .bold))
                 }
@@ -807,9 +817,11 @@ struct OnboardingView: View {
     private var footerHint: String {
         switch step {
         case 2:
-            return draft.folders.isEmpty ? "Adicione ao menos uma pasta" : ""
+            return draft.folders.isEmpty
+                ? L10n.t("Adicione ao menos uma pasta", "Add at least one folder")
+                : ""
         case 3:
-            return "O Mac precisa estar ligado no horário"
+            return L10n.t("O Mac precisa estar ligado no horário", "The Mac must be on at the scheduled time")
         default:
             return ""
         }

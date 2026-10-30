@@ -59,7 +59,7 @@ struct PanelView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 BrandWordmark(compact: true)
-                Text("Vulnerabilidades sob controle")
+                Text(L10n.t("Vulnerabilidades sob controle"))
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
             }
@@ -70,7 +70,7 @@ struct PanelView: View {
                 Circle()
                     .fill(statusColor)
                     .frame(width: 6, height: 6)
-                Text("IA")
+                Text(L10n.t("IA"))
                     .font(.system(size: 10.5, weight: .semibold, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
                     .lineLimit(1)
@@ -86,7 +86,7 @@ struct PanelView: View {
                 Image(systemName: "gearshape")
             }
             .buttonStyle(IconButtonStyle(size: 30))
-            .help("Ajustes")
+            .help(L10n.t("Ajustes"))
 
             Button {
                 model.quit()
@@ -94,7 +94,7 @@ struct PanelView: View {
                 Image(systemName: "power")
             }
             .buttonStyle(IconButtonStyle(size: 30))
-            .help("Sair do Builders Protect")
+            .help(L10n.t("Sair do Builders Protect"))
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
@@ -106,17 +106,17 @@ struct PanelView: View {
             if !model.settings.hasCompletedOnboarding {
                 EmptyPanelCard(
                     symbol: "slider.horizontal.3",
-                    title: "Vamos configurar o Builders Protect",
-                    message: "Escolha suas pastas, conecte a conta da Cultura Builder e defina a rotina diária.",
-                    actionTitle: "Retomar configuração",
+                    title: L10n.t("Vamos configurar o Builders Protect"),
+                    message: L10n.t("Escolha suas pastas, conecte a conta da Cultura Builder e defina a rotina diária."),
+                    actionTitle: L10n.t("Retomar configuração"),
                     action: { model.openOnboarding() }
                 )
             } else if model.settings.folders.isEmpty {
                 EmptyPanelCard(
                     symbol: "folder.badge.plus",
-                    title: "Nenhuma pasta monitorada",
-                    message: "Adicione as pastas onde ficam seus projetos para começar a verificar as dependências.",
-                    actionTitle: "Abrir ajustes",
+                    title: L10n.t("Nenhuma pasta monitorada"),
+                    message: L10n.t("Adicione as pastas onde ficam seus projetos para começar a verificar as dependências."),
+                    actionTitle: L10n.t("Abrir ajustes"),
                     action: { model.openSettings() }
                 )
             } else if model.isScanning {
@@ -125,9 +125,9 @@ struct PanelView: View {
             } else if let error = model.scanError {
                 NoticeCard(
                     kind: .error,
-                    title: "A varredura não terminou",
+                    title: L10n.t("A varredura não terminou"),
                     message: error,
-                    actionTitle: "Tentar de novo",
+                    actionTitle: L10n.t("Tentar de novo"),
                     action: { model.scan() }
                 )
                 if let report = model.report {
@@ -137,7 +137,7 @@ struct PanelView: View {
             } else if let report = model.report {
                 summaryHero(report: report)
 
-                if !model.authStatus.connected {
+                if !model.llmReady {
                     AuthMiniCard(model: model)
                 }
 
@@ -149,9 +149,9 @@ struct PanelView: View {
             } else {
                 EmptyPanelCard(
                     symbol: "shield.lefthalf.filled",
-                    title: "Pronto para a primeira varredura",
-                    message: "O Builders Protect lê seus lockfiles, compara com a base de vulnerabilidades e explica o que corrigir.",
-                    actionTitle: "Verificar agora",
+                    title: L10n.t("Pronto para a primeira varredura"),
+                    message: L10n.t("O Builders Protect lê seus lockfiles, compara com a base de vulnerabilidades e explica o que corrigir."),
+                    actionTitle: L10n.t("Verificar agora"),
                     action: { model.scan() }
                 )
             }
@@ -164,7 +164,7 @@ struct PanelView: View {
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(CBTheme.lime)
                 .padding(.top, 1)
-            Text("Nesta varredura, apenas nomes, versões e lockfiles saem deste Mac.")
+            Text(L10n.t("Nesta varredura, apenas nomes, versões e lockfiles saem deste Mac."))
                 .font(.system(size: 10.5, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -192,13 +192,15 @@ struct PanelView: View {
                                 .fixedSize()
 
                             VStack(alignment: .leading, spacing: 1) {
-                                Text(count == 1 ? "projeto" : "projetos")
+                                Text(count == 1
+                                    ? L10n.t("projeto", "project")
+                                    : L10n.t("projetos", "projects"))
                                     .font(.system(size: 16, weight: .semibold, design: .rounded))
                                     .foregroundStyle(CBTheme.text)
                                 Text(
                                     hasFindings
-                                        ? (count == 1 ? "afetado" : "afetados")
-                                        : (count == 1 ? "verificado" : "verificados")
+                                        ? (count == 1 ? L10n.t("afetado", "affected") : L10n.t("afetados", "affected"))
+                                        : (count == 1 ? L10n.t("verificado", "checked") : L10n.t("verificados", "checked"))
                                 )
                                 .font(.system(size: 16, weight: .medium, design: .rounded))
                                 .foregroundStyle(CBTheme.textSecondary)
@@ -219,7 +221,7 @@ struct PanelView: View {
                             }
                             .frame(width: 64, height: 64)
 
-                            Text(hasFindings ? risk.shortLabel : "LIMPO")
+                            Text(hasFindings ? L10n.t(risk.label).uppercased() : L10n.t("LIMPO", "CLEAN"))
                                 .font(.system(size: 9.5, weight: .heavy, design: .rounded))
                                 .tracking(1)
                                 .foregroundStyle(accent)
@@ -237,7 +239,7 @@ struct PanelView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .help("Abrir a central com os detalhes")
+            .help(L10n.t("Abrir a central com os detalhes"))
 
             Divider().overlay(CBTheme.hairline)
 
@@ -255,10 +257,10 @@ struct PanelView: View {
                     model.openReport()
                     model.scan()
                 } label: {
-                    Label("Verificar agora", systemImage: "arrow.clockwise")
+                    Label(L10n.t("Verificar agora"), systemImage: "arrow.clockwise")
                 }
                 .buttonStyle(SurfaceButtonStyle(tint: CBTheme.lime))
-                .help("Abre a central completa e inicia uma nova verificação")
+                .help(L10n.t("Abre a central completa e inicia uma nova verificação"))
                 .disabled(!model.canScan)
             }
         }
@@ -295,14 +297,14 @@ struct PanelView: View {
                         .frame(width: 36, height: 36)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("CONTROLE TOTAL")
+                        Text(L10n.t("CONTROLE TOTAL"))
                             .font(.system(size: 9.5, weight: .heavy, design: .rounded))
                             .tracking(1.3)
                             .foregroundStyle(CBTheme.lime)
-                        Text("Abra a central completa")
+                        Text(L10n.t("Abra a central completa"))
                             .font(.system(size: 18.5, weight: .semibold, design: .rounded))
                             .foregroundStyle(CBTheme.text)
-                        Text("Projetos, riscos e correções em uma janela só.")
+                        Text(L10n.t("Projetos, riscos e correções em uma janela só."))
                             .font(.system(size: 11.5, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textSecondary)
                             .lineLimit(2)
@@ -321,12 +323,12 @@ struct PanelView: View {
             .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Abrir controle total")
+        .accessibilityLabel(L10n.t("Abrir controle total", "Open full control"))
     }
 
     private func quickRisks(report: ScanReport) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionLabel(text: "Principais riscos")
+            SectionLabel(text: L10n.t("Principais riscos"))
                 .padding(.horizontal, 2)
                 .padding(.bottom, 2)
 
@@ -371,14 +373,14 @@ struct PanelView: View {
             Button {
                 model.openSettings()
             } label: {
-                Label("Ajustes", systemImage: "gearshape")
+                Label(L10n.t("Ajustes"), systemImage: "gearshape")
             }
             .buttonStyle(GhostButtonStyle())
 
             Button {
                 model.openOnboarding()
             } label: {
-                Text("Guia")
+                Text(L10n.t("Guia"))
             }
             .buttonStyle(GhostButtonStyle())
 
@@ -398,15 +400,19 @@ struct PanelView: View {
 
     private var statusColor: Color {
         if model.isScanning { return CBTheme.lime }
-        if model.authStatus.connected { return CBTheme.mint }
+        if model.llmReady { return CBTheme.mint }
         return CBTheme.high
     }
 
     private var statusHelp: String {
-        if model.isScanning { return "Verificando dependências agora" }
-        if model.authStatus.connected {
-            return "IA conectada à Cultura Builder — análise inteligente ativa"
+        if model.isScanning { return L10n.t("Verificando dependências agora", "Checking dependencies now") }
+        if model.llmReady {
+            return model.isHackMode
+                ? L10n.t("Modo RTX ativo — modelo sem censura em todas as análises", "RTX mode active — uncensored model in every analysis")
+                : L10n.t("IA conectada à Cultura Builder — análise inteligente ativa", "AI connected to Cultura Builder — smart analysis active")
         }
-        return "IA desconectada — entre na Cultura Builder em Ajustes para ativar a análise"
+        return model.isHackMode
+            ? L10n.t("Chave RTX ausente — configure em Ajustes > IA e segurança", "RTX key missing — set it in Settings > AI and security")
+            : L10n.t("IA desconectada — entre na Cultura Builder em Ajustes para ativar a análise", "AI disconnected — sign in to Cultura Builder in Settings to enable analysis")
     }
 }

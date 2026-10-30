@@ -2,13 +2,22 @@ import CVECore
 import SwiftUI
 
 enum RedTeamingFeature {
-    static let isEnabled = false
+    static let isEnabled = true
 }
 
 struct RedTeamView: View {
     @ObservedObject var model: AppModel
 
-    @State private var consent = false
+    @State private var newHour = 9
+    @State private var newMinute = 0
+    @State private var routineError: String?
+
+    private var consent: Binding<Bool> {
+        Binding(
+            get: { model.settings.redTeamConsent },
+            set: { model.setRedTeamConsent($0) }
+        )
+    }
 
     var body: some View {
         if RedTeamingFeature.isEnabled {
@@ -22,17 +31,17 @@ struct RedTeamView: View {
         VStack(spacing: 0) {
             HStack(spacing: 15) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Red Teaming")
+                    Text(L10n.t("Red Teaming"))
                         .font(.system(size: 30, weight: .ultraLight, design: .rounded))
                         .foregroundStyle(CBTheme.text)
-                    Text("Análise profunda de código, um projeto por vez")
+                    Text(L10n.t("Análise profunda de código, um projeto por vez"))
                         .font(.system(size: 12.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                 }
 
                 Spacer()
 
-                Text("EM BREVE")
+                Text(L10n.t("EM BREVE"))
                     .font(.system(size: 9, weight: .bold, design: .rounded))
                     .tracking(0.8)
                     .foregroundStyle(CBTheme.textTertiary)
@@ -48,11 +57,11 @@ struct RedTeamView: View {
             VStack(alignment: .leading, spacing: 14) {
                 NoticeCard(
                     kind: .info,
-                    title: "Red Teaming está desativado por enquanto",
-                    message: "A análise profunda de código está temporariamente indisponível enquanto investigamos um problema de consumo de memória. Nenhum código é enviado nesta versão."
+                    title: L10n.t("Red Teaming está desativado por enquanto"),
+                    message: L10n.t("A análise profunda de código está temporariamente indisponível enquanto investigamos um problema de consumo de memória. Nenhum código é enviado nesta versão.")
                 )
 
-                Text("A análise de dependências continua funcionando normalmente.")
+                Text(L10n.t("A análise de dependências continua funcionando normalmente."))
                     .font(.system(size: 11, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
             }
@@ -85,6 +94,7 @@ struct RedTeamView: View {
                     intro
                     projectCard
                     consentCard
+                    routineCard
                     actionCard
                     reportContent
                 }
@@ -108,7 +118,7 @@ struct RedTeamView: View {
             }
         }
         .onChange(of: model.redTeamProjectPath) { _ in
-            consent = false
+            routineError = nil
         }
     }
 
@@ -121,10 +131,10 @@ struct RedTeamView: View {
     private var header: some View {
         HStack(spacing: 15) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("Red Teaming")
+                Text(L10n.t("Red Teaming"))
                     .font(.system(size: 30, weight: .ultraLight, design: .rounded))
                     .foregroundStyle(CBTheme.text)
-                Text("Análise profunda de código, um projeto por vez")
+                Text(L10n.t("Análise profunda de código, um projeto por vez"))
                     .font(.system(size: 12.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
             }
@@ -133,9 +143,11 @@ struct RedTeamView: View {
 
             HStack(spacing: 7) {
                 Circle()
-                    .fill(model.authStatus.connected ? CBTheme.mint : CBTheme.high)
+                    .fill(model.llmReady ? CBTheme.mint : CBTheme.high)
                     .frame(width: 6, height: 6)
-                Text(model.authStatus.connected ? "IA conectada" : "IA desconectada")
+                Text(model.llmReady
+                    ? L10n.t("IA conectada", "AI connected")
+                    : L10n.t("IA desconectada", "AI disconnected"))
                     .font(.system(size: 11, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
             }
@@ -146,7 +158,7 @@ struct RedTeamView: View {
             Button {
                 model.loadRedTeamProjects()
             } label: {
-                Label("Atualizar projetos", systemImage: "arrow.clockwise")
+                Label(L10n.t("Atualizar projetos"), systemImage: "arrow.clockwise")
             }
             .buttonStyle(SurfaceButtonStyle())
             .disabled(model.isLoadingRedTeamProjects || model.isRedTeamRunning)
@@ -163,10 +175,10 @@ struct RedTeamView: View {
                 .padding(.top, 1)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Vai além das dependências")
+                Text(L10n.t("Vai além das dependências"))
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .foregroundStyle(CBTheme.text)
-                Text("O Red Teaming revisa o código do projeto escolhido em busca de falhas de autenticação, injection, exposição de dados e outras vulnerabilidades que não aparecem no lockfile. A análise usa uma LLM privada da Cultura Builder: os dados não são enviados para laboratórios de IA nem usados para treinamento. Pode levar vários minutos.")
+                Text(L10n.t("O Red Teaming revisa o código do projeto escolhido em busca de falhas de autenticação, injection, exposição de dados e outras vulnerabilidades que não aparecem no lockfile. A análise usa uma LLM privada da Cultura Builder: os dados não são enviados para laboratórios de IA nem usados para treinamento. Pode levar vários minutos."))
                     .font(.system(size: 11.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
                     .lineSpacing(2)
@@ -181,7 +193,7 @@ struct RedTeamView: View {
         SurfaceCard(padding: 16) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    SectionLabel(text: "Projeto")
+                    SectionLabel(text: L10n.t("Projeto"))
                     Spacer()
                     if model.isLoadingRedTeamProjects {
                         ProgressView()
@@ -195,7 +207,7 @@ struct RedTeamView: View {
                         ProgressView()
                             .controlSize(.small)
                             .tint(CBTheme.lime)
-                        Text("Procurando projetos nas pastas monitoradas…")
+                        Text(L10n.t("Procurando projetos nas pastas monitoradas…"))
                             .font(.system(size: 11, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textSecondary)
                     }
@@ -203,9 +215,9 @@ struct RedTeamView: View {
                 } else if model.redTeamProjects.isEmpty {
                     NoticeCard(
                         kind: .warning,
-                        title: "Nenhum projeto encontrado",
-                        message: "Adicione uma pasta com lockfiles em Ajustes > Pastas para liberar a análise profunda.",
-                        actionTitle: "Abrir Pastas",
+                        title: L10n.t("Nenhum projeto encontrado"),
+                        message: L10n.t("Adicione uma pasta com lockfiles em Ajustes > Pastas para liberar a análise profunda."),
+                        actionTitle: L10n.t("Abrir Pastas"),
                         action: { model.settingsSection = .folders }
                     )
                 } else {
@@ -223,12 +235,13 @@ struct RedTeamView: View {
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundStyle(CBTheme.lime)
                             VStack(alignment: .leading, spacing: 1) {
-                                Text(model.selectedRedTeamProject?.name ?? "Selecionar projeto")
+                                Text(model.selectedRedTeamProject?.name
+                                    ?? L10n.t("Selecionar projeto", "Select project"))
                                     .font(.system(size: 12.5, weight: .semibold, design: .rounded))
                                     .foregroundStyle(CBTheme.text)
                                 Text(
                                     model.selectedRedTeamProject?.path.homeAbbreviated
-                                        ?? "Escolha um projeto da lista"
+                                        ?? L10n.t("Escolha um projeto da lista", "Choose a project from the list")
                                 )
                                 .font(.system(size: 9, weight: .regular, design: .monospaced))
                                 .foregroundStyle(CBTheme.textTertiary)
@@ -250,7 +263,7 @@ struct RedTeamView: View {
                     if let project = model.selectedRedTeamProject {
                         HStack(spacing: 8) {
                             Label(project.ecosystems.joined(separator: ", "), systemImage: "shippingbox")
-                            Text("·")
+                            Text(L10n.t("·"))
                             Text(Vocabulary.quantity(project.lockfiles.count, "lockfile", "lockfiles"))
                         }
                         .font(.system(size: 9.5, weight: .regular, design: .rounded))
@@ -264,16 +277,16 @@ struct RedTeamView: View {
     private var consentCard: some View {
         SurfaceCard(padding: 16) {
             VStack(alignment: .leading, spacing: 12) {
-                SectionLabel(text: "Consentimento")
+                SectionLabel(text: L10n.t("Consentimento"))
 
                 NoticeCard(
                     kind: .warning,
-                    title: "O código deste projeto será enviado para a LLM privada da Cultura Builder",
-                    message: "Somente os arquivos de texto do projeto escolhido são enviados para a LLM privada da Cultura Builder. .env, chaves, credenciais, binários, lockfiles, dependências instaladas e arquivos grandes são ignorados. Segredos reconhecíveis são redigidos antes do envio. Os dados não são enviados a laboratórios de IA nem usados para treinamento. A análise pode demorar e consumir tokens."
+                    title: L10n.t("O código deste projeto será enviado para a LLM privada da Cultura Builder"),
+                    message: L10n.t("Somente os arquivos de texto do projeto escolhido são enviados para a LLM privada da Cultura Builder. .env, chaves, credenciais, binários, lockfiles, dependências instaladas e arquivos grandes são ignorados. Segredos reconhecíveis são redigidos antes do envio. No modo RTX, o destino é o endpoint RTX. A análise roda em blocos, pode pausar por memória e pode ser retomada.")
                 )
 
-                Toggle(isOn: $consent) {
-                    Text("Autorizo o envio do código deste projeto para a LLM privada da Cultura Builder.")
+                Toggle(isOn: consent) {
+                    Text(L10n.t("Autorizo o envio do código deste projeto para a LLM privada da Cultura Builder."))
                         .font(.system(size: 11.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -284,15 +297,146 @@ struct RedTeamView: View {
         }
     }
 
+    private var routineCard: some View {
+        SurfaceCard(padding: 16) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    SectionLabel(text: L10n.t("Rodadas por dia"))
+                    Spacer()
+                    if let routine = model.redTeamRoutineForSelectedProject, !routine.slots.isEmpty {
+                        Text(L10n.t("\(routine.slots.count) por dia", "\(routine.slots.count) per day"))
+                            .font(.system(size: 9, weight: .semibold, design: .rounded))
+                            .foregroundStyle(CBTheme.lime)
+                    }
+                }
+
+                Text(L10n.t("Agende quantas rodadas quiser no dia. Cada horário precisa de 20 minutos de diferença dos outros."))
+                    .font(.system(size: 9.5, weight: .regular, design: .rounded))
+                    .foregroundStyle(CBTheme.textTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let project = model.selectedRedTeamProject {
+                    if let routine = model.redTeamRoutineForSelectedProject, !routine.slots.isEmpty {
+                        VStack(spacing: 6) {
+                            ForEach(routine.slots) { slot in
+                                HStack(spacing: 9) {
+                                    Image(systemName: "clock")
+                                        .font(.system(size: 10, weight: .semibold))
+                                        .foregroundStyle(CBTheme.lime)
+                                    Text(slot.label)
+                                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                        .monospacedDigit()
+                                        .foregroundStyle(CBTheme.text)
+                                    Spacer()
+                                    Button {
+                                        model.removeRedTeamTime(projectPath: project.path, slotID: slot.id)
+                                    } label: {
+                                        Image(systemName: "xmark")
+                                    }
+                                    .buttonStyle(IconButtonStyle(size: 22))
+                                    .help(L10n.t("Remover horário"))
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 7)
+                                .background(CBTheme.surface, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                            }
+                        }
+
+                        Toggle(isOn: Binding(
+                            get: { routine.enabled },
+                            set: { model.setRedTeamRoutineEnabled(projectPath: project.path, enabled: $0) }
+                        )) {
+                            Text(L10n.t("Rotina ativa"))
+                                .font(.system(size: 10.5, weight: .regular, design: .rounded))
+                                .foregroundStyle(CBTheme.textSecondary)
+                        }
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                        .tint(CBTheme.lime)
+                    }
+
+                    HStack(spacing: 8) {
+                        Picker(L10n.t("Hora"), selection: $newHour) {
+                            ForEach(0..<24, id: \.self) { hour in
+                                Text(String(format: "%02d", hour)).tag(hour)
+                            }
+                        }
+                        .labelsHidden()
+                        .frame(width: 66)
+
+                        Text(L10n.t(":"))
+                            .foregroundStyle(CBTheme.textTertiary)
+
+                        Picker(L10n.t("Minuto"), selection: $newMinute) {
+                            ForEach(Array(stride(from: 0, to: 60, by: 5)), id: \.self) { minute in
+                                Text(String(format: "%02d", minute)).tag(minute)
+                            }
+                        }
+                        .labelsHidden()
+                        .frame(width: 66)
+
+                        Button {
+                            routineError = model.addRedTeamTime(
+                                projectPath: project.path,
+                                projectName: project.name,
+                                hour: newHour,
+                                minute: newMinute
+                            )
+                        } label: {
+                            Label(L10n.t("Adicionar horário"), systemImage: "plus")
+                        }
+                        .buttonStyle(SurfaceButtonStyle())
+
+                        Spacer()
+
+                        if model.redTeamRoutineForSelectedProject != nil {
+                            Button {
+                                model.removeRedTeamRoutine(projectPath: project.path)
+                                routineError = nil
+                            } label: {
+                                Image(systemName: "trash")
+                            }
+                            .buttonStyle(IconButtonStyle(size: 23))
+                            .help(L10n.t("Remover rotina"))
+                        }
+                    }
+
+                    if let routineError {
+                        Text(routineError)
+                            .font(.system(size: 9.3, weight: .regular, design: .rounded))
+                            .foregroundStyle(CBTheme.high)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    if let next = model.redTeamNextRunDate {
+                        Text(L10n.t("Próxima rodada: \(next.relativeShort)", "Next run: \(next.relativeShort)"))
+                            .font(.system(size: 9.3, weight: .regular, design: .rounded))
+                            .foregroundStyle(CBTheme.textTertiary)
+                    }
+                } else {
+                    Text(L10n.t("Escolha um projeto para agendar rodadas."))
+                        .font(.system(size: 9.5, weight: .regular, design: .rounded))
+                        .foregroundStyle(CBTheme.textTertiary)
+                }
+            }
+        }
+    }
+
     private var actionCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if !model.authStatus.connected {
+            if !model.llmReady {
                 NoticeCard(
                     kind: .info,
-                    title: "Conecte a conta para usar o Red Teaming",
-                    message: "A análise profunda depende da LLM da Cultura Builder.",
-                    actionTitle: "Abrir Conta",
-                    action: { model.settingsSection = .account }
+                    title: model.isHackMode
+                        ? L10n.t("Cole a chave RTX para usar o Red Team", "Paste the RTX key to use Red Team")
+                        : L10n.t("Conecte a conta para usar o Red Teaming", "Connect your account to use Red Teaming"),
+                    message: model.isHackMode
+                        ? L10n.t("O modo RTX usa uma chave dedicada em Ajustes > IA e segurança.", "RTX mode uses a dedicated key in Settings > AI and security.")
+                        : L10n.t("A análise profunda depende da LLM da Cultura Builder.", "Deep analysis depends on Cultura Builder's LLM."),
+                    actionTitle: model.isHackMode
+                        ? L10n.t("Abrir IA e segurança", "Open AI and security")
+                        : L10n.t("Abrir Conta", "Open Account"),
+                    action: { model.settingsSection = model.isHackMode ? .ai : .account }
                 )
             }
 
@@ -306,25 +450,40 @@ struct RedTeamView: View {
                 Button {
                     model.cancelRedTeam()
                 } label: {
-                    Label("Cancelar análise", systemImage: "xmark")
+                    Label(L10n.t("Cancelar análise"), systemImage: "xmark")
                 }
                 .buttonStyle(SurfaceButtonStyle(tint: CBTheme.critical))
             } else {
+                if model.redTeamResumeAvailable {
+                    Button {
+                        model.startRedTeam()
+                    } label: {
+                        Label(L10n.t("Retomar análise pausada"), systemImage: "play.fill")
+                    }
+                    .buttonStyle(LimeButtonStyle(fullWidth: true))
+                    .disabled(!model.canRunRedTeam)
+                }
+
                 Button {
-                    model.startRedTeam()
+                    model.startRedTeam(projectPath: model.redTeamProjectPath, resume: false)
                 } label: {
-                    Label("Iniciar análise profunda", systemImage: "shield.lefthalf.filled")
+                    Label(
+                        model.redTeamResumeAvailable
+                            ? L10n.t("Nova análise do zero", "New analysis from scratch")
+                            : L10n.t("Iniciar análise profunda", "Start deep analysis"),
+                        systemImage: "shield.lefthalf.filled"
+                    )
                 }
                 .buttonStyle(LimeButtonStyle(fullWidth: true))
-                .disabled(!model.canRunRedTeam || !consent)
+                .disabled(!model.canRunRedTeam || !model.settings.redTeamConsent)
 
-                Text("A análise não altera seus arquivos e não faz commit. Você pode continuar usando o app enquanto ela roda.")
+                Text(L10n.t("A análise não altera seus arquivos e não faz commit. Você pode continuar usando o app enquanto ela roda."))
                     .font(.system(size: 9.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
             }
 
             if let error = model.redTeamError {
-                NoticeCard(kind: .error, title: "A análise não terminou", message: error)
+                NoticeCard(kind: .error, title: L10n.t("A análise não terminou"), message: error)
             }
         }
     }
@@ -335,10 +494,18 @@ struct RedTeamView: View {
             VStack(alignment: .leading, spacing: 14) {
                 reportHeader(report)
 
+                if report.paused {
+                    NoticeCard(
+                        kind: .warning,
+                        title: L10n.t("Análise pausada para proteger a memória"),
+                        message: L10n.t(report.pauseReason ?? L10n.t("Retome quando o Mac estiver mais livre.", "Resume when the Mac is freer."))
+                    )
+                }
+
                 if report.findings.isEmpty {
                     NoticeCard(
                         kind: .success,
-                        title: "Nenhuma falha de código encontrada",
+                        title: L10n.t("Nenhuma falha de código encontrada"),
                         message: Vocabulary.prose(report.summary)
                     )
                 } else {
@@ -360,7 +527,7 @@ struct RedTeamView: View {
                 HStack(alignment: .top, spacing: 14) {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 7) {
-                            SectionLabel(text: "Último relatório")
+                            SectionLabel(text: L10n.t("Último relatório"))
                             if report.risk != .unknown {
                                 RiskBadge(risk: report.risk, compact: true)
                             }
@@ -368,7 +535,7 @@ struct RedTeamView: View {
                         Text(report.projectName)
                             .font(.system(size: 18, weight: .light, design: .rounded))
                             .foregroundStyle(CBTheme.text)
-                        Text("\(report.finishedAt.relativeShort) · \(report.filesAnalyzed) arquivos · \(max(1, report.bytesAnalyzed / 1000)) KB")
+                        Text(L10n.t("\(report.finishedAt.relativeShort) · \(report.filesAnalyzed) arquivos · \(max(1, report.bytesAnalyzed / 1000)) KB", "\(report.finishedAt.relativeShort) · \(report.filesAnalyzed) files · \(max(1, report.bytesAnalyzed / 1000)) KB"))
                             .font(.system(size: 9.5, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                     }
@@ -393,7 +560,7 @@ struct RedTeamView: View {
 
     private func limitations(_ items: [String]) -> some View {
         VStack(alignment: .leading, spacing: 7) {
-            SectionLabel(text: "Limites desta análise")
+            SectionLabel(text: L10n.t("Limites desta análise"))
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 HStack(alignment: .top, spacing: 8) {
                     Circle()
@@ -412,14 +579,14 @@ struct RedTeamView: View {
 
     private var footer: some View {
         HStack(spacing: 8) {
-            Text("O Red Teaming usa a LLM privada da Cultura Builder e não altera seus arquivos.")
+            Text(L10n.t("O Red Teaming usa a LLM privada da Cultura Builder e não altera seus arquivos."))
                 .font(.system(size: 10.5, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
             Spacer()
             Button {
                 model.settingsSection = .account
             } label: {
-                Label("Conta", systemImage: "person.crop.circle")
+                Label(L10n.t("Conta"), systemImage: "person.crop.circle")
             }
             .buttonStyle(GhostButtonStyle())
         }
@@ -437,7 +604,7 @@ private struct RedTeamFindingCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 7) {
                         RiskBadge(risk: finding.severity, compact: true)
-                        Text(finding.confidence.uppercased())
+                        Text(L10n.t(finding.confidence).uppercased())
                             .font(.system(size: 7.5, weight: .bold, design: .rounded))
                             .tracking(0.7)
                             .foregroundStyle(CBTheme.textTertiary)
@@ -466,10 +633,10 @@ private struct RedTeamFindingCard: View {
             }
 
             if !finding.impact.isEmpty {
-                labeledText("Impacto", Vocabulary.prose(finding.impact))
+                labeledText(L10n.t("Impacto", "Impact"), Vocabulary.prose(finding.impact))
             }
             if !finding.recommendation.isEmpty {
-                labeledText("Como corrigir", Vocabulary.prose(finding.recommendation))
+                labeledText(L10n.t("Como corrigir", "How to fix"), Vocabulary.prose(finding.recommendation))
             }
         }
         .padding(15)

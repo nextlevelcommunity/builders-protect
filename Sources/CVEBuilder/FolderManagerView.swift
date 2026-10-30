@@ -70,10 +70,10 @@ struct FolderManagerView: View {
             .frame(width: 44, height: 44)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Gerenciar pastas")
+                Text(L10n.t("Gerenciar pastas"))
                     .font(.system(size: 20, weight: .semibold, design: .rounded))
                     .foregroundStyle(CBTheme.text)
-                Text("Selecione uma ou várias pastas para ignorar. A escolha vale para a varredura, o Pest e o Red Teaming. Pastas de build, preview e artefatos costumam não ser projetos reais.")
+                Text(L10n.t("Selecione uma ou várias pastas para ignorar. A escolha vale para a varredura, o Pest e o Red Teaming. Pastas de build, preview e artefatos costumam não ser projetos reais."))
                     .font(.system(size: 10.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -87,7 +87,7 @@ struct FolderManagerView: View {
                 Image(systemName: "xmark")
             }
             .buttonStyle(IconButtonStyle(size: 27))
-            .help("Fechar")
+            .help(L10n.t("Fechar"))
         }
         .padding(20)
     }
@@ -98,7 +98,7 @@ struct FolderManagerView: View {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(CBTheme.textTertiary)
-                TextField("Buscar por nome ou caminho", text: $query)
+                TextField(L10n.t("Buscar por nome ou caminho", "Search by name or path"), text: $query)
                     .textFieldStyle(.plain)
                     .font(.system(size: 11, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.text)
@@ -124,10 +124,10 @@ struct FolderManagerView: View {
                             .map(\.path)
                     )
                 } label: {
-                    Label("Selecionar artefatos", systemImage: "wand.and.stars")
+                    Label(L10n.t("Selecionar artefatos"), systemImage: "wand.and.stars")
                 }
                 .buttonStyle(GhostButtonStyle(tint: CBTheme.lime))
-                .help("Seleciona artefatos que ainda entram na varredura")
+                .help(L10n.t("Seleciona artefatos que ainda entram na varredura"))
                 .disabled(
                     isLoading || !filteredCandidates.contains {
                         $0.isLikelyArtifact && !isIgnored($0.path)
@@ -137,7 +137,7 @@ struct FolderManagerView: View {
                 Button {
                     selection = Set(filteredCandidates.filter { isIgnored($0.path) }.map(\.path))
                 } label: {
-                    Label("Selecionar ignoradas", systemImage: "eye.slash")
+                    Label(L10n.t("Selecionar ignoradas"), systemImage: "eye.slash")
                 }
                 .buttonStyle(GhostButtonStyle())
                 .disabled(isLoading || !filteredCandidates.contains { isIgnored($0.path) })
@@ -145,7 +145,7 @@ struct FolderManagerView: View {
                 Button {
                     selection = Set(filteredCandidates.map(\.path))
                 } label: {
-                    Label("Selecionar todas", systemImage: "checkmark.circle")
+                    Label(L10n.t("Selecionar todas"), systemImage: "checkmark.circle")
                 }
                 .buttonStyle(GhostButtonStyle())
                 .disabled(isLoading || filteredCandidates.isEmpty)
@@ -154,7 +154,7 @@ struct FolderManagerView: View {
                     Button {
                         selection.removeAll()
                     } label: {
-                        Label("Limpar seleção", systemImage: "xmark.circle")
+                        Label(L10n.t("Limpar seleção"), systemImage: "xmark.circle")
                     }
                     .buttonStyle(GhostButtonStyle())
                 }
@@ -164,7 +164,7 @@ struct FolderManagerView: View {
                 Button {
                     addExclusion()
                 } label: {
-                    Label("Adicionar pasta", systemImage: "folder.badge.plus")
+                    Label(L10n.t("Adicionar pasta"), systemImage: "folder.badge.plus")
                 }
                 .buttonStyle(GhostButtonStyle())
             }
@@ -180,16 +180,16 @@ struct FolderManagerView: View {
                     .tag(candidate.path)
                     .contextMenu {
                         if isIgnored(candidate.path) {
-                            Button("Reativar pasta") {
+                            Button(L10n.t("Reativar pasta")) {
                                 reactivate([candidate.path])
                             }
                         } else {
-                            Button("Ignorar pasta") {
+                            Button(L10n.t("Ignorar pasta")) {
                                 ignore([candidate.path])
                             }
                         }
                         Divider()
-                        Button("Abrir no Finder") {
+                        Button(L10n.t("Abrir no Finder")) {
                             NSWorkspace.shared.open(URL(fileURLWithPath: candidate.path, isDirectory: true))
                         }
                     }
@@ -218,7 +218,9 @@ struct FolderManagerView: View {
                     .foregroundStyle(selected ? CBTheme.lime : CBTheme.textTertiary)
             }
             .buttonStyle(.plain)
-            .help(selected ? "Remover da seleção" : "Selecionar pasta")
+            .help(selected
+                ? L10n.t("Remover da seleção", "Remove from selection")
+                : L10n.t("Selecionar pasta", "Select folder"))
 
             Image(systemName: ignored ? "eye.slash.fill" : "folder.fill")
                 .font(.system(size: 12, weight: .semibold))
@@ -231,13 +233,13 @@ struct FolderManagerView: View {
                         .font(.system(size: 11.5, weight: .semibold, design: .rounded))
                         .foregroundStyle(ignored ? CBTheme.textSecondary : CBTheme.text)
                     if candidate.isLikelyArtifact {
-                        badge("artefato", tint: CBTheme.high)
+                        badge(L10n.t("artefato", "artifact"), tint: CBTheme.high)
                     }
                     if candidate.isWorktree {
                         badge("worktree", tint: CBTheme.lime)
                     }
                     if !candidate.isProject {
-                        badge("pasta", tint: CBTheme.textTertiary)
+                        badge(L10n.t("pasta", "folder"), tint: CBTheme.textTertiary)
                     }
                 }
 
@@ -248,7 +250,7 @@ struct FolderManagerView: View {
                     .truncationMode(.middle)
 
                 if let parent, parent != candidate.path {
-                    Text("Ignorada por \(URL(fileURLWithPath: parent).lastPathComponent)")
+                    Text(L10n.t("Ignorada por \(URL(fileURLWithPath: parent).lastPathComponent)", "Ignored by \(URL(fileURLWithPath: parent).lastPathComponent)"))
                         .font(.system(size: 8.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                 } else if !candidate.lockfiles.isEmpty {
@@ -261,7 +263,7 @@ struct FolderManagerView: View {
 
             Spacer(minLength: 10)
 
-            Text(ignored ? "IGNORADA" : "MONITORADA")
+            Text(ignored ? L10n.t("IGNORADA", "IGNORED") : L10n.t("MONITORADA", "MONITORED"))
                 .font(.system(size: 7.5, weight: .heavy, design: .rounded))
                 .tracking(0.8)
                 .foregroundStyle(ignored ? CBTheme.high : CBTheme.mint)
@@ -291,7 +293,7 @@ struct FolderManagerView: View {
 
             Spacer()
 
-            Button("Cancelar") {
+            Button(L10n.t("Cancelar")) {
                 dismiss()
             }
             .buttonStyle(GhostButtonStyle())
@@ -299,7 +301,7 @@ struct FolderManagerView: View {
             Button {
                 ignore(selection)
             } label: {
-                Label("Ignorar selecionadas", systemImage: "eye.slash")
+                Label(L10n.t("Ignorar selecionadas"), systemImage: "eye.slash")
             }
             .buttonStyle(GhostButtonStyle(tint: CBTheme.high))
             .disabled(selection.isEmpty || !selection.contains { !isIgnored($0) })
@@ -307,7 +309,7 @@ struct FolderManagerView: View {
             Button {
                 reactivate(selection)
             } label: {
-                Label("Reativar selecionadas", systemImage: "eye")
+                Label(L10n.t("Reativar selecionadas"), systemImage: "eye")
             }
             .buttonStyle(GhostButtonStyle(tint: CBTheme.mint))
             .disabled(selection.isEmpty || !selection.contains { isIgnored($0) })
@@ -316,7 +318,7 @@ struct FolderManagerView: View {
                 onApply(normalizedExclusions(draftExclusions))
                 dismiss()
             } label: {
-                Text("Aplicar")
+                Text(L10n.t("Aplicar"))
             }
             .buttonStyle(LimeButtonStyle())
         }
@@ -327,7 +329,7 @@ struct FolderManagerView: View {
     private var loadingState: some View {
         VStack(spacing: 10) {
             ProgressView().controlSize(.small)
-            Text("Procurando projetos…")
+            Text(L10n.t("Procurando projetos…"))
                 .font(.system(size: 10.5, weight: .medium, design: .rounded))
                 .foregroundStyle(CBTheme.textSecondary)
         }
@@ -351,7 +353,9 @@ struct FolderManagerView: View {
             Image(systemName: "folder")
                 .font(.system(size: 22, weight: .regular))
                 .foregroundStyle(CBTheme.textTertiary)
-            Text(query.isEmpty ? "Nenhuma pasta encontrada." : "Nenhuma pasta corresponde à busca.")
+            Text(query.isEmpty
+                ? L10n.t("Nenhuma pasta encontrada.", "No folder found.")
+                : L10n.t("Nenhuma pasta corresponde à busca.", "No folder matches the search."))
                 .font(.system(size: 10.5, weight: .medium, design: .rounded))
                 .foregroundStyle(CBTheme.textSecondary)
         }
@@ -444,9 +448,9 @@ struct FolderManagerView: View {
 
     private func addExclusion() {
         let panel = NSOpenPanel()
-        panel.title = "Ignorar pasta"
-        panel.message = "Escolha uma ou várias pastas que não devem entrar nas próximas varreduras."
-        panel.prompt = "Ignorar pastas"
+        panel.title = L10n.t("Ignorar pasta", "Ignore folder")
+        panel.message = L10n.t("Escolha uma ou várias pastas que não devem entrar nas próximas varreduras.", "Choose one or more folders that should not enter future scans.")
+        panel.prompt = L10n.t("Ignorar pastas", "Ignore folders")
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = true
@@ -472,7 +476,7 @@ struct FolderManagerView: View {
         )
         projectRefs = preview.projectRefs
         if preview.projectRefs.isEmpty, preview.warnings.contains(where: { $0.contains("não existe") }) {
-            loadError = "Não consegui ler as pastas monitoradas. Verifique se elas ainda existem."
+            loadError = L10n.t("Não consegui ler as pastas monitoradas. Verifique se elas ainda existem.", "Could not read the monitored folders. Check that they still exist.")
         }
         isLoading = false
     }

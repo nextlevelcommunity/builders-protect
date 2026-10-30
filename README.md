@@ -17,12 +17,26 @@ O Builders Protect encontra vulnerabilidades conhecidas nas dependências de um 
 - No app, o Pest revisa o código do projeto com um catálogo destilado de templates do Nuclei, mantém uma lista de projetos escolhidos e permite analisar ou configurar a rotina de cada um sem procurar a pasta novamente.
 - A seção Minha rede faz uma leitura local da Wi-Fi, do roteador, dos dispositivos conhecidos e dos serviços do Mac visíveis na rede.
 - No app, pode gerar diagnóstico com IA e prompts de correção para agentes.
+- Tem dois modos de IA: o padrão, com a sessão do proxy da Cultura Builder, e o modo RTX (`The Psy RTX`), com endpoint dedicado e chave própria para o modelo sem censura.
+- O Red Team analisa o código de um projeto por vez, com consentimento, pausa por memória e retomada, e pode rodar várias vezes por dia nos horários que você definir.
+- A interface abre em inglês por padrão e pode ficar em português ou seguir o idioma do sistema em Ajustes > Geral.
 
 ## Pest e Minha rede
 
 O **Pest** é uma revisão de segurança do código, não um scanner de rede. Ele usa um checklist destilado do catálogo de templates do Nuclei para procurar problemas de autenticação, injection, exposição de dados e configuração. A varredura de arquivos é estática: não executa o projeto, não instala dependências e não faz requisições ao alvo. O Pest usa a IA da Cultura Builder em todas as análises, com consentimento pedido em um modal antes de cada análise manual; a autorização vale apenas para aquela análise e volta a ser solicitada na próxima. Ao salvar uma rotina, você autoriza a execução diária daquele projeto. Na área do Pest, escolha os projetos que quer acompanhar; eles ficam listados com o horário da rotina, e cada um pode ser analisado ou configurado diretamente na linha. As rotinas continuam respeitando pelo menos 30 minutos entre si e só rodam com a conta conectada. Você pode limpar o relatório do projeto atual ou todos os relatórios salvos na própria área do Pest, com confirmação.
 
 A seção **Minha rede** é uma leitura local e passiva da conexão. Ela consulta o endereço do roteador, lê a segurança do Wi-Fi, lista dispositivos conhecidos e verifica serviços do Mac escutando na rede. O relatório explica o que está confirmado agora, o que é possível no seu cenário e o que não foi possível verificar. Ele não prova que alguém invadiu a rede. No topo do relatório, um prompt geral reúne todas as correções em um plano único; cada achado também tem seu próprio prompt.
+
+## Modos de IA
+
+O app tem duas formas de analisar a segurança, escolhidas em **Ajustes > IA e segurança**:
+
+| Modo | Acesso | Uso |
+| --- | --- | --- |
+| Padrão | Login no proxy da Cultura Builder | Uso normal, sem chave. Usa o gateway com `builder-auto`. |
+| RTX (`The Psy RTX`) | Chave dedicada no próprio app | Revisão sem censura com `deepseek-v4.1-flash-1017-uncensored`, no endpoint RTX com túnel. |
+
+No modo RTX, o Pest, o Red Team e o diagnóstico usam o modelo sem censura. A chave é diferente da chave local, fica apenas neste Mac e pode ser testada pelo botão **Testar conexão**. Sem chave, o botão de análise fica bloqueado com o aviso para configurá-la.
 
 ## Como funciona
 
@@ -41,7 +55,7 @@ A base de vulnerabilidades e os modelos de segurança são operados e validados 
 | Varredura de dependências, CLI e GitHub Action | Cultura Builder Community |
 | Minha rede | Cultura Builder Community |
 | Diagnóstico com IA e Pest no app | Assinantes ativos da Cultura Builder |
-| Red Teaming | Assinantes ativos, opt-in por projeto; em preparação |
+| Red Teaming | Assinantes ativos, opt-in por projeto |
 
 A CLI e a GitHub Action não usam IA nem Red Teaming. Elas não exigem assinatura para a varredura de dependências.
 
@@ -145,7 +159,8 @@ O app macOS tem agendamento local próprio e notificações. Veja [docs/ACTION.m
 - Minha rede é uma checagem local: não envia dados da rede, não captura tráfego, não testa senhas e não entra no painel do roteador.
 - O diagnóstico de dependências com IA usa os achados e metadados do projeto; não envia código-fonte.
 - O Red Teaming, quando liberado, será opt-in por projeto, com modelos privados dedicados à segurança e guardrails específicos. Os arquivos selecionados não são enviados para laboratórios de IA nem usados para treinamento.
-- Credenciais de assinante ficam no armazenamento local da Cultura Builder e não entram nos relatórios.
+- Credenciais de assinante ficam no armazenamento local da Cultura Builder e não entram nos relatórios. A chave do modo RTX fica só em `~/Library/Application Support/Builders Protect/settings.json` (permissão 600) e pode vir de `~/.config/cultura-builder-llm/rtx-litellm-key`.
+- No modo RTX, o destino das análises é o endpoint RTX indicado em Ajustes > IA e segurança, com a chave dedicada.
 - O repositório público não contém chaves de API, tokens ou credenciais. O código usa apenas endpoints públicos e a sessão local para recursos de assinante.
 - A Action não precisa de token de IA e não escreve no repositório.
 
@@ -153,7 +168,7 @@ Leia [docs/SECURITY-MODEL.md](docs/SECURITY-MODEL.md) antes de usar em repositó
 
 ## O que está em preparação
 
-- Red Teaming no app, após a estabilização do consumo de recursos.
+- Red Teaming no app segue em evolução, com foco em reduzir consumo de recursos.
 - Interface desktop para Windows e Linux. Nesta versão, o modo suportado fora do macOS é CLI/GitHub Action.
 - Build macOS assinado e notarizado.
 

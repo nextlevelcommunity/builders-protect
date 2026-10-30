@@ -51,7 +51,15 @@ O app pede acesso às pastas que você escolher. Ele precisa ler manifests e loc
 
 Na primeira checagem de **Minha rede**, o macOS pode pedir permissão de rede local. Ela é usada para consultar o endereço do roteador e ler os serviços visíveis. O app não captura tráfego, não testa senhas e não envia dados da rede para a Cultura Builder.
 
-O **Pest** lê apenas o projeto escolhido e usa a IA da Cultura Builder em todas as análises. Sem a conta conectada, ele não roda. Com o consentimento marcado antes de cada análise manual, ou com a autorização ao salvar a rotina, trechos de código e configuração são redigidos e enviados à LLM privada da Cultura Builder.
+O **Pest** lê apenas o projeto escolhido e usa a IA da Cultura Builder em todas as análises. Sem a conta conectada (modo padrão) ou sem a chave RTX (modo RTX), ele não roda. Com o consentimento marcado antes de cada análise manual, ou com a autorização ao salvar a rotina, trechos de código e configuração são redigidos e enviados à LLM privada da Cultura Builder.
+
+### Modo RTX
+
+Em **Ajustes > IA e segurança**, escolha **RTX · sem censura**, cole a chave dedicada e use **Testar conexão**. O endpoint RTX já vem preenchido e só deve mudar se a Cultura Builder indicar outro. A chave fica só neste Mac, em `~/Library/Application Support/Builders Protect/settings.json` com permissão `600`, e nunca entra em relatório.
+
+### Idioma
+
+Em **Ajustes > Geral**, o idioma pode ficar em inglês (padrão), português ou automático pelo idioma do sistema. A troca vale na hora.
 
 ### Abrir ao iniciar
 

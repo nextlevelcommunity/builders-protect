@@ -18,7 +18,7 @@ O Pest sempre usa a IA da Cultura Builder e só envia trechos de código e confi
 
 Minha rede não envia dados para a Cultura Builder. Ela faz uma consulta local ao endereço do roteador e não captura tráfego.
 
-O Red Teaming, quando liberado, enviará somente os arquivos selecionados após consentimento explícito.
+O Red Teaming envia somente arquivos de texto elegíveis do projeto escolhido, em blocos, após consentimento explícito e com segredos reconhecíveis mascarados. `.env`, chaves, binários, lockfiles e dependências instaladas ficam de fora.
 
 ## O que é o Pest?
 
@@ -34,7 +34,7 @@ Não. Ela tira uma foto das configurações e dos serviços visíveis naquele mo
 
 ## O Red Teaming já está disponível?
 
-Está em preparação. Quando for liberado, será opt-in por projeto, exclusivo para assinantes ativos, com modelos privados dedicados à segurança e guardrails específicos. Os dados não serão enviados para laboratórios de IA nem usados para treinamento.
+Está disponível. É opt-in por projeto, com consentimento salvo, análise em blocos com pausa por memória e retomada. Você pode acionar pelo Pest ou pelo alerta do projeto e agendar várias rodadas por dia, com pelo menos 20 minutos entre elas.
 
 ## Por que GitHub em vez de um instalador padrão?
 
@@ -50,7 +50,7 @@ A CLI e a GitHub Action funcionam nos três sistemas. A interface desktop para W
 | --- | --- |
 | Interface, agendamento local, notificações | Execução em PR, push ou cron |
 | Pest, Minha rede, diagnóstico com IA | Varredura de dependências |
-| Red Teaming em preparação | SARIF e resumo no job |
+| Red Teaming | SARIF e resumo no job |
 | macOS | Linux, Windows e macOS |
 
 ## A Action altera meu repositório?

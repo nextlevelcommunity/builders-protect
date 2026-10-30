@@ -48,22 +48,22 @@ struct AnalysisPanelView: View {
             }
         }
         .confirmationDialog(
-            "Ignorar pasta?",
+            L10n.t("Ignorar pasta?", "Ignore folder?"),
             isPresented: Binding(
                 get: { exclusionCandidate != nil },
                 set: { if !$0 { exclusionCandidate = nil } }
             ),
             presenting: exclusionCandidate
         ) { alert in
-            Button("Ignorar pasta", role: .destructive) {
+            Button(L10n.t("Ignorar pasta", "Ignore folder"), role: .destructive) {
                 model.excludeProject(alert)
                 exclusionCandidate = nil
             }
-            Button("Cancelar", role: .cancel) {
+            Button(L10n.t("Cancelar", "Cancel"), role: .cancel) {
                 exclusionCandidate = nil
             }
         } message: { alert in
-            Text("\(alert.project.name) não será mais verificada. A análise será atualizada agora; você pode reativar em Ajustes > Pastas.")
+            Text(L10n.t("\(alert.project.name) não será mais verificada. A análise será atualizada agora; você pode reativar em Ajustes > Pastas.", "\(alert.project.name) will no longer be checked. The analysis updates now; you can reactivate it in Settings > Folders."))
         }
     }
 
@@ -76,10 +76,10 @@ struct AnalysisPanelView: View {
     private var header: some View {
         HStack(spacing: 15) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("Análises")
+                Text(L10n.t("Análises"))
                     .font(.system(size: 30, weight: .ultraLight, design: .rounded))
                     .foregroundStyle(CBTheme.text)
-                Text("Resultados da última varredura")
+                Text(L10n.t("Resultados da última varredura"))
                     .font(.system(size: 12.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
             }
@@ -102,17 +102,17 @@ struct AnalysisPanelView: View {
                 Button {
                     model.copyAllFixPrompts(report.alerts)
                 } label: {
-                    Label("Copiar prompt geral", systemImage: "doc.on.doc")
+                    Label(L10n.t("Copiar prompt geral"), systemImage: "doc.on.doc")
                 }
                 .buttonStyle(ModalSurfaceButtonStyle())
-                .help("Copia um único prompt para corrigir todos os projetos afetados, inclusive os filtrados")
+                .help(L10n.t("Copia um único prompt para corrigir todos os projetos afetados, inclusive os filtrados"))
                 .disabled(!model.canScan)
             }
 
             Button {
                 model.scan()
             } label: {
-                Label("Verificar agora", systemImage: "arrow.clockwise")
+                Label(L10n.t("Verificar agora"), systemImage: "arrow.clockwise")
             }
             .buttonStyle(ModalLimeButtonStyle())
             .disabled(!model.canScan)
@@ -128,7 +128,7 @@ struct AnalysisPanelView: View {
                     .font(.system(size: 12, weight: .regular))
                     .foregroundStyle(CBTheme.textTertiary)
 
-                TextField("Buscar projeto, pacote ou caminho", text: $search)
+                TextField(L10n.t("Buscar projeto, pacote ou caminho", "Search project, package or path"), text: $search)
                     .textFieldStyle(.plain)
                     .font(.system(size: 13, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.text)
@@ -156,14 +156,14 @@ struct AnalysisPanelView: View {
             }
 
             if report.alerts.contains(where: \.hasKEV) {
-                filterChip(title: "KEV", tint: CBTheme.critical, selected: onlyKEV) {
+                filterChip(title: L10n.t("KEV"), tint: CBTheme.critical, selected: onlyKEV) {
                     onlyKEV.toggle()
                 }
             }
 
             Spacer(minLength: 8)
 
-            Text("\(filteredAlerts(report).count) de \(report.alerts.count) projetos")
+            Text(L10n.t("\(filteredAlerts(report).count) de \(report.alerts.count) projetos", "\(filteredAlerts(report).count) of \(report.alerts.count) projects"))
                 .font(.system(size: 11.5, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
                 .monospacedDigit()
@@ -211,9 +211,9 @@ struct AnalysisPanelView: View {
         } else if let error = model.scanError {
             NoticeCard(
                 kind: .error,
-                title: "A varredura não terminou",
+                title: L10n.t("A varredura não terminou"),
                 message: error,
-                actionTitle: "Tentar de novo",
+                actionTitle: L10n.t("Tentar de novo"),
                 action: { model.scan() }
             )
             if let report = model.report {
@@ -225,9 +225,9 @@ struct AnalysisPanelView: View {
         } else {
             EmptyPanelCard(
                 symbol: "shield.lefthalf.filled",
-                title: "Pronto para a primeira varredura",
-                message: "O Builders Protect lê seus lockfiles, compara com a base de vulnerabilidades e explica o que corrigir.",
-                actionTitle: "Verificar agora",
+                title: L10n.t("Pronto para a primeira varredura"),
+                message: L10n.t("O Builders Protect lê seus lockfiles, compara com a base de vulnerabilidades e explica o que corrigir."),
+                actionTitle: L10n.t("Verificar agora"),
                 action: { model.scan() }
             )
         }
@@ -259,11 +259,13 @@ struct AnalysisPanelView: View {
         return HStack(alignment: .top, spacing: 28) {
             VStack(alignment: .leading, spacing: 13) {
                 HStack(spacing: 8) {
-                    SectionLabel(text: report.hasFindings ? "Resultado da análise" : "Tudo limpo")
+                    SectionLabel(text: report.hasFindings
+                        ? L10n.t("Resultado da análise", "Analysis result")
+                        : L10n.t("Tudo limpo", "All clear"))
                     if report.llmUsed {
                         HStack(spacing: 4) {
                             Image(systemName: "sparkles")
-                            Text("análise da IA")
+                            Text(L10n.t("análise da IA"))
                         }
                         .font(.system(size: 9.5, weight: .medium, design: .rounded))
                         .foregroundStyle(CBTheme.lime)
@@ -278,7 +280,9 @@ struct AnalysisPanelView: View {
                         .font(.system(size: 60, weight: .ultraLight, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(CBTheme.text)
-                    Text(report.hasFindings ? "projetos afetados" : "projetos verificados")
+                    Text(report.hasFindings
+                        ? L10n.t("projetos afetados", "affected projects")
+                        : L10n.t("projetos verificados", "projects checked"))
                         .font(.system(size: 14, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textSecondary)
                 }
@@ -291,9 +295,9 @@ struct AnalysisPanelView: View {
                     .textSelection(.enabled)
 
                 HStack(spacing: 34) {
-                    inlineStat(value: "\(report.projectsScanned)", label: "Projetos")
+                    inlineStat(value: "\(report.projectsScanned)", label: L10n.t("Projetos", "Projects"))
                     inlineStat(value: "\(report.lockfilesChecked)", label: "Lockfiles")
-                    inlineStat(value: "\(report.totalPackages)", label: "Pacotes")
+                    inlineStat(value: "\(report.totalPackages)", label: L10n.t("Pacotes", "Packages"))
                     Spacer()
                     Label(model.lastScanLabel, systemImage: "clock")
                         .font(.system(size: 11, weight: .regular, design: .rounded))
@@ -317,7 +321,7 @@ struct AnalysisPanelView: View {
                 }
                 .frame(width: 76, height: 76)
 
-                Text(report.hasFindings ? risk.shortLabel : "LIMPO")
+                Text(report.hasFindings ? L10n.t(risk.label).uppercased() : L10n.t("LIMPO", "CLEAN"))
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .tracking(1)
                     .foregroundStyle(report.hasFindings ? risk.color : CBTheme.mint)
@@ -356,14 +360,14 @@ struct AnalysisPanelView: View {
 
     private func warningsCard(_ report: ScanReport) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionLabel(text: "Avisos da varredura")
+            SectionLabel(text: L10n.t("Avisos da varredura"))
             ForEach(Array(report.warnings.enumerated()), id: \.offset) { _, warning in
                 HStack(alignment: .top, spacing: 9) {
                     Circle()
                         .fill(CBTheme.medium)
                         .frame(width: 5, height: 5)
                         .padding(.top, 6)
-                    Text(Vocabulary.clean(warning))
+                    Text(L10n.t(Vocabulary.clean(warning)))
                         .font(.system(size: 12.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textSecondary)
                         .lineSpacing(2)
@@ -381,9 +385,9 @@ struct AnalysisPanelView: View {
 
         return VStack(alignment: .leading, spacing: 15) {
             HStack(alignment: .firstTextBaseline) {
-                SectionLabel(text: "Projetos afetados")
+                SectionLabel(text: L10n.t("Projetos afetados"))
                 Spacer()
-                Text("\(alerts.count) de \(report.alerts.count)")
+                Text(L10n.t("\(alerts.count) de \(report.alerts.count)", "\(alerts.count) of \(report.alerts.count)"))
                     .font(.system(size: 11, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
                     .monospacedDigit()
@@ -418,10 +422,10 @@ struct AnalysisPanelView: View {
                 .foregroundStyle(CBTheme.textTertiary)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text("Nenhum projeto com esses filtros")
+                Text(L10n.t("Nenhum projeto com esses filtros"))
                     .font(.system(size: 14, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.text)
-                Text("Tente outro termo ou remova os filtros.")
+                Text(L10n.t("Tente outro termo ou remova os filtros."))
                     .font(.system(size: 11.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
             }
@@ -433,7 +437,7 @@ struct AnalysisPanelView: View {
                 riskFilter = .all
                 onlyKEV = false
             } label: {
-                Text("Limpar filtros")
+                Text(L10n.t("Limpar filtros"))
             }
             .buttonStyle(ModalSurfaceButtonStyle())
         }
@@ -469,10 +473,10 @@ struct AnalysisPanelView: View {
                 .foregroundStyle(CBTheme.mint)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Nenhuma vulnerabilidade conhecida nas versões instaladas")
+                Text(L10n.t("Nenhuma vulnerabilidade conhecida nas versões instaladas"))
                     .font(.system(size: 15, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.text)
-                Text("\(Vocabulary.quantity(report.projectsScanned, "projeto", "projetos")) e \(Vocabulary.quantity(report.lockfilesChecked, "lockfile", "lockfiles")) verificados.")
+                Text(L10n.t("\(Vocabulary.quantity(report.projectsScanned, "projeto", "projetos")) e \(Vocabulary.quantity(report.lockfilesChecked, "lockfile", "lockfiles")) verificados.", "\(Vocabulary.quantity(report.projectsScanned, "projeto", "projetos")) and \(Vocabulary.quantity(report.lockfilesChecked, "lockfile", "lockfiles")) checked."))
                     .font(.system(size: 11.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
             }
@@ -484,7 +488,7 @@ struct AnalysisPanelView: View {
 
     private func nextSteps(_ report: ScanReport) -> some View {
         VStack(alignment: .leading, spacing: 13) {
-            SectionLabel(text: "Próximos passos")
+            SectionLabel(text: L10n.t("Próximos passos"))
             ForEach(Array(report.nextSteps.enumerated()), id: \.offset) { index, step in
                 HStack(alignment: .top, spacing: 11) {
                     Text("\(index + 1)")
@@ -512,7 +516,7 @@ struct AnalysisPanelView: View {
                 .font(.system(size: 11, weight: .regular))
                 .foregroundStyle(CBTheme.lime)
                 .padding(.top, 1)
-            Text("A varredura de dependências envia apenas nomes, versões e lockfiles. O Pest tem consentimento próprio para código.")
+            Text(L10n.t("A varredura de dependências envia apenas nomes, versões e lockfiles. O Pest tem consentimento próprio para código."))
                 .font(.system(size: 11.5, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
         }
@@ -520,7 +524,7 @@ struct AnalysisPanelView: View {
 
     private var footer: some View {
         HStack(spacing: 12) {
-            Text("As análises ficam salvas neste Mac.")
+            Text(L10n.t("As análises ficam salvas neste Mac."))
                 .font(.system(size: 10.5, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
 
@@ -529,7 +533,7 @@ struct AnalysisPanelView: View {
             Button {
                 model.settingsSection = .account
             } label: {
-                Label("Ajustes", systemImage: "gearshape")
+                Label(L10n.t("Ajustes"), systemImage: "gearshape")
             }
             .buttonStyle(ModalGhostButtonStyle())
         }
@@ -539,12 +543,12 @@ struct AnalysisPanelView: View {
 
     private var statusColor: Color {
         if model.isScanning { return CBTheme.lime }
-        if model.authStatus.connected { return CBTheme.mint }
+        if model.llmReady { return CBTheme.mint }
         return CBTheme.high
     }
 
     private var statusLabel: String {
-        if model.isScanning { return "Verificando" }
+        if model.isScanning { return L10n.t("Verificando", "Checking") }
         return model.authLabel
     }
 }
@@ -560,11 +564,11 @@ private enum RiskFilter: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .all: return "Todos"
-        case .critical: return "Crítica"
-        case .high: return "Alta"
-        case .medium: return "Média"
-        case .low: return "Baixa"
+        case .all: return L10n.t("Todos", "All")
+        case .critical: return L10n.t("Crítica", "Critical")
+        case .high: return L10n.t("Alta", "High")
+        case .medium: return L10n.t("Média", "Medium")
+        case .low: return L10n.t("Baixa", "Low")
         }
     }
 
@@ -654,7 +658,7 @@ private struct AnalysisProjectRow: View {
                             .lineSpacing(2)
 
                         HStack(spacing: 15) {
-                            Label("Vulnerabilidades", systemImage: "shield.lefthalf.filled")
+                            Label(L10n.t("Vulnerabilidades"), systemImage: "shield.lefthalf.filled")
                             Label(Vocabulary.quantity(alert.packageCount, "pacote", "pacotes"), systemImage: "shippingbox")
                         }
                         .font(.system(size: 11, weight: .regular, design: .rounded))
@@ -698,12 +702,12 @@ private struct AnalysisProjectRow: View {
                     .padding(.leading, 17)
 
                 VStack(alignment: .leading, spacing: 20) {
-                    proseSection(title: "Diagnóstico", text: alert.diagnosis)
-                    proseSection(title: "O que fazer", text: alert.recommendation)
+                    proseSection(title: L10n.t("Diagnóstico"), text: alert.diagnosis)
+                    proseSection(title: L10n.t("O que fazer"), text: alert.recommendation)
 
                     VStack(alignment: .leading, spacing: 5) {
                         HStack {
-                            SectionLabel(text: "Pacotes afetados")
+                            SectionLabel(text: L10n.t("Pacotes afetados"))
                             Spacer()
                             Text("\(alert.packageCount)")
                                 .font(.system(size: 10, weight: .regular, design: .monospaced))
@@ -713,7 +717,7 @@ private struct AnalysisProjectRow: View {
                             AnalysisPackageRow(package: package)
                         }
                         if alert.packageCount > 6 {
-                            Text("+ \(Vocabulary.quantity(alert.packageCount - 6, "pacote", "pacotes")) no detalhe completo")
+                            Text(L10n.t("+ \(Vocabulary.quantity(alert.packageCount - 6, "pacote", "pacotes")) no detalhe completo", "+ \(Vocabulary.quantity(alert.packageCount - 6, "pacote", "pacotes")) in the full details"))
                                 .font(.system(size: 11, weight: .regular, design: .rounded))
                                 .foregroundStyle(CBTheme.textTertiary)
                                 .padding(.top, 3)
@@ -722,17 +726,17 @@ private struct AnalysisProjectRow: View {
 
                     HStack(spacing: 9) {
                         Button(action: onCopy) {
-                            Label("Copiar prompt", systemImage: "doc.on.doc")
+                            Label(L10n.t("Copiar prompt"), systemImage: "doc.on.doc")
                         }
                         .buttonStyle(ModalLimeButtonStyle())
 
                         Button(action: onDetails) {
-                            Text("Abrir detalhes")
+                            Text(L10n.t("Abrir detalhes"))
                         }
                         .buttonStyle(ModalSurfaceButtonStyle())
 
                         Button(action: onExclude) {
-                            Label("Ignorar pasta", systemImage: "eye.slash")
+                            Label(L10n.t("Ignorar pasta"), systemImage: "eye.slash")
                         }
                         .buttonStyle(ModalSurfaceButtonStyle())
 
@@ -742,7 +746,7 @@ private struct AnalysisProjectRow: View {
                             Image(systemName: "folder")
                         }
                         .buttonStyle(IconButtonStyle(size: 34))
-                        .help("Abrir pasta no Finder")
+                        .help(L10n.t("Abrir pasta no Finder"))
                     }
                 }
                 .padding(.leading, 17)
@@ -756,10 +760,10 @@ private struct AnalysisProjectRow: View {
         )
         .contextMenu {
             Button(role: .destructive, action: onExclude) {
-                Label("Ignorar pasta", systemImage: "eye.slash")
+                Label(L10n.t("Ignorar pasta"), systemImage: "eye.slash")
             }
             Button(action: onOpenFolder) {
-                Label("Abrir pasta no Finder", systemImage: "folder")
+                Label(L10n.t("Abrir pasta no Finder"), systemImage: "folder")
             }
         }
     }

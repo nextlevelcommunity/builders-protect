@@ -83,6 +83,12 @@ public struct AppSettings: Codable, Equatable, Sendable {
     public var hasCompletedOnboarding: Bool
     public var notifyOnFindings: Bool
     public var lastScanAt: Date?
+    public var analysisMode: AnalysisMode
+    public var rtxEndpoint: String
+    public var rtxAPIKey: String
+    public var rtxModel: String
+    public var redTeamConsent: Bool
+    public var appLanguage: AppLanguage
 
     public init(
         folders: [MonitoredFolder] = [],
@@ -92,7 +98,13 @@ public struct AppSettings: Codable, Equatable, Sendable {
         scheduleMinute: Int = 0,
         hasCompletedOnboarding: Bool = false,
         notifyOnFindings: Bool = true,
-        lastScanAt: Date? = nil
+        lastScanAt: Date? = nil,
+        analysisMode: AnalysisMode = .standard,
+        rtxEndpoint: String = "",
+        rtxAPIKey: String = "",
+        rtxModel: String = "",
+        redTeamConsent: Bool = false,
+        appLanguage: AppLanguage = .system
     ) {
         self.folders = folders
         self.excludedPaths = excludedPaths
@@ -102,6 +114,12 @@ public struct AppSettings: Codable, Equatable, Sendable {
         self.hasCompletedOnboarding = hasCompletedOnboarding
         self.notifyOnFindings = notifyOnFindings
         self.lastScanAt = lastScanAt
+        self.analysisMode = analysisMode
+        self.rtxEndpoint = rtxEndpoint
+        self.rtxAPIKey = rtxAPIKey
+        self.rtxModel = rtxModel
+        self.redTeamConsent = redTeamConsent
+        self.appLanguage = appLanguage
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -113,6 +131,12 @@ public struct AppSettings: Codable, Equatable, Sendable {
         case hasCompletedOnboarding
         case notifyOnFindings
         case lastScanAt
+        case analysisMode
+        case rtxEndpoint
+        case rtxAPIKey
+        case rtxModel
+        case redTeamConsent
+        case appLanguage
     }
 
     public init(from decoder: Decoder) throws {
@@ -125,6 +149,12 @@ public struct AppSettings: Codable, Equatable, Sendable {
         hasCompletedOnboarding = try container.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? false
         notifyOnFindings = try container.decodeIfPresent(Bool.self, forKey: .notifyOnFindings) ?? true
         lastScanAt = try container.decodeIfPresent(Date.self, forKey: .lastScanAt)
+        analysisMode = try container.decodeIfPresent(AnalysisMode.self, forKey: .analysisMode) ?? .standard
+        rtxEndpoint = try container.decodeIfPresent(String.self, forKey: .rtxEndpoint) ?? ""
+        rtxAPIKey = try container.decodeIfPresent(String.self, forKey: .rtxAPIKey) ?? ""
+        rtxModel = try container.decodeIfPresent(String.self, forKey: .rtxModel) ?? ""
+        redTeamConsent = try container.decodeIfPresent(Bool.self, forKey: .redTeamConsent) ?? false
+        appLanguage = try container.decodeIfPresent(AppLanguage.self, forKey: .appLanguage) ?? .system
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -137,6 +167,12 @@ public struct AppSettings: Codable, Equatable, Sendable {
         try container.encode(hasCompletedOnboarding, forKey: .hasCompletedOnboarding)
         try container.encode(notifyOnFindings, forKey: .notifyOnFindings)
         try container.encodeIfPresent(lastScanAt, forKey: .lastScanAt)
+        try container.encode(analysisMode, forKey: .analysisMode)
+        try container.encode(rtxEndpoint, forKey: .rtxEndpoint)
+        try container.encode(rtxAPIKey, forKey: .rtxAPIKey)
+        try container.encode(rtxModel, forKey: .rtxModel)
+        try container.encode(redTeamConsent, forKey: .redTeamConsent)
+        try container.encode(appLanguage, forKey: .appLanguage)
     }
 
     public var scheduleLabel: String {

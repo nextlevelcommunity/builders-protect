@@ -8,6 +8,7 @@ public final class SettingsStore: @unchecked Sendable {
     private let settingsURL: URL
     private let reportURL: URL
     private let redTeamURL: URL
+    private let redTeamRoutineURL: URL
     private let pestURL: URL
     private let networkURL: URL
     private let encoder: JSONEncoder
@@ -23,7 +24,7 @@ public final class SettingsStore: @unchecked Sendable {
         if !fileManager.fileExists(atPath: base.path),
            fileManager.fileExists(atPath: legacy.path) {
             try? fileManager.createDirectory(at: base, withIntermediateDirectories: true)
-            for name in ["settings.json", "report.json", "redteam.json", "pest.json", "network.json"] {
+            for name in ["settings.json", "report.json", "redteam.json", "redteamroutines.json", "pest.json", "network.json"] {
                 let source = legacy.appendingPathComponent(name)
                 let target = base.appendingPathComponent(name)
                 if fileManager.fileExists(atPath: source.path) {
@@ -36,6 +37,7 @@ public final class SettingsStore: @unchecked Sendable {
         self.settingsURL = base.appendingPathComponent("settings.json")
         self.reportURL = base.appendingPathComponent("report.json")
         self.redTeamURL = base.appendingPathComponent("redteam.json")
+        self.redTeamRoutineURL = base.appendingPathComponent("redteamroutines.json")
         self.pestURL = base.appendingPathComponent("pest.json")
         self.networkURL = base.appendingPathComponent("network.json")
 
@@ -108,6 +110,24 @@ public final class SettingsStore: @unchecked Sendable {
         )
     }
 
+    public func loadRedTeamState() -> RedTeamState {
+        guard let data = try? Data(contentsOf: redTeamRoutineURL),
+              let state = try? decoder.decode(RedTeamState.self, from: data) else {
+            return .empty
+        }
+        return state
+    }
+
+    public func saveRedTeamState(_ state: RedTeamState) {
+        ensureDirectory()
+        guard let data = try? encoder.encode(state) else { return }
+        try? data.write(to: redTeamRoutineURL, options: .atomic)
+        try? fileManager.setAttributes(
+            [.posixPermissions: 0o600],
+            ofItemAtPath: redTeamRoutineURL.path
+        )
+    }
+
     public func loadPestState() -> PestState {
         guard let data = try? Data(contentsOf: pestURL),
               let state = try? decoder.decode(PestState.self, from: data) else {
@@ -148,6 +168,7 @@ public final class SettingsStore: @unchecked Sendable {
         try? fileManager.removeItem(at: settingsURL)
         try? fileManager.removeItem(at: reportURL)
         try? fileManager.removeItem(at: redTeamURL)
+        try? fileManager.removeItem(at: redTeamRoutineURL)
         try? fileManager.removeItem(at: pestURL)
         try? fileManager.removeItem(at: networkURL)
     }

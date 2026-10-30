@@ -124,16 +124,16 @@ struct BrandWordmark: View {
     var body: some View {
         VStack(alignment: .leading, spacing: compact ? 0 : 2) {
             HStack(spacing: 0) {
-                Text("Builders ")
+                Text(L10n.t("Builders "))
                     .fontWeight(.bold)
-                Text("Protect")
+                Text(L10n.t("Protect"))
                     .fontWeight(.light)
             }
             .font(.system(size: compact ? 16 : 21, design: .rounded))
             .foregroundStyle(CBTheme.text)
 
             if !compact {
-                Text("POR CULTURA BUILDER")
+                Text(L10n.t("POR CULTURA BUILDER"))
                     .font(.system(size: 8, weight: .bold, design: .rounded))
                     .tracking(1.6)
                     .foregroundStyle(CBTheme.textTertiary)

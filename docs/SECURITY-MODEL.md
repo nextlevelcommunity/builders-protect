@@ -7,9 +7,10 @@ Este documento descreve o que o Builders Protect lê, envia e produz. Ele vale p
 - A varredura de dependências não envia código-fonte.
 - O Pest usa a IA da Cultura Builder em todas as análises. A varredura de arquivos é local, e o envio de trechos de código e configuração do projeto escolhido só acontece após consentimento na análise manual ou autorização ao salvar a rotina, sempre com redaction.
 - Minha rede é local e passiva: não envia dados para a Cultura Builder, não captura tráfego, não testa senhas e não entra no painel do roteador.
-- O Red Teaming é opt-in, por projeto, e será exclusivo para assinantes ativos.
+- O Red Teaming é opt-in, por projeto, com consentimento salvo e escopo exibido antes do envio.
 - Nenhum segredo é incluído nos relatórios.
 - A Action não escreve no repositório e não precisa de token de IA.
+- A chave do modo RTX é separada da chave local e fica apenas em `settings.json` (permissão 600), ou em `~/.config/cultura-builder-llm/rtx-litellm-key` como fallback local.
 
 ## Dados por recurso
 
@@ -19,7 +20,7 @@ Este documento descreve o que o Builders Protect lê, envia e produz. Ele vale p
 | Diagnóstico de dependências com IA | Achados e metadados do projeto | Achados, nomes de pacotes, versões, caminhos e ecossistemas | Código-fonte, segredos |
 | Pest | Código e configuração de texto do projeto escolhido | Blocos pequenos de texto, após consentimento e redaction | `.env`, chaves, credenciais reconhecíveis, binários, lockfiles, dependências instaladas, arquivos grandes |
 | Minha rede | Configurações de rede do macOS, tabela ARP, DNS, serviços escutando e estado do firewall/FileVault | Nada para a Cultura Builder; uma consulta GET ao endereço local do roteador | Tráfego, senhas, conteúdo de navegação, dados de outros aparelhos |
-| Red Teaming | Arquivos selecionados do projeto | Somente arquivos selecionados, após consentimento | Credenciais, arquivos ignorados, arquivos fora do projeto |
+| Red Teaming | Arquivos de texto do projeto, em blocos | Somente arquivos de texto elegíveis, após consentimento, com redaction | Credenciais, arquivos ignorados, binários, lockfiles, arquivos grandes |
 | GitHub Action | Workspace do repositório | Lockfiles para a base de vulnerabilidades | Código-fonte, segredos, tokens do GitHub |
 
 Lockfiles podem conter nomes de pacotes internos e URLs de registries privados. Trate o relatório e os artefatos gerados como informação interna. O Pest também pode receber trechos de código; use o consentimento por análise e revise o escopo antes de autorizar.
@@ -36,16 +37,27 @@ O diagnóstico de dependências com IA, o Pest e o Red Teaming usam os modelos d
 
 No Pest, a IA é obrigatória. Sem a conta conectada, a análise não começa. O app pede consentimento antes de enviar blocos de texto em cada análise manual; salvar uma rotina autoriza a execução diária daquele projeto. `.env`, chaves, credenciais reconhecíveis, binários, lockfiles, dependências instaladas e arquivos grandes são ignorados ou mascarados. O parser valida os caminhos retornados pela LLM contra os arquivos permitidos.
 
-Quando o Red Teaming for liberado:
+O Red Teaming é manual, por projeto e opt-in:
 
-- a ativação será manual e por projeto;
-- o app mostrará o escopo antes de enviar qualquer arquivo;
-- somente arquivos selecionados serão enviados;
-- os modelos serão privados e dedicados à segurança, com guardrails específicos;
-- os dados não serão enviados para laboratórios de IA nem usados para treinamento;
-- o consentimento poderá ser revogado antes de cada análise.
+- o app mostra o escopo antes de enviar qualquer arquivo;
+- só entram arquivos de texto elegíveis, em blocos pequenos, com segredos reconhecíveis mascarados;
+- `.env`, chaves, credenciais, binários, lockfiles, dependências instaladas e arquivos grandes ficam de fora;
+- a análise roda em blocos com orçamento de memória, pausa automática e retomada;
+- os modelos são privados e dedicados à segurança, com guardrails específicos;
+- os dados não são enviados para laboratórios de IA nem usados para treinamento;
+- o consentimento fica salvo e pode ser revogado em Ajustes > Red Team.
 
-O Red Teaming está em preparação nesta versão e não é executado pela CLI nem pela Action.
+O Red Teaming não é executado pela CLI nem pela Action.
+
+## Modos de IA e chave RTX
+
+O modo padrão usa o gateway da Cultura Builder com a sessão do proxy. O modo RTX usa o endpoint RTX com túnel e uma chave dedicada, diferente da chave local. Com o modo RTX ativo, o Pest, o Red Team e o diagnóstico passam a usar `deepseek-v4.1-flash-1017-uncensored`.
+
+A chave é digitada em Ajustes > IA e segurança, gravada em `settings.json` com permissão `600` e nunca entra em relatórios, prompts ou logs. Se o campo estiver vazio, o app tenta `~/.config/cultura-builder-llm/rtx-litellm-key`. O teste de conexão consulta apenas `/models` no endpoint configurado.
+
+## Idioma
+
+O idioma da interface não muda o que é enviado. O padrão é inglês; a opção fica em Ajustes > Geral, com modo automático pelo idioma do sistema.
 
 ## Rede local
 
@@ -59,7 +71,7 @@ No app, a sessão da Cultura Builder é lida do armazenamento local usado pelo p
 
 O repositório público não contém chaves de API, tokens ou credenciais. Endpoints públicos ficam no código; qualquer credencial de assinante permanece no armazenamento local da máquina.
 
-A CLI e a Action não usam a sessão de assinante. Elas não precisam de token de IA para a varredura de dependências.
+A CLI e a Action não usam a sessão de assinante. Elas não precisam de token de IA para a varredura de dependências. A chave RTX existe só no app.
 
 ## GitHub Actions
 

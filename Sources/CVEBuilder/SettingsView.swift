@@ -3,6 +3,7 @@ import CVECore
 import SwiftUI
 
 enum SettingsSection: String, CaseIterable, Identifiable {
+    case ai
     case analysis
     case pest
     case network
@@ -10,25 +11,29 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     case account
     case folders
     case routine
+    case general
     case about
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .analysis: return "Análises"
-        case .pest: return "Pest"
-        case .network: return "Minha rede"
-        case .redTeam: return "Red Teaming"
-        case .account: return "Conta"
-        case .folders: return "Pastas"
-        case .routine: return "Rotina"
-        case .about: return "Sobre"
+        case .ai: return L10n.t("IA e segurança")
+        case .analysis: return L10n.t("Análises")
+        case .pest: return L10n.t("Pest")
+        case .network: return L10n.t("Minha rede")
+        case .redTeam: return L10n.t("Red Team")
+        case .account: return L10n.t("Conta")
+        case .folders: return L10n.t("Pastas")
+        case .routine: return L10n.t("Rotina")
+        case .general: return L10n.t("Geral")
+        case .about: return L10n.t("Sobre")
         }
     }
 
     var symbol: String {
         switch self {
+        case .ai: return "bolt.shield"
         case .analysis: return "doc.text.magnifyingglass"
         case .pest: return "scope"
         case .network: return "wifi"
@@ -36,6 +41,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .account: return "person.crop.circle"
         case .folders: return "folder"
         case .routine: return "clock.arrow.circlepath"
+        case .general: return "gearshape"
         case .about: return "info.circle"
         }
     }
@@ -60,7 +66,9 @@ struct SettingsView: View {
             Rectangle()
                 .fill(CBTheme.hairline)
                 .frame(width: 1)
-            if section == .analysis {
+            if section == .ai {
+                AISettingsView(model: model, draft: $draft)
+            } else if section == .analysis {
                 AnalysisPanelView(model: model)
             } else if section == .pest {
                 PestView(model: model)
@@ -130,7 +138,7 @@ struct SettingsView: View {
             .padding(.top, 22)
             .padding(.horizontal, 18)
 
-            Text("NAVEGAÇÃO")
+            Text(L10n.t("NAVEGAÇÃO"))
                 .font(.system(size: 8, weight: .semibold, design: .rounded))
                 .tracking(1.5)
                 .foregroundStyle(CBTheme.textTertiary)
@@ -151,15 +159,6 @@ struct SettingsView: View {
                             Text(item.title)
                                 .font(.system(size: 12.5, weight: section == item ? .medium : .regular, design: .rounded))
                             Spacer(minLength: 0)
-                            if item == .redTeam {
-                                Text("Em breve")
-                                    .font(.system(size: 7.5, weight: .bold, design: .rounded))
-                                    .tracking(0.4)
-                                    .foregroundStyle(CBTheme.textTertiary)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 3)
-                                    .background(CBTheme.surfaceStrong, in: Capsule())
-                            }
                         }
                         .foregroundStyle(
                             section == item ? CBTheme.text : CBTheme.textSecondary
@@ -172,8 +171,6 @@ struct SettingsView: View {
                         )
                     }
                     .buttonStyle(.plain)
-                    .disabled(item == .redTeam)
-                    .help(item == .redTeam ? "Em breve" : "")
                 }
             }
             .padding(.top, 8)
@@ -182,7 +179,7 @@ struct SettingsView: View {
             Spacer()
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Builders Protect")
+                Text(L10n.t("Builders Protect"))
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
                 Text("v\(BrandAssets.version)")
@@ -202,6 +199,8 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 16) {
                 pageHeader
                 switch section {
+                case .ai:
+                    EmptyView()
                 case .analysis:
                     EmptyView()
                 case .pest:
@@ -216,6 +215,8 @@ struct SettingsView: View {
                     foldersSection
                 case .routine:
                     routineSection
+                case .general:
+                    generalSection
                 case .about:
                     aboutSection
                 }
@@ -243,22 +244,26 @@ struct SettingsView: View {
 
     private var sectionDescription: String {
         switch section {
+        case .ai:
+            return L10n.t("Modo padrão com login no proxy ou modo RTX com chave dedicada.")
         case .analysis:
-            return "Resultados da última varredura e o que corrigir primeiro."
+            return L10n.t("Resultados da última varredura e o que corrigir primeiro.")
         case .pest:
-            return "Análise de segurança do código, guiada pelo catálogo Nuclei."
+            return L10n.t("Análise de segurança do código, guiada pelo catálogo Nuclei.")
         case .network:
-            return "Uma leitura local da sua Wi-Fi, do roteador e dos serviços visíveis."
+            return L10n.t("Uma leitura local da sua Wi-Fi, do roteador e dos serviços visíveis.")
         case .redTeam:
-            return "Análise profunda de um projeto, com consentimento explícito."
+            return L10n.t("Análise profunda de um projeto, com consentimento explícito.")
         case .account:
-            return "Sua sessão da Cultura Builder libera o diagnóstico da IA."
+            return L10n.t("Sua sessão da Cultura Builder libera o modo padrão da IA.")
         case .folders:
-            return "Estas são as pastas que o Builders Protect varre em busca de lockfiles."
+            return L10n.t("Estas são as pastas que o Builders Protect varre em busca de lockfiles.")
         case .routine:
-            return "Defina quando verificar e como o app avisa você."
+            return L10n.t("Defina quando verificar e como o app avisa você.")
+        case .general:
+            return L10n.t("Idioma e preferências gerais deste Mac.")
         case .about:
-            return "Um app da Cultura Builder para acompanhar dependências."
+            return L10n.t("Um app da Cultura Builder para acompanhar dependências.")
         }
     }
 
@@ -284,20 +289,24 @@ struct SettingsView: View {
                         .frame(width: 38, height: 38)
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(model.authStatus.connected ? "Conta conectada" : "Sessão não encontrada")
+                            Text(model.authStatus.connected
+                                ? L10n.t("Conta conectada", "Connected account")
+                                : L10n.t("Sessão não encontrada", "Session not found"))
                                 .font(.system(size: 13, weight: .semibold, design: .rounded))
                                 .foregroundStyle(CBTheme.text)
                             Text(
                                 model.authStatus.connected
-                                    ? (model.authStatus.expiryLabel.map { "Token válido até \($0)" } ?? "Sessão ativa")
-                                    : "A verificação de vulnerabilidades continua, mas sem diagnóstico da IA."
+                                    ? (model.authStatus.localizedExpiryLabel.map {
+                                        L10n.t("Token válido até \($0)", "Token valid until \($0)")
+                                    } ?? L10n.t("Sessão ativa", "Active session"))
+                                    : L10n.t("A verificação de vulnerabilidades continua, mas sem diagnóstico da IA.", "Vulnerability scanning continues, but without AI diagnosis.")
                             )
                             .font(.system(size: 9.5, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                         }
                         Spacer(minLength: 0)
                         if model.authStatus.connected {
-                            Text("ATIVA")
+                            Text(L10n.t("ATIVA"))
                                 .font(.system(size: 7.5, weight: .heavy, design: .rounded))
                                 .tracking(0.8)
                                 .foregroundStyle(CBTheme.mint)
@@ -310,7 +319,7 @@ struct SettingsView: View {
                     Divider().overlay(CBTheme.hairline)
 
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Para entrar ou trocar de conta, rode no terminal:")
+                        Text(L10n.t("Para entrar ou trocar de conta, rode no terminal:"))
                             .font(.system(size: 9.5, weight: .medium, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                         Text(model.authStatus.loginCommand)
@@ -327,21 +336,21 @@ struct SettingsView: View {
                         Button {
                             model.copyLoginCommand()
                         } label: {
-                            Label("Copiar comando", systemImage: "doc.on.doc")
+                            Label(L10n.t("Copiar comando"), systemImage: "doc.on.doc")
                         }
                         .buttonStyle(LimeButtonStyle())
 
                         Button {
                             Task { await model.refreshAuth(force: true) }
                         } label: {
-                            Text(model.isRefreshingAuth ? "Renovando…" : "Já fiz login")
+                            Text(model.isRefreshingAuth ? L10n.t("Renovando…", "Renewing…") : L10n.t("Já fiz login", "I signed in"))
                         }
                         .buttonStyle(SurfaceButtonStyle())
                         .disabled(model.isRefreshingAuth)
 
                         Spacer(minLength: 0)
 
-                        Button("Abrir o Hub") {
+                        Button(L10n.t("Abrir o Hub")) {
                             model.openHub()
                         }
                         .buttonStyle(GhostButtonStyle())
@@ -351,8 +360,8 @@ struct SettingsView: View {
 
             NoticeCard(
                 kind: .info,
-                title: "O que vai para a Cultura Builder",
-                message: "O diagnóstico de dependências recebe nomes, versões, vulnerabilidades e caminhos dos projetos, sem código-fonte. O Pest só envia código e configuração após sua autorização, com redaction de segredos. O Red Teaming está em breve."
+                title: L10n.t("O que vai para a IA"),
+                message: L10n.t("O diagnóstico de dependências recebe nomes, versões, vulnerabilidades e caminhos dos projetos, sem código-fonte. Pest e Red Team só enviam código e configuração após sua autorização, com redaction de segredos.")
             )
 
             if let path = model.authStatus.authFilePath {
@@ -360,7 +369,7 @@ struct SettingsView: View {
                     Image(systemName: "key")
                         .font(.system(size: 9, weight: .semibold))
                         .foregroundStyle(CBTheme.textTertiary)
-                    Text("Sessão lida de \(path.homeAbbreviated)")
+                    Text(L10n.t("Sessão lida de \(path.homeAbbreviated)", "Session read from \(path.homeAbbreviated)"))
                         .font(.system(size: 8.8, weight: .regular, design: .monospaced))
                         .foregroundStyle(CBTheme.textTertiary)
                         .lineLimit(1)
@@ -379,11 +388,11 @@ struct SettingsView: View {
                     Image(systemName: "folder.badge.plus")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(CBTheme.lime)
-                    Text("Adicionar pasta")
+                    Text(L10n.t("Adicionar pasta"))
                         .font(.system(size: 11.5, weight: .semibold, design: .rounded))
                         .foregroundStyle(CBTheme.text)
                     Spacer()
-                    Text("⌘ O")
+                    Text(L10n.t("⌘ O"))
                         .font(.system(size: 8.5, weight: .medium, design: .monospaced))
                         .foregroundStyle(CBTheme.textTertiary)
                 }
@@ -397,8 +406,8 @@ struct SettingsView: View {
             if draft.folders.isEmpty {
                 NoticeCard(
                     kind: .warning,
-                    title: "Nenhuma pasta monitorada",
-                    message: "Adicione a raiz onde ficam seus repositórios para que o app encontre os lockfiles."
+                    title: L10n.t("Nenhuma pasta monitorada"),
+                    message: L10n.t("Adicione a raiz onde ficam seus repositórios para que o app encontre os lockfiles.")
                 )
             } else {
                 VStack(spacing: 6) {
@@ -424,7 +433,7 @@ struct SettingsView: View {
                                 Image(systemName: "arrow.up.forward.app")
                             }
                             .buttonStyle(IconButtonStyle(size: 23))
-                            .help("Abrir no Finder")
+                            .help(L10n.t("Abrir no Finder"))
 
                             Button {
                                 draft.folders.removeAll { $0.id == folder.id }
@@ -432,7 +441,7 @@ struct SettingsView: View {
                                 Image(systemName: "xmark")
                             }
                             .buttonStyle(IconButtonStyle(size: 23))
-                            .help("Remover pasta")
+                            .help(L10n.t("Remover pasta"))
                         }
                         .padding(.horizontal, 11)
                         .padding(.vertical, 8)
@@ -443,19 +452,19 @@ struct SettingsView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    SectionLabel(text: "Revisar pastas")
+                    SectionLabel(text: L10n.t("Revisar pastas"))
                     Spacer()
                     Button {
                         showingFolderManager = true
                     } label: {
-                        Label("Gerenciar pastas", systemImage: "slider.horizontal.3")
+                        Label(L10n.t("Gerenciar pastas"), systemImage: "slider.horizontal.3")
                     }
                     .buttonStyle(GhostButtonStyle(tint: CBTheme.lime))
                     .disabled(draft.folders.isEmpty && draft.excludedPaths.isEmpty)
                 }
 
                 if draft.excludedPaths.isEmpty {
-                    Text("Todas as pastas encontradas entram na varredura. Use Gerenciar pastas para ver a lista completa, selecionar várias e ignorar builds, previews ou artefatos. O que você ignorar vale para a varredura, o Pest e o Red Teaming.")
+                    Text(L10n.t("Todas as pastas encontradas entram na varredura. Use Gerenciar pastas para ver a lista completa, selecionar várias e ignorar builds, previews ou artefatos. O que você ignorar vale para a varredura, o Pest e o Red Teaming."))
                         .font(.system(size: 10.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -471,12 +480,12 @@ struct SettingsView: View {
                                 Text(Vocabulary.quantity(draft.excludedPaths.count, "pasta excluída", "pastas excluídas"))
                                     .font(.system(size: 11.5, weight: .semibold, design: .rounded))
                                     .foregroundStyle(CBTheme.textSecondary)
-                                Text("Revise, selecione várias e reative de uma vez.")
+                                Text(L10n.t("Revise, selecione várias e reative de uma vez."))
                                     .font(.system(size: 8.8, weight: .regular, design: .rounded))
                                     .foregroundStyle(CBTheme.textTertiary)
                             }
                             Spacer()
-                            Text("Revisar")
+                            Text(L10n.t("Revisar"))
                                 .font(.system(size: 10, weight: .semibold, design: .rounded))
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 9, weight: .bold))
@@ -488,7 +497,7 @@ struct SettingsView: View {
                     .buttonStyle(.plain)
                 }
 
-                Text("Pastas de build, preview e artefatos aparecem marcadas para facilitar a revisão. As worktrees continuam sendo detectadas automaticamente.")
+                Text(L10n.t("Pastas de build, preview e artefatos aparecem marcadas para facilitar a revisão. As worktrees continuam sendo detectadas automaticamente."))
                     .font(.system(size: 9.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -501,7 +510,7 @@ struct SettingsView: View {
                     .font(.system(size: 9.5, weight: .semibold))
                     .foregroundStyle(CBTheme.textTertiary)
                     .padding(.top, 1)
-                Text("A varredura ignora node_modules, .git, builds, caches e ambientes virtuais. Ela lê apenas manifests e lockfiles.")
+                Text(L10n.t("A varredura ignora node_modules, .git, builds, caches e ambientes virtuais. Ela lê apenas manifests e lockfiles."))
                     .font(.system(size: 9.3, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -528,7 +537,7 @@ struct SettingsView: View {
             if isPreviewing {
                 HStack(spacing: 8) {
                     ProgressView().controlSize(.small)
-                    Text("Procurando projetos…")
+                    Text(L10n.t("Procurando projetos…"))
                         .font(.system(size: 10, weight: .medium, design: .rounded))
                         .foregroundStyle(CBTheme.textSecondary)
                 }
@@ -553,7 +562,7 @@ struct SettingsView: View {
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(CBTheme.high)
                         .padding(.top, 1)
-                    Text("Nenhum lockfile encontrado. Tente adicionar a pasta raiz dos repositórios.")
+                    Text(L10n.t("Nenhum lockfile encontrado. Tente adicionar a pasta raiz dos repositórios."))
                         .font(.system(size: 9.8, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -572,8 +581,8 @@ struct SettingsView: View {
             SurfaceCard(padding: 0) {
                 VStack(spacing: 0) {
                     settingToggle(
-                        title: "Rotina diária",
-                        detail: "Verifica todos os projetos uma vez por dia.",
+                        title: L10n.t("Rotina diária"),
+                        detail: L10n.t("Verifica todos os projetos uma vez por dia."),
                         isOn: $draft.scheduleEnabled
                     )
 
@@ -581,10 +590,10 @@ struct SettingsView: View {
                         Divider().overlay(CBTheme.hairline)
                         HStack(spacing: 14) {
                             VStack(alignment: .leading, spacing: 3) {
-                                Text("Horário")
+                                Text(L10n.t("Horário"))
                                     .font(.system(size: 11.5, weight: .semibold, design: .rounded))
                                     .foregroundStyle(CBTheme.text)
-                                Text("Próxima execução: \(model.nextRunLabel.lowercased())")
+                                Text(L10n.t("Próxima execução: \(model.nextRunLabel.lowercased())", "Next run: \(model.nextRunLabel.lowercased())"))
                                     .font(.system(size: 9.2, weight: .regular, design: .rounded))
                                     .foregroundStyle(CBTheme.textTertiary)
                             }
@@ -607,17 +616,17 @@ struct SettingsView: View {
 
                     Divider().overlay(CBTheme.hairline)
                     settingToggle(
-                        title: "Abrir ao iniciar o Mac",
+                        title: L10n.t("Abrir ao iniciar o Mac"),
                         detail: Bundle.main.bundleURL.pathExtension == "app"
-                            ? "Mantém o radar ativo depois de reiniciar."
-                            : "Disponível quando o app está instalado como .app.",
+                            ? L10n.t("Mantém o radar ativo depois de reiniciar.", "Keeps the radar active after a restart.")
+                            : L10n.t("Disponível quando o app está instalado como .app.", "Available when the app is installed as .app."),
                         isOn: $launchAtLogin
                     )
 
                     Divider().overlay(CBTheme.hairline)
                     settingToggle(
-                        title: "Avisar sobre novas vulnerabilidades",
-                        detail: "Envia uma notificação quando uma vulnerabilidade nova aparece.",
+                        title: L10n.t("Avisar sobre novas vulnerabilidades"),
+                        detail: L10n.t("Envia uma notificação quando uma vulnerabilidade nova aparece."),
                         isOn: $draft.notifyOnFindings
                     )
                 }
@@ -627,14 +636,14 @@ struct SettingsView: View {
                 Button {
                     NotificationService.requestAuthorization()
                 } label: {
-                    Label("Permitir notificações", systemImage: "bell")
+                    Label(L10n.t("Permitir notificações"), systemImage: "bell")
                 }
                 .buttonStyle(SurfaceButtonStyle())
 
                 Button {
                     model.scan()
                 } label: {
-                    Label("Verificar agora", systemImage: "arrow.clockwise")
+                    Label(L10n.t("Verificar agora"), systemImage: "arrow.clockwise")
                 }
                 .buttonStyle(GhostButtonStyle(tint: CBTheme.lime))
                 .disabled(!model.canScan)
@@ -644,8 +653,56 @@ struct SettingsView: View {
 
             NoticeCard(
                 kind: .info,
-                title: "Se o Mac estiver dormindo",
-                message: "A varredura acontece quando o Mac acordar. Ao abrir o app, o Builders Protect também recupera uma rotina perdida."
+                title: L10n.t("Se o Mac estiver dormindo"),
+                message: L10n.t("A varredura acontece quando o Mac acordar. Ao abrir o app, o Builders Protect também recupera uma rotina perdida.")
+            )
+        }
+    }
+
+    private var generalSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SurfaceCard(padding: 0) {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L10n.t("Idioma"))
+                                .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                                .foregroundStyle(CBTheme.text)
+                            Text(L10n.t("O padrão é inglês; o sistema em português já abre em português."))
+                                .font(.system(size: 9.2, weight: .regular, design: .rounded))
+                                .foregroundStyle(CBTheme.textTertiary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer()
+                        Picker(L10n.t(""), selection: $draft.appLanguage) {
+                            ForEach(AppLanguage.allCases, id: \.self) { item in
+                                Text(L10n.languageName(item)).tag(item)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .frame(width: 190)
+                    }
+                    .padding(14)
+
+                    Divider().overlay(CBTheme.hairline)
+
+                    HStack(spacing: 8) {
+                        Image(systemName: "textformat")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(CBTheme.textTertiary)
+                        Text(L10n.t("Idioma aplicado agora: \(draft.appLanguage.isPortuguese ? "Português (Brasil)" : "English")", "Language applied now: \(draft.appLanguage.isPortuguese ? "Português (Brasil)" : "English")"))
+                            .font(.system(size: 9.5, weight: .regular, design: .rounded))
+                            .foregroundStyle(CBTheme.textTertiary)
+                    }
+                    .padding(14)
+                }
+            }
+
+            NoticeCard(
+                kind: .info,
+                title: L10n.t("Sem reiniciar"),
+                message: L10n.t("A troca de idioma vale na hora para as telas do app. Relatórios já gerados mantêm o texto original.")
             )
         }
     }
@@ -656,13 +713,13 @@ struct SettingsView: View {
                 BrandMark(size: 62)
                 VStack(alignment: .leading, spacing: 4) {
                     BrandWordmark()
-                    Text("Versão \(BrandAssets.version)")
+                    Text(L10n.t("Versão \(BrandAssets.version)", "Version \(BrandAssets.version)"))
                         .font(.system(size: 9, weight: .regular, design: .monospaced))
                         .foregroundStyle(CBTheme.textTertiary)
                 }
             }
 
-            Text("O Builders Protect transforma lockfiles em um plano de correção claro. Ele compara as versões instaladas com a base de vulnerabilidades e usa a LLM da Cultura Builder para priorizar o que realmente importa.")
+            Text(L10n.t("O Builders Protect transforma lockfiles em um plano de correção claro. Ele compara as versões instaladas com a base de vulnerabilidades e usa a LLM da Cultura Builder para priorizar o que realmente importa."))
                 .font(.system(size: 10.8, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textSecondary)
                 .lineSpacing(2)
@@ -671,40 +728,40 @@ struct SettingsView: View {
             VStack(spacing: 0) {
                 aboutRow(
                     symbol: "lock.shield",
-                    title: "Privacidade",
-                    detail: "A varredura de dependências envia nomes, versões e lockfiles, sem código-fonte. O Pest e o Red Teaming têm consentimento próprio."
+                    title: L10n.t("Privacidade"),
+                    detail: L10n.t("A varredura de dependências envia nomes, versões e lockfiles, sem código-fonte. O Pest e o Red Teaming têm consentimento próprio.")
                 )
                 Divider().overlay(CBTheme.hairline)
                 aboutRow(
                     symbol: "externaldrive",
-                    title: "Dados locais",
-                    detail: "Ajustes e relatórios ficam em ~/Library/Application Support/Builders Protect."
+                    title: L10n.t("Dados locais"),
+                    detail: L10n.t("Ajustes e relatórios ficam em ~/Library/Application Support/Builders Protect.")
                 )
                 Divider().overlay(CBTheme.hairline)
                 aboutRow(
                     symbol: "network",
-                    title: "Fontes",
-                    detail: "hub.culturabuilder.com para vulnerabilidades e análise."
+                    title: L10n.t("Fontes"),
+                    detail: L10n.t("hub.culturabuilder.com para vulnerabilidades e análise. Endpoint RTX opcional em IA e segurança.")
                 )
             }
             .background(CBTheme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             HStack(spacing: 8) {
-                Button("Abrir o Hub") {
+                Button(L10n.t("Abrir o Hub")) {
                     model.openHub()
                 }
                 .buttonStyle(SurfaceButtonStyle())
 
                 Spacer()
 
-                Button("Rever configuração") {
+                Button(L10n.t("Rever configuração")) {
                     onClose()
                     model.openOnboarding()
                 }
                 .buttonStyle(GhostButtonStyle(tint: CBTheme.lime))
             }
 
-            Text("Feito pela Cultura Builder.")
+            Text(L10n.t("Feito pela Cultura Builder."))
                 .font(.system(size: 9, weight: .medium, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
         }
@@ -762,13 +819,13 @@ struct SettingsView: View {
                 HStack(spacing: 5) {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(CBTheme.mint)
-                    Text("Ajustes salvos")
+                    Text(L10n.t("Ajustes salvos"))
                 }
                 .font(.system(size: 9.5, weight: .medium, design: .rounded))
                 .foregroundStyle(CBTheme.textSecondary)
                 .transition(.opacity)
             } else {
-                Text("As alterações são salvas automaticamente neste Mac.")
+                Text(L10n.t("As alterações são salvas automaticamente neste Mac."))
                     .font(.system(size: 9.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
             }
@@ -779,14 +836,14 @@ struct SettingsView: View {
                 persistDraft(announce: false)
                 onClose()
             } label: {
-                Text("Fechar")
+                Text(L10n.t("Fechar"))
             }
             .buttonStyle(GhostButtonStyle())
 
             Button {
                 save()
             } label: {
-                Text("Salvar alterações")
+                Text(L10n.t("Salvar alterações"))
             }
             .buttonStyle(LimeButtonStyle())
         }

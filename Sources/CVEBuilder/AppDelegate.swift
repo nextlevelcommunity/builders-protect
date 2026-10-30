@@ -141,6 +141,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUs
                 self?.updateStatusItem(report: report, scanning: scanning)
             }
             .store(in: &cancellables)
+
+        model.$language
+            .dropFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                self.buildMenu()
+                self.updateStatusItem(report: self.model.report, scanning: self.model.isScanning)
+            }
+            .store(in: &cancellables)
     }
 
     private func configureStatusItem() {
@@ -198,7 +208,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUs
         if scanning {
             button.title = ""
             button.contentTintColor = nil
-            button.toolTip = "Builders Protect — verificando dependências"
+            button.toolTip = L10n.t("Builders Protect — verificando dependências", "Builders Protect — checking dependencies")
             return
         }
 
@@ -208,9 +218,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUs
 
         if findings > 0 {
             let projects = report?.alerts.count ?? 0
-            button.toolTip = "Vulnerabilidades em \(Vocabulary.quantity(projects, "projeto", "projetos"))"
+            button.toolTip = L10n.t("Vulnerabilidades em \(Vocabulary.quantity(projects, "projeto", "projetos"))", "Vulnerabilities in \(Vocabulary.quantity(projects, "project", "projects"))")
         } else {
-            button.toolTip = "Builders Protect — nenhuma vulnerabilidade conhecida"
+            button.toolTip = L10n.t("Builders Protect — nenhuma vulnerabilidade conhecida", "Builders Protect — no known vulnerability")
         }
     }
 
@@ -220,11 +230,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUs
         let appItem = NSMenuItem()
         appItem.title = "Builders Protect"
         mainMenu.addItem(appItem)
-        let appMenu = NSMenu(title: "Builders Protect")
+        let appMenu = NSMenu(title: L10n.t("Builders Protect"))
         appItem.submenu = appMenu
 
         let about = appMenu.addItem(
-            withTitle: "Sobre o Builders Protect",
+            withTitle: L10n.t("Sobre o Builders Protect", "About Builders Protect"),
             action: #selector(showAbout),
             keyEquivalent: ""
         )
@@ -233,14 +243,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUs
         appMenu.addItem(.separator())
 
         let check = appMenu.addItem(
-            withTitle: "Verificar agora",
+            withTitle: L10n.t("Verificar agora", "Check now"),
             action: #selector(checkNow),
             keyEquivalent: "r"
         )
         check.target = self
 
         let panel = appMenu.addItem(
-            withTitle: "Abrir painel",
+            withTitle: L10n.t("Abrir painel", "Open panel"),
             action: #selector(showPanelFromMenu),
             keyEquivalent: "p"
         )
@@ -248,21 +258,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUs
         panel.target = self
 
         let report = appMenu.addItem(
-            withTitle: "Abrir controle total",
+            withTitle: L10n.t("Abrir controle total", "Open full control"),
             action: #selector(showReport),
             keyEquivalent: ""
         )
         report.target = self
 
         let settings = appMenu.addItem(
-            withTitle: "Ajustes…",
+            withTitle: L10n.t("Ajustes…", "Settings…"),
             action: #selector(showSettings),
             keyEquivalent: ","
         )
         settings.target = self
 
         let onboarding = appMenu.addItem(
-            withTitle: "Rever configuração",
+            withTitle: L10n.t("Rever configuração", "Review setup"),
             action: #selector(showOnboarding),
             keyEquivalent: ""
         )
@@ -271,38 +281,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUs
         appMenu.addItem(.separator())
 
         let quit = appMenu.addItem(
-            withTitle: "Sair do Builders Protect",
+            withTitle: L10n.t("Sair do Builders Protect", "Quit Builders Protect"),
             action: #selector(quitApp),
             keyEquivalent: "q"
         )
         quit.target = self
 
         let editItem = NSMenuItem()
-        editItem.title = "Editar"
+        editItem.title = L10n.t("Editar", "Edit")
         mainMenu.addItem(editItem)
-        let editMenu = NSMenu(title: "Editar")
+        let editMenu = NSMenu(title: L10n.t("Editar"))
         editItem.submenu = editMenu
-        editMenu.addItem(withTitle: "Desfazer", action: Selector(("undo:")), keyEquivalent: "z")
-        let redo = editMenu.addItem(withTitle: "Refazer", action: Selector(("redo:")), keyEquivalent: "z")
+        editMenu.addItem(withTitle: L10n.t("Desfazer", "Undo"), action: Selector(("undo:")), keyEquivalent: "z")
+        let redo = editMenu.addItem(withTitle: L10n.t("Refazer", "Redo"), action: Selector(("redo:")), keyEquivalent: "z")
         redo.keyEquivalentModifierMask = [.command, .shift]
         editMenu.addItem(.separator())
-        editMenu.addItem(withTitle: "Cortar", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
-        editMenu.addItem(withTitle: "Copiar", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
-        editMenu.addItem(withTitle: "Colar", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
-        editMenu.addItem(withTitle: "Selecionar tudo", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        editMenu.addItem(withTitle: L10n.t("Cortar", "Cut"), action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        editMenu.addItem(withTitle: L10n.t("Copiar", "Copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: L10n.t("Colar", "Paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        editMenu.addItem(withTitle: L10n.t("Selecionar tudo", "Select all"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
 
         let windowItem = NSMenuItem()
-        windowItem.title = "Janela"
+        windowItem.title = L10n.t("Janela", "Window")
         mainMenu.addItem(windowItem)
-        let windowMenu = NSMenu(title: "Janela")
+        let windowMenu = NSMenu(title: L10n.t("Janela"))
         windowItem.submenu = windowMenu
         windowMenu.addItem(
-            withTitle: "Minimizar",
+            withTitle: L10n.t("Minimizar", "Minimize"),
             action: #selector(NSWindow.performMiniaturize(_:)),
             keyEquivalent: "m"
         )
         windowMenu.addItem(
-            withTitle: "Fechar",
+            withTitle: L10n.t("Fechar", "Close"),
             action: #selector(NSWindow.performClose(_:)),
             keyEquivalent: "w"
         )
@@ -315,14 +325,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUs
         let menu = NSMenu()
 
         let panel = menu.addItem(
-            withTitle: "Abrir painel",
+            withTitle: L10n.t("Abrir painel", "Open panel"),
             action: #selector(showPanelFromMenu),
             keyEquivalent: ""
         )
         panel.target = self
 
         let control = menu.addItem(
-            withTitle: "Abrir controle total",
+            withTitle: L10n.t("Abrir controle total", "Open full control"),
             action: #selector(showReport),
             keyEquivalent: ""
         )
@@ -331,7 +341,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUs
         menu.addItem(.separator())
 
         let check = menu.addItem(
-            withTitle: "Verificar agora",
+            withTitle: L10n.t("Verificar agora", "Check now"),
             action: #selector(checkNow),
             keyEquivalent: ""
         )
@@ -346,7 +356,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUs
 
     @objc private func showAbout() {
         let credits = NSAttributedString(
-            string: "Vulnerabilidades sob controle.\nUma ferramenta da Cultura Builder.",
+            string: L10n.t("Vulnerabilidades sob controle.\nUma ferramenta da Cultura Builder.", "Vulnerabilities under control.\nA Cultura Builder tool."),
             attributes: [
                 .font: NSFont.systemFont(ofSize: 11, weight: .regular),
                 .foregroundColor: NSColor.secondaryLabelColor
@@ -466,7 +476,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUs
         let view = AlertDetailView(model: model, alert: alert)
         let hosting = NSHostingController(rootView: view)
         let window = NSWindow(contentViewController: hosting)
-        window.title = "Alerta — \(alert.project.name)"
+        window.title = L10n.t("Alerta — \(alert.project.name)", "Alert — \(alert.project.name)")
         window.styleMask = [
             .titled, .closable, .miniaturizable, .resizable, .fullSizeContentView
         ]
@@ -502,10 +512,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUs
         let userInfo = response.notification.request.content.userInfo
         let opensNetwork = userInfo["openNetwork"] as? Bool == true
         let opensPest = userInfo["openPest"] as? Bool == true
+        let opensRedTeam = userInfo["openRedTeam"] as? Bool == true
         Task { @MainActor [weak self] in
             guard let self else { return }
             if opensNetwork {
                 self.openSettings(section: .network)
+            } else if opensRedTeam {
+                self.openSettings(section: .redTeam)
             } else if opensPest {
                 self.openSettings(section: .pest)
             } else {

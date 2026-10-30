@@ -1,8 +1,38 @@
 import Foundation
 
 enum Vocabulary {
+    private static let englishUnits: [String: (singular: String, plural: String)] = [
+        "projeto": ("project", "projects"),
+        "projetos": ("project", "projects"),
+        "lockfile": ("lockfile", "lockfiles"),
+        "pacote": ("package", "packages"),
+        "pacotes": ("package", "packages"),
+        "pasta": ("folder", "folders"),
+        "pastas": ("folder", "folders"),
+        "pasta excluída": ("excluded folder", "excluded folders"),
+        "pasta selecionada": ("selected folder", "selected folders"),
+        "ponto": ("point", "points"),
+        "ponto de atenção": ("point of attention", "points of attention"),
+        "ponto crítico": ("critical point", "critical points"),
+        "ponto alto": ("high point", "high points"),
+        "projeto monitorado": ("monitored project", "monitored projects"),
+        "ignorado": ("ignored", "ignored"),
+        "worktree ignorada": ("worktree ignored", "worktrees ignored"),
+        "arquivo": ("file", "files"),
+        "arquivos": ("file", "files"),
+        "achado": ("finding", "findings"),
+        "achados": ("finding", "findings"),
+        "rodada": ("run", "runs"),
+        "horário": ("time", "times"),
+        "bloco": ("chunk", "chunks")
+    ]
+
     static func quantity(_ value: Int, _ singular: String, _ plural: String) -> String {
-        "\(value) \(value == 1 ? singular : plural)"
+        if !L10n.isPortuguese,
+           let unit = englishUnits[singular.lowercased()] {
+            return "\(value) \(value == 1 ? unit.singular : unit.plural)"
+        }
+        return "\(value) \(value == 1 ? singular : plural)"
     }
 
     static func clean(_ text: String) -> String {

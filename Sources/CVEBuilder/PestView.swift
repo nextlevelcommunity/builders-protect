@@ -71,7 +71,7 @@ struct PestView: View {
         }
         .sheet(isPresented: $showConsentSheet, onDismiss: { pendingResume = false }) {
             PestConsentSheet(
-                projectName: model.selectedPestProject?.name ?? "este projeto",
+                projectName: model.selectedPestProject?.name ?? L10n.t("este projeto", "this project"),
                 isResume: pendingResume,
                 onCancel: {
                     showConsentSheet = false
@@ -84,20 +84,27 @@ struct PestView: View {
             PestProjectPickerSheet(model: model)
         }
         .confirmationDialog(
-            clearAllReports ? "Limpar todos os relatórios do Pest?" : "Limpar este relatório do Pest?",
+            clearAllReports
+                ? L10n.t("Limpar todos os relatórios do Pest?", "Clear all Pest reports?")
+                : L10n.t("Limpar este relatório do Pest?", "Clear this Pest report?"),
             isPresented: $showClearDialog,
             titleVisibility: .visible
         ) {
-            Button(clearAllReports ? "Limpar todos" : "Limpar relatório", role: .destructive) {
+            Button(
+                clearAllReports
+                    ? L10n.t("Limpar todos", "Clear all")
+                    : L10n.t("Limpar relatório", "Clear report"),
+                role: .destructive
+            ) {
                 if clearAllReports {
                     model.clearAllPestReports()
                 } else {
                     model.clearSelectedPestReport()
                 }
             }
-            Button("Cancelar", role: .cancel) {}
+            Button(L10n.t("Cancelar", "Cancel"), role: .cancel) {}
         } message: {
-            Text("Os achados salvos serão removidos deste Mac. A próxima análise começa do zero.")
+            Text(L10n.t("Os achados salvos serão removidos deste Mac. A próxima análise começa do zero."))
         }
     }
 
@@ -111,10 +118,10 @@ struct PestView: View {
         HStack(spacing: 15) {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
-                    Text("Pest")
+                    Text(L10n.t("Pest"))
                         .font(.system(size: 30, weight: .ultraLight, design: .rounded))
                         .foregroundStyle(CBTheme.text)
-                    Text("NUCLEI GUIDE")
+                    Text(L10n.t("NUCLEI GUIDE"))
                         .font(.system(size: 7.5, weight: .bold, design: .rounded))
                         .tracking(1)
                         .foregroundStyle(CBTheme.lime)
@@ -122,7 +129,7 @@ struct PestView: View {
                         .padding(.vertical, 3)
                         .background(CBTheme.lime.opacity(0.1), in: Capsule())
                 }
-                Text("Segurança de código, um projeto por vez")
+                Text(L10n.t("Segurança de código, um projeto por vez"))
                     .font(.system(size: 12.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
             }
@@ -131,9 +138,11 @@ struct PestView: View {
 
             HStack(spacing: 7) {
                 Circle()
-                    .fill(model.authStatus.connected ? CBTheme.mint : CBTheme.high)
+                    .fill(model.llmReady ? CBTheme.mint : CBTheme.high)
                     .frame(width: 6, height: 6)
-                Text(model.authStatus.connected ? "IA conectada" : "IA desconectada")
+                Text(model.llmReady
+                    ? L10n.t("IA conectada", "AI connected")
+                    : L10n.t("IA desconectada", "AI disconnected"))
                     .font(.system(size: 11, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
             }
@@ -144,7 +153,7 @@ struct PestView: View {
             Button {
                 model.loadPestProjects()
             } label: {
-                Label("Atualizar projetos", systemImage: "arrow.clockwise")
+                Label(L10n.t("Atualizar projetos"), systemImage: "arrow.clockwise")
             }
             .buttonStyle(SurfaceButtonStyle())
             .disabled(model.isLoadingPestProjects || model.isPestRunning)
@@ -161,10 +170,10 @@ struct PestView: View {
                 .padding(.top, 1)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Um caçador de brechas, não um scanner de rede")
+                Text(L10n.t("Um caçador de brechas, não um scanner de rede"))
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .foregroundStyle(CBTheme.text)
-                Text("O Pest usa um checklist destilado do catálogo de templates do Nuclei para revisar autenticação, injection, exposição de dados, configuração e outros riscos do projeto escolhido. A varredura é estática: não executa o projeto, não instala dependências e não faz requisições ao alvo. A revisão semântica usa a LLM privada da Cultura Builder; os arquivos são redigidos e enviados em blocos pequenos após o seu consentimento.")
+                Text(L10n.t("O Pest usa um checklist destilado do catálogo de templates do Nuclei para revisar autenticação, injection, exposição de dados, configuração e outros riscos do projeto escolhido. A varredura é estática: não executa o projeto, não instala dependências e não faz requisições ao alvo. A revisão semântica usa a LLM privada da Cultura Builder; os arquivos são redigidos e enviados em blocos pequenos após o seu consentimento."))
                     .font(.system(size: 11.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
                     .lineSpacing(2)
@@ -182,7 +191,7 @@ struct PestView: View {
         SurfaceCard(padding: 16) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 9) {
-                    SectionLabel(text: "Meus projetos")
+                    SectionLabel(text: L10n.t("Meus projetos"))
                     Spacer()
                     if model.isLoadingPestProjects {
                         ProgressView()
@@ -190,13 +199,13 @@ struct PestView: View {
                             .tint(CBTheme.lime)
                     }
                     if !model.pestProjects.isEmpty {
-                        Text("\(model.activePestProjects.count) de \(model.pestProjects.count)")
+                        Text(L10n.t("\(model.activePestProjects.count) de \(model.pestProjects.count)", "\(model.activePestProjects.count) of \(model.pestProjects.count)"))
                             .font(.system(size: 9.5, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                         Button {
                             showProjectPicker = true
                         } label: {
-                            Label("Gerenciar", systemImage: "slider.horizontal.3")
+                            Label(L10n.t("Gerenciar"), systemImage: "slider.horizontal.3")
                         }
                         .buttonStyle(GhostButtonStyle())
                         .disabled(model.isLoadingPestProjects || model.isPestRunning)
@@ -208,7 +217,7 @@ struct PestView: View {
                         ProgressView()
                             .controlSize(.small)
                             .tint(CBTheme.lime)
-                        Text("Procurando projetos nas pastas monitoradas…")
+                        Text(L10n.t("Procurando projetos nas pastas monitoradas…"))
                             .font(.system(size: 11, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textSecondary)
                     }
@@ -216,17 +225,17 @@ struct PestView: View {
                 } else if model.pestProjects.isEmpty {
                     NoticeCard(
                         kind: .warning,
-                        title: "Nenhum projeto encontrado",
-                        message: "Adicione uma pasta com manifests ou código em Ajustes > Pastas para liberar o Pest.",
-                        actionTitle: "Abrir Pastas",
+                        title: L10n.t("Nenhum projeto encontrado"),
+                        message: L10n.t("Adicione uma pasta com manifests ou código em Ajustes > Pastas para liberar o Pest."),
+                        actionTitle: L10n.t("Abrir Pastas"),
                         action: { model.settingsSection = .folders }
                     )
                 } else if model.activePestProjects.isEmpty {
                     NoticeCard(
                         kind: .info,
-                        title: "Nenhum projeto na lista",
-                        message: "Escolha os projetos que você acompanha no Pest. Eles ficam à mão para analisar e configurar a rotina sem procurar a pasta de novo.",
-                        actionTitle: "Escolher projetos",
+                        title: L10n.t("Nenhum projeto na lista"),
+                        message: L10n.t("Escolha os projetos que você acompanha no Pest. Eles ficam à mão para analisar e configurar a rotina sem procurar a pasta de novo."),
+                        actionTitle: L10n.t("Escolher projetos"),
                         action: { showProjectPicker = true }
                     )
                 } else {
@@ -236,7 +245,7 @@ struct PestView: View {
                         }
                     }
 
-                    Text("Clique em um projeto para abrir o relatório e ajustar a rotina. O botão de play analisa na hora; cada rotina usa um horário próprio, com pelo menos 30 minutos de diferença.")
+                    Text(L10n.t("Clique em um projeto para abrir o relatório e ajustar a rotina. O botão de play analisa na hora; cada rotina usa um horário próprio, com pelo menos 30 minutos de diferença."))
                         .font(.system(size: 9.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -279,19 +288,19 @@ struct PestView: View {
                         HStack(spacing: 6) {
                             Text(project.ecosystems.joined(separator: ", "))
                             if !project.lockfiles.isEmpty {
-                                Text("·")
+                                Text(L10n.t("·"))
                                 Text(Vocabulary.quantity(project.lockfiles.count, "lockfile", "lockfiles"))
                             }
-                            Text("·")
+                            Text(L10n.t("·"))
                             if let routine {
                                 Text(
                                     routine.enabled
-                                        ? "rotina \(routine.timeLabel)"
-                                        : "rotina pausada"
+                                        ? L10n.t("rotina \(routine.timeLabel)", "routine \(routine.timeLabel)")
+                                        : L10n.t("rotina pausada", "routine paused")
                                 )
                                 .foregroundStyle(routine.enabled ? CBTheme.mint : CBTheme.textTertiary)
                             } else {
-                                Text("sem rotina")
+                                Text(L10n.t("sem rotina"))
                             }
                         }
                         .font(.system(size: 9, weight: .regular, design: .rounded))
@@ -318,8 +327,17 @@ struct PestView: View {
                         tint: routine?.enabled == true ? CBTheme.mint : CBTheme.textSecondary
                     )
                 )
-                .help("Configurar rotina deste projeto")
+                .help(L10n.t("Configurar rotina deste projeto"))
                 .disabled(model.isPestRunning)
+
+                Button {
+                    model.requestRedTeam(projectPath: project.path)
+                } label: {
+                    Image(systemName: "shield.lefthalf.filled")
+                }
+                .buttonStyle(IconButtonStyle(size: 28, tint: CBTheme.lime.opacity(0.8)))
+                .help(L10n.t("Acionar o Red Team neste projeto"))
+                .disabled(model.isRedTeamRunning)
 
                 Button {
                     analyze(project)
@@ -327,8 +345,8 @@ struct PestView: View {
                     Image(systemName: "play.fill")
                 }
                 .buttonStyle(IconButtonStyle(size: 28, tint: CBTheme.lime))
-                .help("Analisar este projeto agora")
-                .disabled(model.isPestRunning || !model.authStatus.connected)
+                .help(L10n.t("Analisar este projeto agora"))
+                .disabled(model.isPestRunning || !model.llmReady)
             }
         }
         .padding(.horizontal, 11)
@@ -354,9 +372,9 @@ struct PestView: View {
         return SurfaceCard(padding: 16) {
             VStack(alignment: .leading, spacing: 11) {
                 HStack {
-                    SectionLabel(text: "Memória e espaço")
+                    SectionLabel(text: L10n.t("Memória e espaço"))
                     Spacer()
-                    Text("IMPORTANTE")
+                    Text(L10n.t("IMPORTANTE"))
                         .font(.system(size: 7.5, weight: .bold, design: .rounded))
                         .tracking(0.8)
                         .foregroundStyle(CBTheme.lime)
@@ -367,23 +385,24 @@ struct PestView: View {
 
                 HStack(alignment: .top, spacing: 22) {
                     memoryMetric(
-                        "Memória livre",
+                        L10n.t("Memória livre", "Free memory"),
                         PestMemoryGuard.formatBytes(snapshot.availableBytes),
-                        detail: "mínimo \(PestMemoryGuard.formatBytes(PestMemoryGuard.minimumAvailableBytes))"
+                        detail: L10n.t("mínimo \(PestMemoryGuard.formatBytes(PestMemoryGuard.minimumAvailableBytes))", "minimum \(PestMemoryGuard.formatBytes(PestMemoryGuard.minimumAvailableBytes))")
                     )
                     memoryMetric(
-                        "Disco livre",
+                        L10n.t("Disco livre", "Free disk"),
                         snapshot.diskAvailableBytes.map { PestMemoryGuard.formatBytes(UInt64(max($0, 0))) } ?? "—",
-                        detail: "mínimo \(PestMemoryGuard.formatBytes(UInt64(PestMemoryGuard.minimumDiskBytes)))"
+                        detail: L10n.t("mínimo \(PestMemoryGuard.formatBytes(UInt64(PestMemoryGuard.minimumDiskBytes)))", "minimum \(PestMemoryGuard.formatBytes(UInt64(PestMemoryGuard.minimumDiskBytes)))")
                     )
                     memoryMetric(
-                        "Orçamento",
-                        budget.map { PestMemoryGuard.formatBytes($0.maxRSSGrowthBytes) } ?? "indisponível",
-                        detail: budget.map { "\($0.maxFiles) arquivos · \(PestMemoryGuard.formatBytes(UInt64($0.maxTotalBytes)))" } ?? "feche apps pesados"
+                        L10n.t("Orçamento", "Budget"),
+                        budget.map { PestMemoryGuard.formatBytes($0.maxRSSGrowthBytes) } ?? L10n.t("indisponível", "unavailable"),
+                        detail: budget.map { L10n.t("\($0.maxFiles) arquivos · \(PestMemoryGuard.formatBytes(UInt64($0.maxTotalBytes)))", "\($0.maxFiles) files · \(PestMemoryGuard.formatBytes(UInt64($0.maxTotalBytes)))") }
+                            ?? L10n.t("feche apps pesados", "close heavy apps")
                     )
                 }
 
-                Text("Para uma análise confortável, deixe pelo menos 2 GB de memória livre e 500 MB de disco. O Pest pausa e salva o progresso se o Mac ficar abaixo do mínimo; você pode retomar depois.")
+                Text(L10n.t("Para uma análise confortável, deixe pelo menos 2 GB de memória livre e 500 MB de disco. O Pest pausa e salva o progresso se o Mac ficar abaixo do mínimo; você pode retomar depois."))
                     .font(.system(size: 9.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -391,8 +410,8 @@ struct PestView: View {
                 if budget == nil {
                     NoticeCard(
                         kind: .warning,
-                        title: "Memória abaixo do mínimo seguro",
-                        message: "Feche navegadores, Docker ou apps pesados e volte ao Pest. A análise não começa até haver espaço para trabalhar sem travar o Mac."
+                        title: L10n.t("Memória abaixo do mínimo seguro"),
+                        message: L10n.t("Feche navegadores, Docker ou apps pesados e volte ao Pest. A análise não começa até haver espaço para trabalhar sem travar o Mac.")
                     )
                 }
             }
@@ -428,7 +447,7 @@ struct PestView: View {
                 if consent {
                     HStack(spacing: 7) {
                         Image(systemName: "checkmark.shield.fill")
-                        Text("Consentimento autorizado para esta análise.")
+                        Text(L10n.t("Consentimento autorizado para esta análise."))
                     }
                     .font(.system(size: 10.5, weight: .medium, design: .rounded))
                     .foregroundStyle(CBTheme.mint)
@@ -437,7 +456,7 @@ struct PestView: View {
                 Button {
                     model.cancelPest()
                 } label: {
-                    Label("Cancelar análise", systemImage: "xmark")
+                    Label(L10n.t("Cancelar análise"), systemImage: "xmark")
                 }
                 .buttonStyle(SurfaceButtonStyle(tint: CBTheme.critical))
             } else {
@@ -452,17 +471,17 @@ struct PestView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("Pest com IA")
+                        Text(L10n.t("Pest com IA"))
                             .font(.system(size: 12, weight: .semibold, design: .rounded))
                             .foregroundStyle(CBTheme.text)
-                        Text("A revisão usa a LLM privada da Cultura Builder. O consentimento é pedido antes de cada análise manual; salvar uma rotina autoriza a execução diária.")
+                        Text(L10n.t("A revisão usa a LLM privada da Cultura Builder. O consentimento é pedido antes de cada análise manual; salvar uma rotina autoriza a execução diária."))
                             .font(.system(size: 9.5, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                     }
 
                     Spacer(minLength: 8)
 
-                    Text("OBRIGATÓRIO")
+                    Text(L10n.t("OBRIGATÓRIO"))
                         .font(.system(size: 7.5, weight: .bold, design: .rounded))
                         .tracking(0.7)
                         .foregroundStyle(CBTheme.lime)
@@ -476,13 +495,19 @@ struct PestView: View {
                     in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                 )
 
-                if !model.authStatus.connected {
+                if !model.llmReady {
                     NoticeCard(
                         kind: .warning,
-                        title: "Conecte a conta para usar o Pest",
-                        message: "O Pest usa a IA da Cultura Builder em todas as análises. Entre na sua conta para liberar o botão de análise.",
-                        actionTitle: "Abrir Conta",
-                        action: { model.settingsSection = .account }
+                        title: model.isHackMode
+                            ? L10n.t("Cole a chave RTX para usar o Pest", "Paste the RTX key to use Pest")
+                            : L10n.t("Conecte a conta para usar o Pest", "Connect your account to use Pest"),
+                        message: model.isHackMode
+                            ? L10n.t("O modo RTX usa uma chave dedicada em Ajustes > IA e segurança.", "RTX mode uses a dedicated key in Settings > AI and security.")
+                            : L10n.t("O Pest usa a IA da Cultura Builder em todas as análises. Entre na sua conta para liberar o botão de análise.", "Pest uses Cultura Builder AI in every analysis. Sign in to unlock the analyze button."),
+                        actionTitle: model.isHackMode
+                            ? L10n.t("Abrir IA e segurança", "Open AI and security")
+                            : L10n.t("Abrir Conta", "Open Account"),
+                        action: { model.settingsSection = model.isHackMode ? .ai : .account }
                     )
                 }
 
@@ -491,7 +516,7 @@ struct PestView: View {
                         Button {
                             requestPestStart(resume: true)
                         } label: {
-                            Label("Retomar análise pausada", systemImage: "play.fill")
+                            Label(L10n.t("Retomar análise pausada"), systemImage: "play.fill")
                         }
                         .buttonStyle(LimeButtonStyle())
                         .disabled(!canStart)
@@ -499,7 +524,7 @@ struct PestView: View {
                         Button {
                             requestPestStart()
                         } label: {
-                            Label("Nova análise", systemImage: "arrow.clockwise")
+                            Label(L10n.t("Nova análise"), systemImage: "arrow.clockwise")
                         }
                         .buttonStyle(SurfaceButtonStyle())
                         .disabled(!canStart)
@@ -508,19 +533,19 @@ struct PestView: View {
                     Button {
                         requestPestStart()
                     } label: {
-                        Label("Analisar com Pest", systemImage: "scope")
+                        Label(L10n.t("Analisar com Pest"), systemImage: "scope")
                     }
                     .buttonStyle(LimeButtonStyle(fullWidth: true))
                     .disabled(!canStart)
                 }
 
-                Text("O Pest não altera seus arquivos e não faz commit. Você pode continuar usando o app enquanto ele roda.")
+                Text(L10n.t("O Pest não altera seus arquivos e não faz commit. Você pode continuar usando o app enquanto ele roda."))
                     .font(.system(size: 9.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
             }
 
             if let error = model.pestError {
-                NoticeCard(kind: .error, title: "O Pest não terminou", message: error)
+                NoticeCard(kind: .error, title: L10n.t("O Pest não terminou"), message: error)
             }
         }
     }
@@ -547,23 +572,23 @@ struct PestView: View {
         SurfaceCard(padding: 16) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    SectionLabel(text: "Rotina diária")
+                    SectionLabel(text: L10n.t("Rotina diária"))
                     Spacer()
                     if let next = model.pestNextRunDate {
-                        Text("próxima \(shortNextRun(next))")
+                        Text(L10n.t("próxima \(shortNextRun(next))", "next \(shortNextRun(next))"))
                             .font(.system(size: 9.5, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                     }
                 }
 
-                Text("Cada projeto pode ter a própria rotina diária. O Pest respeita pelo menos 30 minutos entre rotinas e pausa se a memória ficar baixa.")
+                Text(L10n.t("Cada projeto pode ter a própria rotina diária. O Pest respeita pelo menos 30 minutos entre rotinas e pausa se a memória ficar baixa."))
                     .font(.system(size: 10.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if model.selectedPestProject != nil {
                     HStack(spacing: 8) {
-                        Picker("Hora", selection: $routineHour) {
+                        Picker(L10n.t("Hora"), selection: $routineHour) {
                             ForEach(0..<24, id: \.self) { hour in
                                 Text(String(format: "%02d", hour)).tag(hour)
                             }
@@ -571,11 +596,11 @@ struct PestView: View {
                         .labelsHidden()
                         .frame(width: 62)
 
-                        Text(":")
+                        Text(L10n.t(":"))
                             .font(.system(size: 15, weight: .light, design: .monospaced))
                             .foregroundStyle(CBTheme.textTertiary)
 
-                        Picker("Minuto", selection: $routineMinute) {
+                        Picker(L10n.t("Minuto"), selection: $routineMinute) {
                             ForEach(0..<60, id: \.self) { minute in
                                 Text(String(format: "%02d", minute)).tag(minute)
                             }
@@ -585,7 +610,7 @@ struct PestView: View {
 
                         Spacer()
 
-                        Text("com IA")
+                        Text(L10n.t("com IA"))
                             .font(.system(size: 9.5, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                     }
@@ -593,22 +618,22 @@ struct PestView: View {
                     if let conflict = routineConflict {
                         NoticeCard(
                             kind: .warning,
-                            title: "Horário indisponível",
+                            title: L10n.t("Horário indisponível"),
                             message: conflict
                         )
                     }
 
                     if let routine = model.pestRoutineForSelectedProject {
-                        Text("Rotina \(routine.enabled ? "ativa" : "pausada") às \(routine.timeLabel). \(nextRunDescription(for: routine))")
+                        Text(L10n.t("Rotina \(routine.enabled ? "ativa" : "pausada") às \(routine.timeLabel). \(nextRunDescription(for: routine))", "Routine \(routine.enabled ? "active" : "paused") at \(routine.timeLabel). \(nextRunDescription(for: routine))"))
                             .font(.system(size: 9.5, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                     } else {
-                        Text("Sem rotina para este projeto. O Pest também pode ser executado manualmente a qualquer momento.")
+                        Text(L10n.t("Sem rotina para este projeto. O Pest também pode ser executado manualmente a qualquer momento."))
                             .font(.system(size: 9.5, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                     }
 
-                    Text("A rotina usa a IA da Cultura Builder e só roda com a conta conectada. Salvar a rotina autoriza o envio recorrente dos mesmos arquivos redigidos para a LLM privada, uma vez ao dia.")
+                    Text(L10n.t("A rotina usa a IA da Cultura Builder e só roda com a conta conectada. Salvar a rotina autoriza o envio recorrente dos mesmos arquivos redigidos para a LLM privada, uma vez ao dia."))
                         .font(.system(size: 9, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -619,8 +644,8 @@ struct PestView: View {
                         } label: {
                             Label(
                                 model.pestRoutineForSelectedProject == nil
-                                    ? "Criar rotina"
-                                    : "Salvar alterações",
+                                    ? L10n.t("Criar rotina", "Create routine")
+                                    : L10n.t("Salvar alterações", "Save changes"),
                                 systemImage: "clock.badge.checkmark"
                             )
                         }
@@ -630,7 +655,7 @@ struct PestView: View {
                         Button {
                             suggestRoutineTime()
                         } label: {
-                            Label("Sugerir horário", systemImage: "wand.and.stars")
+                            Label(L10n.t("Sugerir horário"), systemImage: "wand.and.stars")
                         }
                         .buttonStyle(SurfaceButtonStyle())
 
@@ -640,19 +665,19 @@ struct PestView: View {
                                 routineError = nil
                                 syncRoutineForm(force: true)
                             } label: {
-                                Label("Remover", systemImage: "trash")
+                                Label(L10n.t("Remover"), systemImage: "trash")
                             }
                             .buttonStyle(SurfaceButtonStyle(tint: CBTheme.critical))
                         }
                     }
                 } else {
-                    Text("Selecione um projeto para configurar a rotina.")
+                    Text(L10n.t("Selecione um projeto para configurar a rotina."))
                         .font(.system(size: 10.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                 }
 
                 if let routineError {
-                    NoticeCard(kind: .error, title: "Rotina não salva", message: routineError)
+                    NoticeCard(kind: .error, title: L10n.t("Rotina não salva"), message: routineError)
                 }
 
                 if !model.pestState.routines.isEmpty {
@@ -661,7 +686,7 @@ struct PestView: View {
                         .frame(height: 1)
 
                     VStack(alignment: .leading, spacing: 8) {
-                        SectionLabel(text: "Rotinas configuradas")
+                        SectionLabel(text: L10n.t("Rotinas configuradas"))
                         ForEach(model.pestState.routines) { routine in
                             routineRow(routine)
                         }
@@ -689,7 +714,7 @@ struct PestView: View {
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .foregroundStyle(CBTheme.text)
                     .lineLimit(1)
-                Text("\(routine.timeLabel) · IA · \(nextRunDescription(for: routine))")
+                Text(L10n.t("\(routine.timeLabel) · IA · \(nextRunDescription(for: routine))", "\(routine.timeLabel) · AI · \(nextRunDescription(for: routine))"))
                     .font(.system(size: 9, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textTertiary)
                     .lineLimit(1)
@@ -703,10 +728,10 @@ struct PestView: View {
                 Image(systemName: "play.fill")
             }
             .buttonStyle(IconButtonStyle(size: 26, tint: CBTheme.lime))
-            .help("Analisar este projeto agora")
+            .help(L10n.t("Analisar este projeto agora"))
             .disabled(
                 model.isPestRunning
-                    || !model.authStatus.connected
+                    || !model.llmReady
                     || !model.pestProjects.contains(where: { $0.path == routine.projectPath })
             )
 
@@ -718,7 +743,7 @@ struct PestView: View {
                     formLoadedFor = routine.projectPath
                     routineError = nil
                 } else {
-                    routineError = "A pasta deste projeto não está mais monitorada."
+                    routineError = L10n.t("A pasta deste projeto não está mais monitorada.", "This project's folder is no longer monitored.")
                 }
             } label: {
                 Image(systemName: "pencil")
@@ -770,7 +795,7 @@ struct PestView: View {
             routines: model.pestState.routines,
             excluding: model.pestRoutineForSelectedProject?.id
         ) else {
-            routineError = "Não encontrei um horário livre com 30 minutos de intervalo."
+            routineError = L10n.t("Não encontrei um horário livre com 30 minutos de intervalo.", "I could not find a free time with a 30-minute gap.")
             return
         }
         routineHour = slot.hour
@@ -796,9 +821,11 @@ struct PestView: View {
     }
 
     private func nextRunDescription(for routine: PestRoutine) -> String {
-        guard routine.enabled else { return "pausada" }
-        guard let next = PestRoutinePlanner.nextRunDate(for: routine) else { return "sem próxima data" }
-        if next.timeIntervalSinceNow < 60 { return "assim que possível" }
+        guard routine.enabled else { return L10n.t("pausada", "paused") }
+        guard let next = PestRoutinePlanner.nextRunDate(for: routine) else {
+            return L10n.t("sem próxima data", "no next date")
+        }
+        if next.timeIntervalSinceNow < 60 { return L10n.t("assim que possível", "as soon as possible") }
         return shortNextRun(next)
     }
 
@@ -807,9 +834,15 @@ struct PestView: View {
         formatter.dateFormat = "HH:mm"
         let time = formatter.string(from: date)
         let calendar = Calendar.current
-        if calendar.isDateInToday(date) { return "hoje às \(time)" }
-        if calendar.isDateInTomorrow(date) { return "amanhã às \(time)" }
-        formatter.dateFormat = "dd/MM 'às' HH:mm"
+        if calendar.isDateInToday(date) {
+            return L10n.t("hoje às \(time)", "today at \(time)")
+        }
+        if calendar.isDateInTomorrow(date) {
+            return L10n.t("amanhã às \(time)", "tomorrow at \(time)")
+        }
+        formatter.locale = L10n.locale
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
         return formatter.string(from: date)
     }
 
@@ -822,9 +855,9 @@ struct PestView: View {
                 if report.paused {
                     NoticeCard(
                         kind: .warning,
-                        title: "Análise pausada",
-                        message: report.pauseReason ?? "O Pest pausou para proteger a memória do Mac.",
-                        actionTitle: canStart ? "Retomar agora" : nil,
+                        title: L10n.t("Análise pausada"),
+                        message: L10n.t(report.pauseReason ?? L10n.t("O Pest pausou para proteger a memória do Mac.", "Pest paused to protect the Mac's memory.")),
+                        actionTitle: canStart ? L10n.t("Retomar agora", "Resume now") : nil,
                         action: canStart ? { requestPestStart(resume: true) } : nil
                     )
                 }
@@ -833,8 +866,8 @@ struct PestView: View {
                     NoticeCard(
                         kind: report.paused ? .info : .success,
                         title: report.paused
-                            ? "Nenhum achado nos blocos já analisados"
-                            : "Nenhuma brecha confirmada",
+                            ? L10n.t("Nenhum achado nos blocos já analisados", "No findings in the chunks analyzed so far")
+                            : L10n.t("Nenhuma brecha confirmada", "No confirmed flaw"),
                         message: Vocabulary.prose(report.summary)
                     )
                 } else {
@@ -858,7 +891,9 @@ struct PestView: View {
                 HStack(alignment: .top, spacing: 14) {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 7) {
-                            SectionLabel(text: report.paused ? "Relatório parcial" : "Último relatório")
+                            SectionLabel(text: report.paused
+                                ? L10n.t("Relatório parcial", "Partial report")
+                                : L10n.t("Último relatório", "Last report"))
                             if report.risk != .unknown {
                                 RiskBadge(risk: report.risk, compact: true)
                             }
@@ -866,7 +901,7 @@ struct PestView: View {
                         Text(report.projectName)
                             .font(.system(size: 20, weight: .light, design: .rounded))
                             .foregroundStyle(CBTheme.text)
-                        Text("\(report.finishedAt.relativeShort) · \(report.filesAnalyzed) arquivos · \(max(1, report.bytesAnalyzed / 1000)) KB")
+                        Text(L10n.t("\(report.finishedAt.relativeShort) · \(report.filesAnalyzed) arquivos · \(max(1, report.bytesAnalyzed / 1000)) KB", "\(report.finishedAt.relativeShort) · \(report.filesAnalyzed) files · \(max(1, report.bytesAnalyzed / 1000)) KB"))
                             .font(.system(size: 12, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textTertiary)
                     }
@@ -878,7 +913,7 @@ struct PestView: View {
                             .font(.system(size: 44, weight: .ultraLight, design: .rounded))
                             .monospacedDigit()
                             .foregroundStyle(report.risk.color)
-                        Text(report.llmUsed ? "com IA" : "local")
+                        Text(report.llmUsed ? L10n.t("com IA", "with AI") : L10n.t("local", "local"))
                             .font(.system(size: 10, weight: .bold, design: .rounded))
                             .tracking(0.6)
                             .foregroundStyle(CBTheme.textTertiary)
@@ -896,7 +931,7 @@ struct PestView: View {
                     Button {
                         model.copyPestSummary(report)
                     } label: {
-                        Label("Copiar resumo", systemImage: "doc.on.doc")
+                        Label(L10n.t("Copiar resumo"), systemImage: "doc.on.doc")
                     }
                     .buttonStyle(GhostButtonStyle(tint: CBTheme.lime))
 
@@ -904,7 +939,7 @@ struct PestView: View {
                         clearAllReports = false
                         showClearDialog = true
                     } label: {
-                        Label("Limpar", systemImage: "trash")
+                        Label(L10n.t("Limpar"), systemImage: "trash")
                     }
                     .buttonStyle(GhostButtonStyle(tint: CBTheme.critical))
                     .disabled(model.isPestRunning)
@@ -913,12 +948,12 @@ struct PestView: View {
                         clearAllReports = true
                         showClearDialog = true
                     } label: {
-                        Label("Limpar tudo", systemImage: "trash")
+                        Label(L10n.t("Limpar tudo"), systemImage: "trash")
                     }
                     .buttonStyle(GhostButtonStyle(tint: CBTheme.critical))
                     .disabled(model.isPestRunning)
 
-                    Text("\(report.checksApplied.count) checks · \(report.chunksAnalyzed) bloco(s)")
+                    Text(L10n.t("\(report.checksApplied.count) checks · \(report.chunksAnalyzed) bloco(s)", "\(report.checksApplied.count) checks · \(report.chunksAnalyzed) chunk(s)"))
                         .font(.system(size: 11.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                 }
@@ -928,7 +963,7 @@ struct PestView: View {
 
     private func limitations(_ items: [String]) -> some View {
         VStack(alignment: .leading, spacing: 7) {
-            SectionLabel(text: "Limites desta análise")
+            SectionLabel(text: L10n.t("Limites desta análise"))
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 HStack(alignment: .top, spacing: 8) {
                     Circle()
@@ -947,14 +982,14 @@ struct PestView: View {
 
     private var footer: some View {
         HStack(spacing: 8) {
-            Text("Pest: análise estática guiada pelo catálogo Nuclei. Não executa o projeto nem faz requisições ao alvo.")
+            Text(L10n.t("Pest: análise estática guiada pelo catálogo Nuclei. Não executa o projeto nem faz requisições ao alvo."))
                 .font(.system(size: 12, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
             Spacer()
             Button {
                 model.settingsSection = .account
             } label: {
-                Label("Conta", systemImage: "person.crop.circle")
+                Label(L10n.t("Conta"), systemImage: "person.crop.circle")
             }
             .buttonStyle(GhostButtonStyle())
         }
@@ -990,7 +1025,7 @@ private struct PestProjectPickerSheet: View {
                         ProgressView()
                             .controlSize(.small)
                             .tint(CBTheme.lime)
-                        Text("Procurando projetos nas pastas monitoradas…")
+                        Text(L10n.t("Procurando projetos nas pastas monitoradas…"))
                             .font(.system(size: 11.5, weight: .regular, design: .rounded))
                             .foregroundStyle(CBTheme.textSecondary)
                     }
@@ -998,13 +1033,13 @@ private struct PestProjectPickerSheet: View {
                 } else if model.pestProjects.isEmpty {
                     NoticeCard(
                         kind: .warning,
-                        title: "Nenhum projeto encontrado",
-                        message: "Adicione uma pasta com manifests ou código em Ajustes > Pastas para liberar o Pest."
+                        title: L10n.t("Nenhum projeto encontrado"),
+                        message: L10n.t("Adicione uma pasta com manifests ou código em Ajustes > Pastas para liberar o Pest.")
                     )
                     .padding(20)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 } else if filteredProjects.isEmpty {
-                    Text("Nenhum projeto corresponde à busca.")
+                    Text(L10n.t("Nenhum projeto corresponde à busca."))
                         .font(.system(size: 11.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1034,10 +1069,10 @@ private struct PestProjectPickerSheet: View {
             .frame(width: 44, height: 44)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Projetos do Pest")
+                Text(L10n.t("Projetos do Pest"))
                     .font(.system(size: 20, weight: .semibold, design: .rounded))
                     .foregroundStyle(CBTheme.text)
-                Text("Escolha os projetos que ficam na lista de acesso rápido. Você pode analisar e configurar a rotina de cada um sem procurar a pasta novamente.")
+                Text(L10n.t("Escolha os projetos que ficam na lista de acesso rápido. Você pode analisar e configurar a rotina de cada um sem procurar a pasta novamente."))
                     .font(.system(size: 10.5, weight: .regular, design: .rounded))
                     .foregroundStyle(CBTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1051,7 +1086,7 @@ private struct PestProjectPickerSheet: View {
                 Image(systemName: "xmark")
             }
             .buttonStyle(IconButtonStyle(size: 27))
-            .help("Fechar")
+            .help(L10n.t("Fechar"))
         }
         .padding(20)
     }
@@ -1061,7 +1096,7 @@ private struct PestProjectPickerSheet: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(CBTheme.textTertiary)
-            TextField("Buscar por nome ou caminho", text: $query)
+            TextField(L10n.t("Buscar por nome ou caminho", "Search by name or path"), text: $query)
                 .textFieldStyle(.plain)
                 .font(.system(size: 11, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.text)
@@ -1127,17 +1162,19 @@ private struct PestProjectPickerSheet: View {
                 Spacer(minLength: 8)
 
                 if let routine {
-                    Text(routine.enabled ? "Rotina \(routine.timeLabel)" : "Rotina pausada")
+                    Text(routine.enabled
+                        ? L10n.t("Rotina \(routine.timeLabel)", "Routine \(routine.timeLabel)")
+                        : L10n.t("Rotina pausada", "Routine paused"))
                         .font(.system(size: 9.5, weight: .medium, design: .rounded))
                         .foregroundStyle(routine.enabled ? CBTheme.mint : CBTheme.textTertiary)
                 } else {
-                    Text("Sem rotina")
+                    Text(L10n.t("Sem rotina"))
                         .font(.system(size: 9.5, weight: .regular, design: .rounded))
                         .foregroundStyle(CBTheme.textTertiary)
                 }
 
                 if active {
-                    Text("NA LISTA")
+                    Text(L10n.t("NA LISTA"))
                         .font(.system(size: 7.5, weight: .bold, design: .rounded))
                         .tracking(0.7)
                         .foregroundStyle(CBTheme.lime)
@@ -1163,11 +1200,11 @@ private struct PestProjectPickerSheet: View {
 
     private var footer: some View {
         HStack(spacing: 12) {
-            Text("\(model.activePestProjects.count) selecionado(s). As alterações são salvas automaticamente.")
+            Text(L10n.t("\(model.activePestProjects.count) selecionado(s). As alterações são salvas automaticamente.", "\(model.activePestProjects.count) selected. Changes are saved automatically."))
                 .font(.system(size: 10, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
             Spacer()
-            Button("Concluir") {
+            Button(L10n.t("Concluir")) {
                 dismiss()
             }
             .buttonStyle(LimeButtonStyle())
@@ -1201,8 +1238,10 @@ private struct PestConsentSheet: View {
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
-                    SectionLabel(text: "Consentimento do Pest")
-                    Text(isResume ? "Retomar a análise com IA" : "Analisar com IA")
+                    SectionLabel(text: L10n.t("Consentimento do Pest"))
+                    Text(isResume
+                        ? L10n.t("Retomar a análise com IA", "Resume the AI analysis")
+                        : L10n.t("Analisar com IA", "Analyze with AI"))
                         .font(.system(size: 21, weight: .light, design: .rounded))
                         .foregroundStyle(CBTheme.text)
                     Text(projectName)
@@ -1215,30 +1254,32 @@ private struct PestConsentSheet: View {
 
             NoticeCard(
                 kind: .warning,
-                title: "Arquivos de texto do projeto serão enviados para a LLM privada",
-                message: "Somente arquivos de código e configuração do projeto escolhido são enviados, em blocos pequenos, para a LLM privada da Cultura Builder. Sem o consentimento, a análise não começa."
+                title: L10n.t("Arquivos de texto do projeto serão enviados para a LLM privada"),
+                message: L10n.t("Somente arquivos de código e configuração do projeto escolhido são enviados, em blocos pequenos, para a LLM privada da Cultura Builder. Sem o consentimento, a análise não começa.")
             )
 
             VStack(alignment: .leading, spacing: 9) {
-                consentLine("Somente arquivos de código e configuração do projeto escolhido.")
-                consentLine(".env, chaves, credenciais, binários, lockfiles e dependências instaladas ficam de fora.")
-                consentLine("Segredos reconhecíveis são mascarados antes do envio. Os dados não são usados para treinamento.")
+                consentLine(L10n.t("Somente arquivos de código e configuração do projeto escolhido.", "Only code and configuration files from the chosen project."))
+                consentLine(L10n.t(".env, chaves, credenciais, binários, lockfiles e dependências instaladas ficam de fora.", ".env, keys, credentials, binaries, lockfiles and installed dependencies stay out."))
+                consentLine(L10n.t("Segredos reconhecíveis são mascarados antes do envio. Os dados não são usados para treinamento.", "Recognizable secrets are masked before sending. Data is not used for training."))
             }
 
-            Text("O consentimento vale apenas para esta execução. Na próxima análise, o app pergunta de novo.")
+            Text(L10n.t("O consentimento vale apenas para esta execução. Na próxima análise, o app pergunta de novo."))
                 .font(.system(size: 10, weight: .regular, design: .rounded))
                 .foregroundStyle(CBTheme.textTertiary)
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack(spacing: 10) {
-                Button("Agora não", action: onCancel)
+                Button(L10n.t("Agora não", "Not now"), action: onCancel)
                     .buttonStyle(GhostButtonStyle())
 
                 Spacer()
 
                 Button(action: onAuthorize) {
                     Label(
-                        isResume ? "Autorizar e retomar" : "Autorizar e analisar",
+                        isResume
+                            ? L10n.t("Autorizar e retomar", "Authorize and resume")
+                            : L10n.t("Autorizar e analisar", "Authorize and analyze"),
                         systemImage: "checkmark.shield.fill"
                     )
                 }
@@ -1274,16 +1315,16 @@ private struct PestFindingCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 7) {
                         RiskBadge(risk: finding.severity, compact: true)
-                        Text(finding.confidence.uppercased())
+                        Text(L10n.t(finding.confidence).uppercased())
                             .font(.system(size: 9.5, weight: .bold, design: .rounded))
                             .tracking(0.7)
                             .foregroundStyle(CBTheme.textTertiary)
-                        Text(finding.category.uppercased())
+                        Text(L10n.t(finding.category).uppercased())
                             .font(.system(size: 9.5, weight: .bold, design: .rounded))
                             .tracking(0.7)
                             .foregroundStyle(CBTheme.textTertiary)
                         if finding.source == .ia {
-                            Text("IA")
+                            Text(L10n.t("IA"))
                                 .font(.system(size: 9.5, weight: .bold, design: .rounded))
                                 .foregroundStyle(CBTheme.lime)
                                 .padding(.horizontal, 5)
@@ -1318,17 +1359,17 @@ private struct PestFindingCard: View {
             }
 
             if !finding.impact.isEmpty {
-                labeledText("Impacto", Vocabulary.prose(finding.impact))
+                labeledText(L10n.t("Impacto", "Impact"), Vocabulary.prose(finding.impact))
             }
             if !finding.recommendation.isEmpty {
-                labeledText("Como corrigir", Vocabulary.prose(finding.recommendation))
+                labeledText(L10n.t("Como corrigir", "How to fix"), Vocabulary.prose(finding.recommendation))
             }
 
             HStack(spacing: 8) {
                 Button {
                     onCopyPrompt()
                 } label: {
-                    Label("Copiar prompt de correção", systemImage: "doc.on.doc.fill")
+                    Label(L10n.t("Copiar prompt de correção"), systemImage: "doc.on.doc.fill")
                 }
                 .buttonStyle(GhostButtonStyle(tint: CBTheme.lime))
 

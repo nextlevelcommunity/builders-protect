@@ -46,11 +46,11 @@ extension RiskLevel {
 
     var actionLabel: String {
         switch self {
-        case .critical: return "Corrigir agora"
-        case .high: return "Priorizar"
-        case .medium: return "Planejar correção"
-        case .low: return "Acompanhar"
-        case .unknown: return "Revisar"
+        case .critical: return L10n.t("Corrigir agora", "Fix now")
+        case .high: return L10n.t("Priorizar", "Prioritize")
+        case .medium: return L10n.t("Planejar correção", "Plan the fix")
+        case .low: return L10n.t("Acompanhar", "Monitor")
+        case .unknown: return L10n.t("Revisar", "Review")
         }
     }
 }
@@ -58,11 +58,24 @@ extension RiskLevel {
 extension Date {
     var relativeShort: String {
         let seconds = Date().timeIntervalSince(self)
-        if seconds < 60 { return "agora" }
-        if seconds < 3_600 { return "há \(Int(seconds / 60)) min" }
-        if seconds < 86_400 { return "há \(Int(seconds / 3_600)) h" }
-        if seconds < 604_800 { return "há \(Int(seconds / 86_400)) d" }
-        return formatted(date: .abbreviated, time: .omitted)
+        if seconds < 60 { return L10n.t("agora", "just now") }
+        if seconds < 3_600 {
+            let minutes = Int(seconds / 60)
+            return L10n.t("há \(minutes) min", "\(minutes) min ago")
+        }
+        if seconds < 86_400 {
+            let hours = Int(seconds / 3_600)
+            return L10n.t("há \(hours) h", "\(hours) h ago")
+        }
+        if seconds < 604_800 {
+            let days = Int(seconds / 86_400)
+            return L10n.t("há \(days) d", "\(days) d ago")
+        }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: L10n.isPortuguese ? "pt_BR" : "en_US")
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter.string(from: self)
     }
 
     var fullDateTime: String {

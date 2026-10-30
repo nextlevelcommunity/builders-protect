@@ -30,7 +30,7 @@ public struct BuilderAuthStatus: Sendable {
     public var expiryLabel: String? {
         guard let expiresAt else { return nil }
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.locale = Locale.current
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter.string(from: expiresAt)

@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.3.0 — 2026-10-30
+
+- Novo modo RTX (`The Psy RTX`) em Ajustes > IA e segurança: endpoint dedicado com túnel e chave própria, separada da chave local. Com o modo ativo, todas as análises usam o modelo sem censura `deepseek-v4.1-flash-1017-uncensored` no lugar do `builder-auto`.
+- O modo padrão continua sendo o login no proxy da Cultura Builder; a chave RTX só é exigida no modo sem censura.
+- A seção de IA ganhou teste de conexão, campos de endpoint e modelo e um atalho de consentimento explícito para o envio.
+- Red Teaming liberado: consentimento persistente, botão "Acionar Red Team" no Pest e no alerta do projeto, retomada de análise pausada e notificação.
+- Red Team agora roda em blocos lidos do disco, com orçamento de memória, pausa automática e retomada — sem manter o projeto inteiro na memória.
+- Rodadas do Red Team várias vezes por dia: horários livres por projeto, intervalo mínimo de 20 minutos, até 12 horários, com rotina ativável e removível.
+- Idioma da interface: padrão em inglês, opção de português ou automático pelo idioma do sistema, com troca imediata em Ajustes > Geral.
+- A escolha de idioma agora vale para toda a interface, menu do app, onboarding, contadores, datas, mensagens de erro e análises geradas pela IA.
+- Textos de privacidade, conta e memória atualizados para os dois modos de IA.
+
 ## 1.2.2 — 2026-10-27
 
 - O Pest agora mantém uma lista de projetos escolhidos, com análise e rotina por projeto, sem precisar procurar a pasta a cada uso.
