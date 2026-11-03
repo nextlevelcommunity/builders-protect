@@ -9,7 +9,15 @@ MASTER_ICON="$ROOT/Resources/icon_1024x1024.png"
 ICNS="$ROOT/Resources/AppIcon.icns"
 ICONSET="$ROOT/.build/AppIcon.iconset"
 
-swift build --package-path "$ROOT" -c "$CONFIG"
+# Binário universal: roda em Apple Silicon e em Macs Intel.
+# O build local usa hardened runtime desde já, para o app testado ser o mesmo
+# que vai para notarização (sem surpresa só na hora de assinar de verdade).
+ARCHS=(--arch arm64 --arch x86_64)
+if ! swift build --package-path "$ROOT" -c "$CONFIG" "${ARCHS[@]}"; then
+    echo "AVISO: build universal falhou; caindo para a arquitetura nativa." >&2
+    ARCHS=()
+    swift build --package-path "$ROOT" -c "$CONFIG"
+fi
 
 if [[ ! -f "$MASTER_ICON" || "$ROOT/scripts/make-icon.swift" -nt "$MASTER_ICON" ]]; then
     echo "Gerando icone..."
@@ -35,16 +43,23 @@ fi
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$ROOT/.build/$CONFIG/CVEBuilder" "$APP/Contents/MacOS/CVEBuilder"
+BIN=""
+for candidate in "$ROOT/.build/apple/Products/$CONFIG/CVEBuilder" "$ROOT/.build/$CONFIG/CVEBuilder"; do
+    [[ -f "$candidate" ]] && BIN="$candidate" && break
+done
+[[ -n "$BIN" ]] || { echo "ERRO: binário não encontrado após o build." >&2; exit 1; }
+cp "$BIN" "$APP/Contents/MacOS/CVEBuilder"
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 cp "$ICNS" "$APP/Contents/Resources/AppIcon.icns"
 cp "$MASTER_ICON" "$APP/Contents/Resources/icon_1024x1024.png"
-for bundle in "$ROOT/.build/$CONFIG"/*.bundle; do
+for bundle in "$ROOT/.build/apple/Products/$CONFIG"/*.bundle "$ROOT/.build/$CONFIG"/*.bundle; do
     [[ -d "$bundle" ]] && cp -R "$bundle" "$APP/Contents/Resources/"
 done
 chmod +x "$APP/Contents/MacOS/CVEBuilder"
 
 xattr -cr "$APP" 2>/dev/null || true
-codesign --force --deep --sign - "$APP" >/dev/null 2>&1 || true
+ENT_ARGS=()
+[[ -f "$ROOT/Resources/BuildersProtect.entitlements" ]] && ENT_ARGS=(--entitlements "$ROOT/Resources/BuildersProtect.entitlements")
+codesign --force --deep --options runtime "${ENT_ARGS[@]}" --sign - "$APP" >/dev/null 2>&1 || true
 
 echo "$APP"

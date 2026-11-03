@@ -93,13 +93,13 @@ jobs:
 
 Veja [docs/ACTION.md](docs/ACTION.md) para entradas, saídas, cron e permissões.
 
-### App macOS a partir do fork
+### App macOS
 
-O app é instalado a partir do código-fonte, na sua máquina:
+Duas formas:
 
-1. Faça um fork de [nextlevelcommunity/builders-protect](https://github.com/nextlevelcommunity/builders-protect).
-2. Clone o seu fork e entre na pasta.
-3. Rode `make install`.
+**Baixar o app pronto (recomendado).** Abra [Releases](https://github.com/nextlevelcommunity/builders-protect/releases), baixe o `.dmg` da versão mais recente e confira o hash com o `SHA256SUMS.txt` da mesma release. Arraste o app para Aplicativos, abra pelo Launchpad e, se o macOS reclamar do desenvolvedor, clique com o botão direito no app > **Abrir** (ou rode uma vez `xattr -d com.apple.quarantine "/Applications/Builders Protect.app"`). O app é universal: Apple Silicon e Intel. Requisitos: macOS 13+.
+
+**Compilar do código-fonte.** Faça um fork de [nextlevelcommunity/builders-protect](https://github.com/nextlevelcommunity/builders-protect), clone o seu fork e rode `make install`:
 
 ```bash
 git clone https://github.com/<seu-usuario>/builders-protect.git
@@ -107,13 +107,9 @@ cd builders-protect
 make install
 ```
 
-O `make install` compila o app, assina localmente em modo ad-hoc e copia para `~/Applications/Builders Protect.app`. Requisitos: macOS 13+, Swift 5.10+ e Xcode Command Line Tools. Para gerar um DMG, use `make dmg`.
-
-O app fica disponível no Dock, no Launchpad e no **⌘+Tab**. O ícone na barra de menus abre o painel rápido; o banner **Controle total** abre a janela principal.
+O `make install` compila o app (universal, hardened runtime), assina localmente em modo ad-hoc e copia para `~/Applications/Builders Protect.app`. Requisitos: macOS 13+, Swift 5.10+ e Xcode Command Line Tools. Para gerar e conferir um DMG, use `make dist`.
 
 O build local não é notarizado pela Apple. Se o macOS bloquear a primeira abertura, use **Abrir** pelo menu de contexto do Finder. Veja [docs/INSTALL.md](docs/INSTALL.md).
-
-Também é possível baixar um build pronto em [Releases](https://github.com/nextlevelcommunity/builders-protect/releases).
 
 ### CLI
 

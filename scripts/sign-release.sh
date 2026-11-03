@@ -1,61 +1,104 @@
 #!/bin/zsh
-# sign-release.sh — cria cert Developer ID via API ASC, assina, notariza e publica.
-# Uso: ./scripts/sign-release.sh <ISSUER_UUID> <TEAM_ID> <VERSION_TAG>
+# sign-release.sh — assina com Developer ID, notariza, grampeia e publica.
+# Uso: ./scripts/sign-release.sh <ISSUER_UUID> <TEAM_ID> <TAG>
+#   ex: ./scripts/sign-release.sh 69a6de70-... 8TA8YQY457 v1.3.3
+# Pré-requisito: chave de API ASC em ~/.appstoreconnect/private_keys/AuthKey_<KID>.p8
+#                 (ou defina ASC_KEY_ID / ASC_KEY_PATH)
 set -euo pipefail
-ISSUER="${1:?issuer id}"
-TEAM="${2:?team id}"
-TAG="${3:?tag ex v1.3.2}"
+
+ISSUER="${1:?issuer id (App Store Connect > Integrações > chave de API)}"
+TEAM="${2:?team id (developer.apple.com > Membership)}"
+TAG="${3:?tag, ex v1.3.3}"
 DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$DIR/.." && pwd)"
+KID="${ASC_KEY_ID:-8KC953UNQ7}"
+P8="${ASC_KEY_PATH:-$HOME/.appstoreconnect/private_keys/AuthKey_$KID.p8}"
 KEY="$DIR/creds/dev_id.key"
-CSR_B64=$(cat "$DIR/creds/dev_id.csr.b64")
-P8="$HOME/.appstoreconnect/private_keys/AuthKey_8KC953UNQ7.p8"
+CSR_B64=$(tr -d '\n' < "$DIR/creds/dev_id.csr.b64")
 KC="$DIR/creds/asc.keychain"
-OUT="$DIR/creds/developers_id.cer"
+KCPASS="bp$(date +%s)"
+OUT="$DIR/creds/developer_id.cer"
+APP="$ROOT/dist/Builders Protect.app"
+DMG="$ROOT/dist/Builders Protect.dmg"
+ENT="$ROOT/Resources/BuildersProtect.entitlements"
 
-# 1) JWT ES256 com a p8 (node crypto, sem dependências)
-JWT=$(node -e '
-const fs=require("fs"),crypto=require("crypto");
-const [iss,kid,team]=process.argv.slice(1);
-const pem=fs.readFileSync(process.env.P8,"utf8");
-const raw=pem.replace(/-----(BEGIN|END) PRIVATE KEY-----/g,"").replace(/\s+/g,"");
-const b64=(o)=>Buffer.from(JSON.stringify(o)).toString("base64url");
-const now=Math.floor(Date.now()/1000);
-const header=b64({alg:"ES256",kid,type:"JWT"});
-const payload=b64({iss,iat:now,exp:now+1200,aud:"appstoreconnect-v1"});
-const input=header+"."+payload;
-const sign=crypto.createSign("RSA-SHA256"); // replaced below (ES256)
-' "$ISSUER" "8KC953UNQ7" "$TEAM" 2>/dev/null || true)
+[[ -f "$P8" ]] || { echo "ERRO: chave ASC não encontrada em $P8"; exit 1; }
+[[ -d "$APP" ]] || { echo "ERRO: rode 'make dist' antes."; exit 1; }
 
-# nota: ES256 correto abaixo
-JWT=$(node --input-type=module -e '
+jwt() {
+    node --input-type=module -e '
 import fs from "fs"; import crypto from "crypto";
-const [iss,p8path]=process.argv.slice(1);
-const p8=fs.readFileSync(p8path,"utf8");
-const key=crypto.createPrivateKey(p8);
+const [iss,kid,p8path]=process.argv.slice(1);
+const key=crypto.createPrivateKey(fs.readFileSync(p8path,"utf8"));
 const b64=o=>Buffer.from(JSON.stringify(o)).toString("base64url");
 const now=Math.floor(Date.now()/1000);
-const input=`${b64({alg:"ES256",kid:"8KC953UNQ7",typ:"JWT"})}.${b64({iss,iat:now,exp:now+1200,aud:"appstoreconnect-v1"})}`;
-const sig=crypto.sign("sha256",Buffer.from(input),key).toString("base64url");
-console.log(`${input}.${sig}`);
-' "$ISSUER" "$P8")
+const input=`${b64({alg:"ES256",kid,typ:"JWT"})}.${b64({iss,iat:now,exp:now+1200,aud:"appstoreconnect-v1"})}`;
+console.log(`${input}.${crypto.sign("sha256",Buffer.from(input),key).toString("base64url")}`);
+' "$ISSUER" "$KID" "$P8"
+}
 
-echo ">> JWT pronto. Criando certificado Developer ID Application..."
-RESP=$(curl -sS -X POST "https://api.appstoreconnect.apple.com/v1/certificates" \
-  -H "Authorization: Bearer $JWT" -H "Content-Type: application/json" \
-  -d "{\"data\":{\"attributes\":{\"certificateType\":\"DEVELOPER_ID_APPLICATION\",\"csrContent\":\"$CSR_B64\"},\"type\":\"certificates\"}}")
-echo "$RESP" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d); if(j.errors)throw new Error(JSON.stringify(j.errors)); const cer=j.data.attributes.certificateContent; require("fs").writeFileSync(process.argv[1],Buffer.from(cer,"base64")); console.log("OK cert salvo:",j.data.id);}catch(e){console.error("ERRO:",e.message);process.exit(1);}})' "$OUT"
+echo ">> 1/6 validando credenciais na API da Apple..."
+TOKEN=$(jwt)
+CODE=$(curl -sS -o /tmp/asc-preflight.json -w '%{http_code}' \
+    -H "Authorization: Bearer $TOKEN" \
+    "https://api.appstoreconnect.apple.com/v1/certificates?limit=1")
+if [[ "$CODE" != "200" ]]; then
+    echo "ERRO: API respondeu $CODE. Corpo:"
+    head -c 400 /tmp/asc-preflight.json; echo
+    echo "Dica: 401 = chave revogada ou Issuer de outro time; 403 = chave sem papel de Admin/Developer."
+    exit 1
+fi
+echo "   ok — credenciais válidas"
 
-# 2) intermediários Apple
-curl -sS -o "$DIR/creds/wwdr.cer" https://www.apple.com/certificateauthority/AppleWWDRCAG4.cer
-curl -sS -o "$DIR/creds/intermediate.cer" https://www.apple.com/certificateauthority/AppleRootCA-G3.cer
+echo ">> 2/6 obtendo certificado Developer ID Application..."
+EXISTING=$(security find-identity -v -p codesigning 2>/dev/null | grep -c "Developer ID Application" || true)
+if (( EXISTING > 0 )); then
+    echo "   usando certificado já instalado no keychain"
+else
+    RESP=$(curl -sS -X POST "https://api.appstoreconnect.apple.com/v1/certificates" \
+        -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+        -d "{\"data\":{\"type\":\"certificates\",\"attributes\":{\"certificateType\":\"DEVELOPER_ID_APPLICATION\",\"csrContent\":\"$CSR_B64\"}}}")
+    echo "$RESP" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{
+      try{const j=JSON.parse(d); if(j.errors) throw new Error(JSON.stringify(j.errors));
+        require("fs").writeFileSync(process.argv[1],Buffer.from(j.data.attributes.certificateContent,"base64"));
+        console.log("   ok — cert",j.data.id);}catch(e){console.error("ERRO:",e.message);process.exit(1);}
+    })' "$OUT"
 
-# 3) keychain efêmero
-security create-keychain -p "bp$(date +%s)" "$KC" 2>/dev/null || true
-security unlock-keychain -p "bp$(date +%s)" "$KC" 2>/dev/null || true
-security import "$OUT" -k "$KC" -A
-security import "$DIR/creds/wwdr.cer" -k "$KC" -A
-security set-key-partition-list -S apple-tool:,apple: -k "bp$(date +%s)" "$KC" >/dev/null
+    security create-keychain -p "$KCPASS" "$KC" 2>/dev/null || true
+    security set-keychain-settings -lut 21600 "$KC"
+    security unlock-keychain -p "$KCPASS" "$KC"
+    security import "$KEY" -k "$KC" -A -T /usr/bin/codesign
+    security import "$OUT" -k "$KC" -A -T /usr/bin/codesign
+    curl -sS -o "$DIR/creds/wwdr.cer" https://www.apple.com/certificateauthority/AppleWWDRCAG4.cer
+    security import "$DIR/creds/wwdr.cer" -k "$KC" -A -T /usr/bin/codesign
+    security set-key-partition-list -S apple-tool:,apple:,codesign: -k "$KCPASS" "$KC" >/dev/null
+    security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+fi
 
-echo ">> OK. Assine com:"
-echo "   codesign --deep --force --options runtime --keychain \"$KC\" --sign \"$TEAM\" --timestamp \"dist/Builders Protect.app\""
-echo ">> Depois: make dmg && xcrun notarytool submit dist/'Builders Protect.dmg' --key $P8 --key-id 8KC953UNQ7 --issuer $ISSUER --wait"
+SIGN_ARGS=(--force --options runtime --timestamp --sign "Developer ID Application")
+[[ -f "$ENT" ]] && SIGN_ARGS+=(--entitlements "$ENT")
+
+echo ">> 3/6 assinando app e dmg..."
+codesign "${SIGN_ARGS[@]}" --keychain "$KC" "$APP"
+codesign "${SIGN_ARGS[@]}" "$DMG" 2>/dev/null || true
+codesign --verify --strict --deep "$APP"
+echo "   ok"
+
+echo ">> 4/6 notarizando (pode levar minutos)..."
+xcrun notarytool submit "$DMG" --key "$P8" --key-id "$KID" --issuer "$ISSUER" --wait
+
+echo ">> 5/6 grampeando e verificando..."
+xcrun stapler staple "$DMG"
+xcrun stapler staple "$APP"
+xcrun stapler validate "$DMG"
+spctl -a -vvv -t exec "$APP"
+shasum -a 256 "$DMG" > "$ROOT/dist/SHA256SUMS.txt"
+echo "   ok — Gatekeeper aceita"
+
+echo ">> 6/6 publicando $TAG..."
+gh release create "$TAG" "$DMG" "$ROOT/dist/SHA256SUMS.txt" \
+    --repo nextlevelcommunity/builders-protect \
+    --title "Builders Protect $TAG" \
+    --notes "Assinado com Developer ID e notarizado pela Apple. Universal (Apple Silicon + Intel). Verifique com SHA256SUMS.txt."
+
+echo "PRONTO: $TAG publicado, assinado e notarizado."

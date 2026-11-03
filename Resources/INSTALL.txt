@@ -1,0 +1,37 @@
+Builders Protect — instalação
+=============================
+
+1. Arraste "Builders Protect" para a pasta Aplicativos.
+2. Abra o app pelo Launchpad (ou Spotlight).
+3. Se o macOS disser que o app é de um desenvolvedor não identificado:
+   - clique com o botão direito no app > Abrir > Abrir; ou
+   - rode uma vez no Terminal:
+     xattr -d com.apple.quarantine "/Applications/Builders Protect.app"
+4. Requisitos: macOS 13 ou superior, Apple Silicon ou Intel.
+
+O app é universal (arm64 + x86_64) e traz o próprio motor de varredura.
+Nada é enviado para fora sem consentimento na tela.
+
+Conferir o download:
+  shasum -a 256 ~/Downloads/"Builders Protect.dmg"
+  (compare com SHA256SUMS.txt da mesma release)
+
+---
+
+Builders Protect — installation
+===============================
+
+1. Drag "Builders Protect" into Applications.
+2. Open it from Launchpad (or Spotlight).
+3. If macOS says the developer cannot be verified:
+   - right-click the app > Open > Open; or
+   - run once in Terminal:
+     xattr -d com.apple.quarantine "/Applications/Builders Protect.app"
+4. Requires macOS 13+, Apple Silicon or Intel.
+
+The app is universal (arm64 + x86_64) and ships its own scanning engine.
+Nothing leaves the machine without on-screen consent.
+
+Verify the download:
+  shasum -a 256 ~/Downloads/"Builders Protect.dmg"
+  (compare with SHA256SUMS.txt from the same release)

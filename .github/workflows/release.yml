@@ -20,6 +20,38 @@ jobs:
       - run: npm test
       - run: swift test
       - run: make dmg
+      - name: Assinar e notarizar (quando há segredos)
+        if: ${{ secrets.DEVELOPER_ID_P12 != '' }}
+        env:
+          DEVELOPER_ID_P12: ${{ secrets.DEVELOPER_ID_P12 }}
+          DEVELOPER_ID_PASSWORD: ${{ secrets.DEVELOPER_ID_PASSWORD }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER: ${{ secrets.ASC_ISSUER }}
+          TEAM_ID: ${{ secrets.ASC_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          KC="$RUNNER_TEMP/signing.keychain"
+          security create-keychain -p "$DEVELOPER_ID_PASSWORD" "$KC"
+          security set-keychain-settings -lut 3600 "$KC"
+          security unlock-keychain -p "$DEVELOPER_ID_PASSWORD" "$KC"
+          echo "$DEVELOPER_ID_P12" | base64 -d > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KC" -P "$DEVELOPER_ID_PASSWORD" -A -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -k "$DEVELOPER_ID_PASSWORD" "$KC" >/dev/null
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "${{ secrets.ASC_KEY_P8 }}" | base64 -d > ~/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8
+          codesign --force --options runtime --timestamp --entitlements Resources/BuildersProtect.entitlements \
+            --sign "Developer ID Application" "dist/Builders Protect.app"
+          codesign --force --options runtime --timestamp --sign "Developer ID Application" "dist/Builders Protect.dmg"
+          xcrun notarytool submit "dist/Builders Protect.dmg" --key ~/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8 \
+            --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER" --wait
+          xcrun stapler staple "dist/Builders Protect.dmg"
+          xcrun stapler staple "dist/Builders Protect.app"
+          spctl -a -vvv -t exec "dist/Builders Protect.app"
+      - name: Checagem de artefato
+        run: ./scripts/release-check.sh
+        env:
+          BP_SKIP_LAUNCH: "1"
       - name: Prepare release asset
         run: |
           cd dist

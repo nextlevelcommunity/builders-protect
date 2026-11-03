@@ -2,7 +2,7 @@ APP_NAME := Builders Protect
 DIST_APP := dist/$(APP_NAME).app
 INSTALL_APP := $(HOME)/Applications/$(APP_NAME).app
 
-.PHONY: build test test-cli test-all run install uninstall clean dmg
+.PHONY: build test test-cli test-all run install uninstall clean dmg dist verify
 
 build:
 	./scripts/build-app.sh release
@@ -35,7 +35,14 @@ dmg: build
 	rm -rf dist/dmg-root
 	mkdir -p dist/dmg-root
 	ditto "$(DIST_APP)" "dist/dmg-root/$(APP_NAME).app"
+	cp Resources/INSTALL.txt "dist/dmg-root/LEIA-ME.txt"
 	ln -s /Applications dist/dmg-root/Applications
 	hdiutil create -volname "$(APP_NAME)" -srcfolder dist/dmg-root -ov -format UDZO "dist/$(APP_NAME).dmg"
 	rm -rf dist/dmg-root
 	@echo "DMG em dist/$(APP_NAME).dmg"
+
+verify:
+	./scripts/release-check.sh
+
+dist: dmg verify
+	@echo "Artefato verificado: dist/$(APP_NAME).dmg"

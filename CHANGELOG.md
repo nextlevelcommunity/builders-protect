@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.3 — 2026-11-03
+
+- App passa a ser **universal** (Apple Silicon + Intel): antes só rodava em Mac com chip Apple.
+- Build e assinatura agora usam **hardened runtime** desde o build local, para o app testado ser o mesmo que vai para notarização.
+- DMG traz `LEIA-ME.txt` com instalação em português e inglês e conferência por hash.
+- Novo `make dist` + `scripts/release-check.sh`: checagem pontual do artefato (arquitetura, versão, assinatura, hardened runtime, abertura real, integridade do DMG, chave fora do git).
+- CI e workflow de release passaram a rodar a checagem de artefato; o release assina e notariza sozinho quando os segredos existem.
+- `scripts/sign-release.sh` valida as credenciais na API da Apple antes de qualquer passo e falha cedo.
+
 ## 1.3.2 — 2026-11-03
 
 - DMG reempacotado para distribuição; pipeline de Developer ID + notarização preparado (scripts/sign-release.sh).
