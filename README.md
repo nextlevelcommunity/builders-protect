@@ -166,11 +166,12 @@ Leia [docs/SECURITY-MODEL.md](docs/SECURITY-MODEL.md) antes de usar em repositó
 
 - Red Teaming no app segue em evolução, com foco em reduzir consumo de recursos.
 - Interface desktop para Windows e Linux. Nesta versão, o modo suportado fora do macOS é CLI/GitHub Action.
-- Build macOS assinado e notarizado.
+- Build macOS notarizado (o pipeline está pronto; falta a conta Apple emitir o certificado — veja [docs/SIGNING.md](docs/SIGNING.md)).
 
 ## Documentação
 
 - [Instalação](docs/INSTALL.md)
+- [Assinatura e notarização](docs/SIGNING.md)
 - [GitHub Action](docs/ACTION.md)
 - [Modelo de segurança](docs/SECURITY-MODEL.md)
 - [Arquitetura](docs/ARCHITECTURE.md)
