@@ -2,7 +2,7 @@
 
 ## 1.3.2 — 2026-11-03
 
-- DMG重新empacotado para distribuição; pipeline de Developer ID + notarização preparado (scripts/sign-release.sh).
+- DMG reempacotado para distribuição; pipeline de Developer ID + notarização preparado (scripts/sign-release.sh).
 
 
 ## 1.3.1 — 2026-10-31
