@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1 — 2026-10-31
+
+- O idioma padrão passa a ser inglês de verdade: a primeira abertura não depende mais do idioma do Mac. Quem preferir português ou o idioma do sistema escolhe em Ajustes > Geral.
+- Ajuste coberto por teste para o padrão, a ordem das opções e a resolução de cada idioma.
+
 ## 1.3.0 — 2026-10-30
 
 - Novo modo RTX (`The Psy RTX`) em Ajustes > IA e segurança: endpoint dedicado com túnel e chave própria, separada da chave local. Com o modo ativo, todas as análises usam o modelo sem censura `deepseek-v4.1-flash-1017-uncensored` no lugar do `builder-auto`.

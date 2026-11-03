@@ -51,7 +51,11 @@ final class RTXConfigurationTests: XCTestCase {
         )
     }
 
-    func testLanguageDefaultsToSystemAndFallsBackToEnglish() {
+    func testLanguageDefaultsToEnglish() {
+        XCTAssertEqual(AppSettings().appLanguage, .english)
+        XCTAssertEqual(AppLanguage.allCases, [.english, .portuguese, .system])
+        XCTAssertEqual(AppLanguage.english.resolvedCode, "en")
+        XCTAssertEqual(AppLanguage.portuguese.resolvedCode, "pt-BR")
         XCTAssertEqual(AppLanguage.system.resolvedCode.hasPrefix("en") || AppLanguage.system.resolvedCode.hasPrefix("pt"), true)
         XCTAssertFalse(AppLanguage.english.isPortuguese)
         XCTAssertTrue(AppLanguage.portuguese.isPortuguese)

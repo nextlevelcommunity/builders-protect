@@ -4,7 +4,7 @@ import Foundation
 /// Textos da interface. O padrão é inglês; o português vem do sistema ou da
 /// escolha em Ajustes > Geral. A chave é sempre o texto em português.
 enum L10n {
-    static var language: AppLanguage = .system
+    static var language: AppLanguage = .english
 
     static var isPortuguese: Bool { language.isPortuguese }
 
@@ -324,7 +324,7 @@ enum L10n {
         "O diagnóstico de dependências envia nomes, versões, vulnerabilidades e caminhos, sem código-fonte. Pest e Red Team só enviam código após sua autorização, com redaction de segredos. No modo RTX, o destino é o endpoint RTX.": "The dependency diagnosis sends names, versions, vulnerabilities and paths, with no source code. Pest and Red Team only send code after your authorization, with secret redaction. In RTX mode, the destination is the RTX endpoint.",
         "O diagnóstico de dependências recebe nomes, versões, vulnerabilidades e caminhos dos projetos, sem código-fonte. Pest e Red Team só enviam código e configuração após sua autorização, com redaction de segredos.": "The dependency diagnosis receives names, versions, vulnerabilities and project paths, with no source code. Pest and Red Team only send code and configuration after your authorization, with secret redaction.",
         "O endpoint já tem o acesso do túnel. Só mude se a Cultura Builder indicar outro.": "The endpoint already has tunnel access. Only change it if Cultura Builder points to another one.",
-        "O padrão é inglês; o sistema em português já abre em português.": "The default is English; a Portuguese system already opens in Portuguese.",
+        "O padrão é inglês. Você pode trocar para português ou seguir o idioma do sistema.": "The default is English. You can switch to Portuguese or follow the system language.",
         "O que acontece agora": "What happens now",
         "O que fazer": "What to do",
         "O que pode acontecer": "What can happen",

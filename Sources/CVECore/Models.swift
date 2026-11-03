@@ -104,7 +104,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         rtxAPIKey: String = "",
         rtxModel: String = "",
         redTeamConsent: Bool = false,
-        appLanguage: AppLanguage = .system
+        appLanguage: AppLanguage = .english
     ) {
         self.folders = folders
         self.excludedPaths = excludedPaths
@@ -154,7 +154,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         rtxAPIKey = try container.decodeIfPresent(String.self, forKey: .rtxAPIKey) ?? ""
         rtxModel = try container.decodeIfPresent(String.self, forKey: .rtxModel) ?? ""
         redTeamConsent = try container.decodeIfPresent(Bool.self, forKey: .redTeamConsent) ?? false
-        appLanguage = try container.decodeIfPresent(AppLanguage.self, forKey: .appLanguage) ?? .system
+        appLanguage = try container.decodeIfPresent(AppLanguage.self, forKey: .appLanguage) ?? .english
     }
 
     public func encode(to encoder: Encoder) throws {

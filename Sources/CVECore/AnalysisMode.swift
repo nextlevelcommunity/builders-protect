@@ -11,12 +11,12 @@ public enum AnalysisMode: String, Codable, CaseIterable, Sendable {
     public var isHack: Bool { self == .rtx }
 }
 
-/// Idioma da interface. O padrão segue o idioma do sistema e cai em inglês
-/// quando o sistema não é português.
+/// Idioma da interface. O padrão é inglês; a pessoa pode escolher português
+/// ou seguir o idioma do sistema.
 public enum AppLanguage: String, Codable, CaseIterable, Sendable {
-    case system
     case english
     case portuguese
+    case system
 
     public var resolvedCode: String {
         switch self {

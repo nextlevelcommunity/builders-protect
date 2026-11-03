@@ -668,7 +668,7 @@ struct SettingsView: View {
                             Text(L10n.t("Idioma"))
                                 .font(.system(size: 11.5, weight: .semibold, design: .rounded))
                                 .foregroundStyle(CBTheme.text)
-                            Text(L10n.t("O padrão é inglês; o sistema em português já abre em português."))
+                            Text(L10n.t("O padrão é inglês. Você pode trocar para português ou seguir o idioma do sistema."))
                                 .font(.system(size: 9.2, weight: .regular, design: .rounded))
                                 .foregroundStyle(CBTheme.textTertiary)
                                 .fixedSize(horizontal: false, vertical: true)
