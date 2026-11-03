@@ -11,7 +11,7 @@ TEAM="${2:?team id (developer.apple.com > Membership)}"
 TAG="${3:?tag, ex v1.3.3}"
 DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$DIR/.." && pwd)"
-KID="${ASC_KEY_ID:-8KC953UNQ7}"
+KID="${ASC_KEY_ID:-GZPQDQ53F8}"
 P8="${ASC_KEY_PATH:-$HOME/.appstoreconnect/private_keys/AuthKey_$KID.p8}"
 KEY="$DIR/creds/dev_id.key"
 CSR_B64=$(tr -d '\n' < "$DIR/creds/dev_id.csr.b64")
@@ -33,7 +33,9 @@ const key=crypto.createPrivateKey(fs.readFileSync(p8path,"utf8"));
 const b64=o=>Buffer.from(JSON.stringify(o)).toString("base64url");
 const now=Math.floor(Date.now()/1000);
 const input=`${b64({alg:"ES256",kid,typ:"JWT"})}.${b64({iss,iat:now,exp:now+1200,aud:"appstoreconnect-v1"})}`;
-console.log(`${input}.${crypto.sign("sha256",Buffer.from(input),key).toString("base64url")}`);
+// Apple exige a assinatura ECDSA no formato cru JOSE (r||s), nao DER.
+const sig=crypto.sign("sha256",Buffer.from(input),{key,dsaEncoding:"ieee-p1363"});
+console.log(`${input}.${sig.toString("base64url")}`);
 ' "$ISSUER" "$KID" "$P8"
 }
 
