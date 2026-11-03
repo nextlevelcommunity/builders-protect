@@ -51,6 +51,7 @@ jobs:
       - run: npm test
       - name: Pack CLI tarball
         run: |
+          npm pack
           mkdir dist
           mv *.tgz dist/
         shell: bash
