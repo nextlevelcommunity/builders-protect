@@ -14,3 +14,4 @@ builders-protect.sarif
 coverage/
 *.tgz
 .playwright-mcp/
+scripts/creds/
