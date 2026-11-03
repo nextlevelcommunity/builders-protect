@@ -39,3 +39,29 @@ jobs:
             "dist/Builders.Protect.dmg" \
             "dist/SHA256SUMS.txt" \
             --clobber
+
+  cli:
+    name: Package CLI (Linux, Windows, macOS)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm test
+      - name: Pack CLI tarball
+        run: |
+          mkdir dist
+          mv *.tgz dist/
+        shell: bash
+      - name: Publish release asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --generate-notes --title "Builders Protect $TAG"
+          fi
+          gh release upload "$TAG" dist/*.tgz --clobber
+        shell: bash
