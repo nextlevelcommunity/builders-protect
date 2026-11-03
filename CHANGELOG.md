@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.2 — 2026-11-03
+
+- DMG重新empacotado para distribuição; pipeline de Developer ID + notarização preparado (scripts/sign-release.sh).
+
+
 ## 1.3.1 — 2026-10-31
 
 - O idioma padrão passa a ser inglês de verdade: a primeira abertura não depende mais do idioma do Mac. Quem preferir português ou o idioma do sistema escolhe em Ajustes > Geral.
