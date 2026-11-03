@@ -12,6 +12,8 @@ jobs:
   macos:
     name: Build macOS release
     runs-on: macos-latest
+    env:
+      HAS_SIGNING: ${{ secrets.DEVELOPER_ID_P12 != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,7 +23,7 @@ jobs:
       - run: swift test
       - run: make dmg
       - name: Assinar e notarizar (quando há segredos)
-        if: ${{ secrets.DEVELOPER_ID_P12 != '' }}
+        if: env.HAS_SIGNING == 'true'
         env:
           DEVELOPER_ID_P12: ${{ secrets.DEVELOPER_ID_P12 }}
           DEVELOPER_ID_PASSWORD: ${{ secrets.DEVELOPER_ID_PASSWORD }}
