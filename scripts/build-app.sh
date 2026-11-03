@@ -1,5 +1,6 @@
 #!/bin/zsh
 set -euo pipefail
+setopt null_glob
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CONFIG="${1:-release}"
