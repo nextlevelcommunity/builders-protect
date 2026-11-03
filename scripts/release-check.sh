@@ -106,7 +106,7 @@ if [[ -f "$DMG" ]]; then
         fail "dmg não monta"
     fi
     rmdir "$MP" 2>/dev/null
-    ( cd "$ROOT/dist" && shasum -a 256 "Builders Protect.dmg" > SHA256SUMS.txt )
+    ( cd "$ROOT/dist" && shasum -a 256 "$(basename "$DMG")" > SHA256SUMS.txt )
     pass "SHA256SUMS.txt atualizado"
 else
     info "dmg ausente (rode make dmg)"

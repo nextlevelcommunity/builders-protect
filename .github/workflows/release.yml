@@ -57,9 +57,11 @@ jobs:
       - name: Prepare release asset
         run: |
           cd dist
-          cp "Builders Protect.dmg" "Builders.Protect.dmg"
-          shasum -a 256 "Builders.Protect.dmg" > SHA256SUMS.txt
-          cat SHA256SUMS.txt
+          cp "Builders Protect.dmg" "Builders-Protect-${TAG}.dmg"
+          shasum -a 256 "Builders-Protect-${TAG}.dmg" > "SHA256SUMS-${TAG}.txt"
+          cat "SHA256SUMS-${TAG}.txt"
+        env:
+          TAG: ${{ github.ref_name }}
       - name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -70,8 +72,8 @@ jobs:
             gh release create "$TAG" --generate-notes --title "Builders Protect $TAG"
           fi
           gh release upload "$TAG" \
-            "dist/Builders.Protect.dmg" \
-            "dist/SHA256SUMS.txt" \
+            "dist/Builders-Protect-${TAG}.dmg" \
+            "dist/SHA256SUMS-${TAG}.txt" \
             --clobber
 
   cli:
