@@ -120,6 +120,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.ref_name }}
         run: |
+          $tag = $env:TAG
+          if (-not $tag) { throw "TAG ausente" }
           $files = @(
             "dist/Builders-Protect-CLI-windows-x64.zip",
             "dist/Builders-Protect-CLI-windows-x64.zip.sha256"
@@ -127,11 +129,11 @@ jobs:
           $deadline = (Get-Date).AddMinutes(10)
           $uploaded = $false
           while ((Get-Date) -lt $deadline) {
-            gh release upload "$TAG" @files --clobber 2>&1 | Out-Host
+            gh release upload "$tag" @files --clobber 2>&1 | Out-Host
             if ($LASTEXITCODE -eq 0) { $uploaded = $true; break }
             # O release pode ainda nao existir (job macOS roda em paralelo) — tenta criar e repete
-            gh release create "$TAG" --generate-notes --title "Builders Protect $TAG" 2>&1 | Out-Host
+            gh release create "$tag" --generate-notes --title "Builders Protect $tag" 2>&1 | Out-Host
             Start-Sleep -Seconds 15
           }
-          if (-not $uploaded) { throw "Falha ao publicar assets do Windows no release $TAG" }
+          if (-not $uploaded) { throw "Falha ao publicar assets do Windows no release $tag" }
         shell: pwsh
