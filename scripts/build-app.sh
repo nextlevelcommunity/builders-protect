@@ -51,6 +51,14 @@ done
 [[ -n "$BIN" ]] || { echo "ERRO: binário não encontrado após o build." >&2; exit 1; }
 cp "$BIN" "$APP/Contents/MacOS/CVEBuilder"
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
+# Versão sempre vem do package.json — nunca dessincroniza com a release.
+VERSION=$(sed -n 's/^[[:space:]]*"version":[[:space:]]*"\([^"]*\)".*/\1/p' "$ROOT/package.json" | head -1)
+if [[ -n "$VERSION" ]]; then
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION" "$APP/Contents/Info.plist"
+else
+    echo "AVISO: versão não encontrada no package.json; mantendo a do Info.plist." >&2
+fi
 cp "$ICNS" "$APP/Contents/Resources/AppIcon.icns"
 cp "$MASTER_ICON" "$APP/Contents/Resources/icon_1024x1024.png"
 for bundle in "$ROOT/.build/apple/Products/$CONFIG"/*.bundle "$ROOT/.build/$CONFIG"/*.bundle; do
