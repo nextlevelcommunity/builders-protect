@@ -79,7 +79,7 @@ else
     security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
 fi
 
-SIGN_ARGS=(--force --options runtime --timestamp --sign "Developer ID Application")
+SIGN_ARGS=(--deep --force --options runtime --timestamp --sign "Developer ID Application")
 [[ -f "$ENT" ]] && SIGN_ARGS+=(--entitlements "$ENT")
 
 echo ">> 3/6 assinando app e dmg..."
