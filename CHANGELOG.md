@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.5 — 2026-11-04
+
+- **Build Windows portátil do CLI**: release agora publica `Builders-Protect-CLI-windows-x64.zip` com `node.exe` embutido e launcher `builders-protect.cmd` — não exige Node instalado.
+- `scripts/build-windows.ps1`: monta, testa (`--version`) e gera SHA256 do pacote no runner Windows.
+- Sem assinatura Authenticode por enquanto (aviso do SmartScreen documentado no LEIA-ME).
+
 ## 1.3.3 — 2026-11-03
 
 - App passa a ser **universal** (Apple Silicon + Intel): antes só rodava em Mac com chip Apple.

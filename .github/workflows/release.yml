@@ -102,3 +102,29 @@ jobs:
           fi
           gh release upload "$TAG" dist/*.tgz --clobber
         shell: bash
+
+  windows:
+    name: Build Windows portable CLI
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm test
+      - name: Assemble portable Windows zip
+        shell: pwsh
+        run: ./scripts/build-windows.ps1
+      - name: Publish release asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if (-not (gh release view "$TAG" 2>$null)) {
+            gh release create "$TAG" --generate-notes --title "Builders Protect $TAG"
+          }
+          gh release upload "$TAG" `
+            "dist/Builders-Protect-CLI-windows-x64.zip" `
+            "dist/Builders-Protect-CLI-windows-x64.zip.sha256" `
+            --clobber
+        shell: pwsh
