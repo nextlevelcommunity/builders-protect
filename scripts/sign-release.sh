@@ -8,7 +8,7 @@
 #                 (ou defina ASC_KEY_ID / ASC_KEY_PATH)
 set -euo pipefail
 
-ISSUER="${1:-772f6c41-8140-4c41-b0e4-a2bff919be63}"
+ISSUER="${ASC_ISSUER:-772f6c41-8140-4c41-b0e4-a2bff919be63}"
 TEAM="${2:-HCT8F2D969}"
 TAG="${1:?tag, ex v1.3.3}"
 DIR="$(cd "$(dirname "$0")" && pwd)"
