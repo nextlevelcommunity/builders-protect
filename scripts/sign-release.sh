@@ -88,6 +88,15 @@ if [[ -f "$KC" ]]; then
 else
     codesign "${SIGN_ARGS[@]}" "$APP"
 fi
+# O DMG precisa ser recriado DEPOIS do re-sign do app: assinar o DMG nao
+# altera o conteudo de dentro, e o notarizador valida o app de dentro dele.
+rm -rf "$ROOT/dist/dmg-root"
+mkdir -p "$ROOT/dist/dmg-root"
+ditto "$APP" "$ROOT/dist/dmg-root/Builders Protect.app"
+[[ -f "$ROOT/Resources/INSTALL.txt" ]] && cp "$ROOT/Resources/INSTALL.txt" "$ROOT/dist/dmg-root/LEIA-ME.txt"
+ln -sf /Applications "$ROOT/dist/dmg-root/Applications"
+hdiutil create -volname "Builders Protect" -srcfolder "$ROOT/dist/dmg-root" -ov -format UDZO "$DMG" >/dev/null
+rm -rf "$ROOT/dist/dmg-root"
 codesign "${SIGN_ARGS[@]}" "$DMG" 2>/dev/null || true
 codesign --verify --strict --deep "$APP"
 echo "   ok"
