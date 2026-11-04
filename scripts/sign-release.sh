@@ -1,17 +1,19 @@
 #!/bin/zsh
 # sign-release.sh — assina com Developer ID, notariza, grampeia e publica.
-# Uso: ./scripts/sign-release.sh <ISSUER_UUID> <TEAM_ID> <TAG>
-#   ex: ./scripts/sign-release.sh 69a6de70-... 8TA8YQY457 v1.3.3
+# Uso: ./scripts/sign-release.sh <TAG>
+#   ex: ./scripts/sign-release.sh v1.3.3
+#   (issuer/team têm default da Cultura Builder: chave ASC L8KABF93C5,
+#    issuer 772f6c41-8140-4c41-b0e4-a2bff919be63, team HCT8F2D969)
 # Pré-requisito: chave de API ASC em ~/.appstoreconnect/private_keys/AuthKey_<KID>.p8
 #                 (ou defina ASC_KEY_ID / ASC_KEY_PATH)
 set -euo pipefail
 
-ISSUER="${1:?issuer id (App Store Connect > Integrações > chave de API)}"
-TEAM="${2:?team id (developer.apple.com > Membership)}"
-TAG="${3:?tag, ex v1.3.3}"
+ISSUER="${1:-772f6c41-8140-4c41-b0e4-a2bff919be63}"
+TEAM="${2:-HCT8F2D969}"
+TAG="${1:?tag, ex v1.3.3}"
 DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$DIR/.." && pwd)"
-KID="${ASC_KEY_ID:-GZPQDQ53F8}"
+KID="${ASC_KEY_ID:-L8KABF93C5}"
 P8="${ASC_KEY_PATH:-$HOME/.appstoreconnect/private_keys/AuthKey_$KID.p8}"
 KEY="$DIR/creds/dev_id.key"
 CSR_B64=$(tr -d '\n' < "$DIR/creds/dev_id.csr.b64")
@@ -81,7 +83,11 @@ SIGN_ARGS=(--force --options runtime --timestamp --sign "Developer ID Applicatio
 [[ -f "$ENT" ]] && SIGN_ARGS+=(--entitlements "$ENT")
 
 echo ">> 3/6 assinando app e dmg..."
-codesign "${SIGN_ARGS[@]}" --keychain "$KC" "$APP"
+if [[ -f "$KC" ]]; then
+    codesign "${SIGN_ARGS[@]}" --keychain "$KC" "$APP"
+else
+    codesign "${SIGN_ARGS[@]}" "$APP"
+fi
 codesign "${SIGN_ARGS[@]}" "$DMG" 2>/dev/null || true
 codesign --verify --strict --deep "$APP"
 echo "   ok"
@@ -98,9 +104,14 @@ shasum -a 256 "$DMG" > "$ROOT/dist/SHA256SUMS.txt"
 echo "   ok — Gatekeeper aceita"
 
 echo ">> 6/6 publicando $TAG..."
-gh release create "$TAG" "$DMG" "$ROOT/dist/SHA256SUMS.txt" \
-    --repo nextlevelcommunity/builders-protect \
-    --title "Builders Protect $TAG" \
-    --notes "Assinado com Developer ID e notarizado pela Apple. Universal (Apple Silicon + Intel). Verifique com SHA256SUMS.txt."
+REPO="nextlevelcommunity/builders-protect"
+if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+    gh release upload "$TAG" "$DMG" "$ROOT/dist/SHA256SUMS.txt" --repo "$REPO" --clobber
+else
+    gh release create "$TAG" "$DMG" "$ROOT/dist/SHA256SUMS.txt" \
+        --repo "$REPO" \
+        --title "Builders Protect $TAG" \
+        --notes "Assinado com Developer ID e notarizado pela Apple. Universal (Apple Silicon + Intel). Verifique com SHA256SUMS.txt."
+fi
 
 echo "PRONTO: $TAG publicado, assinado e notarizado."
